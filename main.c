@@ -5,131 +5,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libs/delo2d.h"
 
 #define GLEW_STATIC 1
-typedef struct Vertex Vertex;
-struct Vertex
-{
-    float x,y;
-    int r,g,b,a;
-};
-static unsigned int compile_shader(unsigned int type,char *shader_source_code)
-{    
-    unsigned int id = glCreateShader(type);
-    char const* src = shader_source_code;
-    glShaderSource(id,1,&src,NULL);
-    glCompileShader(id);
 
-
-    return id;
-
-}
-static int create_shader(char *vertex_shader_source_code, char *fragment_shader_source_code)
-{
-    unsigned int program = glCreateProgram();
-    unsigned int vs = compile_shader(GL_VERTEX_SHADER,vertex_shader_source_code);
-    unsigned int fs = compile_shader(GL_FRAGMENT_SHADER,fragment_shader_source_code);
-
-    glAttachShader(program,vs);
-    glAttachShader(program,fs);
-
-    glLinkProgram(program);
-    glValidateProgram(program);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    return program;
-}
-static char* load_shader(char *path)
-{
-    FILE *f = fopen(path, "rb");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    char *source_code = malloc(fsize + sizeof(char));
-    fread(source_code, fsize, 1, f);
-    fclose(f);
-    source_code[fsize] = '\0';
-    return source_code;
-}
-int find_keyword(char *string, char *sub_string,int tag)
-{
-    int n = 0;
-    size_t length = strlen(string);
-    for (size_t i = 0; i < length; i++)
-    {
-        if(string[i] == sub_string[n])
-        {
-            n++;
-        }
-        else
-        {
-            n = 0;
-        }
-        if(n == strlen(sub_string))
-        {            
-            if(tag == 0)
-            {
-                return i+1;
-            }
-            else
-            {
-                return i - (strlen(sub_string)-1);
-            }
-        }
-    }
-    return 0;
-}
-static char* parse_shader(char *source_full,char *keyword_begin,char *keyword_end)
-{
-    int begin = find_keyword(source_full,keyword_begin,0);
-    int end = find_keyword(source_full,keyword_end,1);
-
-    if(end > begin)
-    {
-        int length = end - begin;
-        char *src = malloc(sizeof(char)*length+1);
-        memcpy(src,&source_full[begin],sizeof(char)*(length));
-        src[length] = '\0'; 
-        return src; 
-    }
-    else
-    {
-        return NULL;
-    }
-}
-unsigned int shader_from_file(char *path_shader)
-{
-    char *src = load_shader(path_shader); 
-    char *src_vert = parse_shader(src,"#VERT_BEGIN","#VERT_END");
-    char *src_frag = parse_shader(src,"#FRAG_BEGIN","#FRAG_END");    
-
-    if(src_vert != NULL && src_frag != NULL)
-    {
-        unsigned int shader = create_shader(src_vert,src_frag); 
-        
-        free(src);
-        free(src_vert);
-        free(src_frag);
-        return shader;
-    }
-    else
-    {
-        return 0;
-    }
-
-    
-}
 int main(void)
 {
-    
-
-
-
     GLFWwindow* window;
    
-
     if (!glfwInit())
     {
         return -1;
@@ -149,27 +32,62 @@ int main(void)
         return -1;
     }
 
-    float vertices[6] = { -0.5f,-0.5f,0.0f,0.5f,0.5f,-0.5f};
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
 
+
+    unsigned int vao;
+    glGenVertexArrays(1,&vao);
+    glBindVertexArray(vao);
+
+    float positions[8] = { -0.5f,-0.5f, 
+                            0.5f,-0.5f, 
+                            0.5f,0.5f,
+                            -0.5f,0.5f};
     unsigned int buffer;
     glGenBuffers(1,&buffer);
     glBindBuffer(GL_ARRAY_BUFFER,buffer);
-    glBufferData(GL_ARRAY_BUFFER,6 * sizeof(float),vertices,GL_DYNAMIC_DRAW);
-
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*2,0);
+    glBufferData(GL_ARRAY_BUFFER,4*2* sizeof(float),positions,GL_DYNAMIC_DRAW);    
     glEnableVertexAttribArray(0);
-
-    unsigned int shader = shader_from_file("default_shader.glsl");
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*2,0);
     
-    glUseProgram(shader);
+
+
+    unsigned int indices[] = {0,1,2,2,3,0};
+    unsigned int ibo;
+    glGenBuffers(1,&ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,6 * sizeof(unsigned int),indices,GL_DYNAMIC_DRAW);
+
+
+
+
 
     
+
+    unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
+    
+    int location = glGetUniformLocation(shader,"u_color");
+
+    
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+
+
 
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(GL_TRIANGLES,0,3);
+
+        glUseProgram(shader);    
+        glUniform4f(location,0.2f,0.3f,0.8,1.0f);
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
+        glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,NULL);
 
         glfwSwapBuffers(window);
 

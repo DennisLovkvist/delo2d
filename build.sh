@@ -1,1 +1,1 @@
-gcc main.c -lglfw -lGLEW -lGL; ./a.out
+gcc main.c delo2d.c -Ilibs -lglfw -lGLEW -lGL; ./a.out
