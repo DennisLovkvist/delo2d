@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define GLEW_STATIC 1
 typedef struct Vertex Vertex;
@@ -52,17 +53,73 @@ static char* load_shader(char *path)
     source_code[fsize] = '\0';
     return source_code;
 }
-unsigned int shader_from_files(char *path_vertex_shader, char *path_fragment_shader)
+int find_keyword(char *string, char *sub_string,int tag)
 {
-    char *source_code_vertex_shader = load_shader(path_vertex_shader);
-    char *source_code_fragment_shader = load_shader(path_fragment_shader);    
+    int n = 0;
+    size_t length = strlen(string);
+    for (size_t i = 0; i < length; i++)
+    {
+        if(string[i] == sub_string[n])
+        {
+            n++;
+        }
+        else
+        {
+            n = 0;
+        }
+        if(n == strlen(sub_string))
+        {            
+            if(tag == 0)
+            {
+                return i+1;
+            }
+            else
+            {
+                return i - (strlen(sub_string)-1);
+            }
+        }
+    }
+    return 0;
+}
+static char* parse_shader(char *source_full,char *keyword_begin,char *keyword_end)
+{
+    int begin = find_keyword(source_full,keyword_begin,0);
+    int end = find_keyword(source_full,keyword_end,1);
 
-    unsigned int shader = create_shader(source_code_vertex_shader,source_code_fragment_shader);
-   
-    free(source_code_vertex_shader);
-    free(source_code_fragment_shader);
+    if(end > begin)
+    {
+        int length = end - begin;
+        char *src = malloc(sizeof(char)*length+1);
+        memcpy(src,&source_full[begin],sizeof(char)*(length));
+        src[length] = '\0'; 
+        return src; 
+    }
+    else
+    {
+        return NULL;
+    }
+}
+unsigned int shader_from_file(char *path_shader)
+{
+    char *src = load_shader(path_shader); 
+    char *src_vert = parse_shader(src,"#VERT_BEGIN","#VERT_END");
+    char *src_frag = parse_shader(src,"#FRAG_BEGIN","#FRAG_END");    
 
-    return shader;
+    if(src_vert != NULL && src_frag != NULL)
+    {
+        unsigned int shader = create_shader(src_vert,src_frag); 
+        
+        free(src);
+        free(src_vert);
+        free(src_frag);
+        return shader;
+    }
+    else
+    {
+        return 0;
+    }
+
+    
 }
 int main(void)
 {
@@ -102,7 +159,8 @@ int main(void)
     glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*2,0);
     glEnableVertexAttribArray(0);
 
-    unsigned int shader = shader_from_files("shader.vert","shader.frag");
+    unsigned int shader = shader_from_file("default_shader.glsl");
+    
     glUseProgram(shader);
 
     
@@ -118,7 +176,7 @@ int main(void)
         glfwPollEvents();
     }
 
-    glDeleteShader(shader);
+    glDeleteProgram(shader);
     glfwTerminate();
     return 0;
 }
