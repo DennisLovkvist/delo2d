@@ -36,7 +36,7 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
     glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
 
-
+/*
     unsigned int vao;
     glGenVertexArrays(1,&vao);
     glBindVertexArray(vao);
@@ -59,12 +59,18 @@ int main(void)
     glGenBuffers(1,&ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,6 * sizeof(unsigned int),indices,GL_DYNAMIC_DRAW);
+*/
+
+    VertexArray vertex_array;
+    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,1);
 
 
-
-
-
+    delo2d_vertex_set_element(&vertex_array,0,-0.5f,-0.5f,1,1,1,1);
+    delo2d_vertex_set_element(&vertex_array,1, 0.5f,-0.5f,1,1,1,1);
+    delo2d_vertex_set_element(&vertex_array,2, 0.5f, 0.5f,1,1,1,1);    
+    delo2d_vertex_set_element(&vertex_array,3,-0.5f, 0.5f,1,1,1,1);
     
+    delo2d_vertex_array_set_data(&vertex_array);    
 
     unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
     
@@ -85,9 +91,13 @@ int main(void)
 
         glUseProgram(shader);    
         glUniform4f(location,0.2f,0.3f,0.8,1.0f);
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
-        glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,NULL);
+
+        //glBindVertexArray(vao);
+        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
+        //glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,NULL);
+
+        delo2d_vertex_array_bind(&vertex_array);
+        delo2d_vertex_array_draw(&vertex_array);
 
         glfwSwapBuffers(window);
 

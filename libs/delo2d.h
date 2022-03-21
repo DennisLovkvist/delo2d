@@ -1,17 +1,56 @@
+#pragma once
 #include <GL/glew.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct Vertex Vertex;
+
+#define DELO_LINE_LIST 2
+#define DELO_TRIANGLE_LIST 3
+#define DELO_QUAD_LIST 4
+
 struct Vertex
 {
     float x,y;
     int r,g,b,a;
 };
+typedef struct VertexArray VertexArray;
+struct VertexArray
+{
+    unsigned int ibo;
+    unsigned int vao;
+    unsigned int buffer;
+
+    unsigned int id;
+    unsigned int type;
+
+    unsigned int count_elements;
+    unsigned int indices_per_element;
+    unsigned int count_vertex;
+    unsigned int count_index;
+    unsigned int count_position;
+    unsigned int count_color;
+
+    float *buffer_position;
+    float *buffer_color;
+    unsigned int *buffer_index;
+};
+//region vertex array code begin
+void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float r, float g, float b, float a);
+void delo2d_vertex_array_draw(VertexArray *vertex_array);
+void delo2d_vertex_array_delete(VertexArray *vertex_array);
+void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
+void delo2d_vertex_array_set_data(VertexArray *vertex_array);
+void delo2d_vertex_array_bind(VertexArray *vertex_array);
+void delo2d_vertex_array_unbind(VertexArray *vertex_array);
+//region vertex array code end
+
+//region shader code begin
 static unsigned int delo2d_compile_shader(unsigned int type,char *shader_source_code);
 static int delo2d_create_shader(char *vertex_shader_source_code, char *fragment_shader_source_code);
 static char* delo2d_load_shader(char *path);
 static int delo2d_find_keyword(char *string, char *sub_string,int tag);
 static char* delo2d_parse_shader(char *source_full,char *keyword_begin,char *keyword_end);
 unsigned int delo2d_shader_from_file(char *path_shader);
+//region shader code end

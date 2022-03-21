@@ -2,7 +2,99 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libs/delo2d.h"
 
+void delo2d_vertex_array_draw(VertexArray *vertex_array)
+{
+    int draw_index_count = vertex_array->indices_per_element * vertex_array->count_elements;
+    glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,NULL);
+}
+void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float r, float g, float b, float a)
+{
+   vertex_array->buffer_position[position * 2] = x;
+   vertex_array->buffer_position[(position * 2) + 1] = y;
+}
+void delo2d_vertex_array_delete(VertexArray *vertex_array)
+{
+    delo2d_vertex_array_unbind(vertex_array);
+    free(vertex_array->buffer_position);
+    free(vertex_array->buffer_color);
+    free(vertex_array->buffer_index);
+}
+void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count)
+{
+    vertex_array->type = type;
+    vertex_array->count_elements = element_count;
+    vertex_array->count_vertex = element_count * type;
+    vertex_array->count_position = element_count * (type*2);
+    vertex_array->buffer_position = malloc(vertex_array->count_position * sizeof(float));
+    vertex_array->indices_per_element = type == DELO_TRIANGLE_LIST ? 3:6;
+    
+    int length = vertex_array->count_position;
+    for (size_t i = 0; i < length; i++)
+    {
+        vertex_array->buffer_position[i] = 0.0f;
+    } 
+
+    vertex_array->count_index = vertex_array->indices_per_element * element_count;
+    vertex_array->buffer_index = malloc(vertex_array->count_index * sizeof(unsigned int));    
+
+    
+    if(vertex_array->type == DELO_TRIANGLE_LIST)
+    {
+        length = vertex_array->count_index;
+
+        for (size_t i = 0; i < length; i++)
+        {
+            vertex_array->buffer_index[i] = i;
+        } 
+    }    
+    if(vertex_array->type == DELO_QUAD_LIST)
+    {        
+        for (size_t i = 0; i < element_count; i++)
+        {
+            int index = i * 6;
+            int pos_index = i*4;
+            vertex_array->buffer_index[index + 0] = pos_index + 0;
+            vertex_array->buffer_index[index + 1] = pos_index + 1;
+            vertex_array->buffer_index[index + 2] = pos_index + 2;
+            vertex_array->buffer_index[index + 3] = pos_index + 2;
+            vertex_array->buffer_index[index + 4] = pos_index + 3;
+            vertex_array->buffer_index[index + 5] = pos_index + 0;
+        } 
+    }
+
+    glGenVertexArrays(1,&(vertex_array->vao));
+    glGenBuffers(1,&(vertex_array->buffer));
+    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+    glGenBuffers(1,&(vertex_array->ibo));
+}
+void delo2d_vertex_array_set_data(VertexArray *vertex_array)
+{   
+    delo2d_vertex_array_bind(vertex_array);
+    
+    glBufferData(GL_ARRAY_BUFFER,(vertex_array->indices_per_element * 2) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW);    
+    
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*2,0);
+
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
+}
+void delo2d_vertex_array_bind(VertexArray *vertex_array)
+{
+    glBindVertexArray(&(vertex_array->vao));
+    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
+}
+void delo2d_vertex_array_unbind(VertexArray *vertex_array)
+{
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+}
+
+
+//shader code begin
 static unsigned int delo2d_compile_shader(unsigned int type,char *shader_source_code)
 {    
     unsigned int id = glCreateShader(type);
@@ -106,3 +198,4 @@ unsigned int delo2d_shader_from_file(char *path_shader)
         return 0;
     }    
 }
+//shader code end
