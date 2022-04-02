@@ -36,70 +36,55 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
     glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
 
-/*
-    unsigned int vao;
-    glGenVertexArrays(1,&vao);
-    glBindVertexArray(vao);
-
-    float positions[8] = { -0.5f,-0.5f, 
-                            0.5f,-0.5f, 
-                            0.5f,0.5f,
-                            -0.5f,0.5f};
-    unsigned int buffer;
-    glGenBuffers(1,&buffer);
-    glBindBuffer(GL_ARRAY_BUFFER,buffer);
-    glBufferData(GL_ARRAY_BUFFER,4*2* sizeof(float),positions,GL_DYNAMIC_DRAW);    
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*2,0);
-    
-
-
-    unsigned int indices[] = {0,1,2,2,3,0};
-    unsigned int ibo;
-    glGenBuffers(1,&ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,6 * sizeof(unsigned int),indices,GL_DYNAMIC_DRAW);
-*/
 
     VertexArray vertex_array;
     delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,1);
 
-
-    delo2d_vertex_set_element(&vertex_array,0,-0.5f,-0.5f,1,1,1,1);
-    delo2d_vertex_set_element(&vertex_array,1, 0.5f,-0.5f,1,1,1,1);
-    delo2d_vertex_set_element(&vertex_array,2, 0.5f, 0.5f,1,1,1,1);    
-    delo2d_vertex_set_element(&vertex_array,3,-0.5f, 0.5f,1,1,1,1);
+    delo2d_vertex_set_element(&vertex_array,0,-0.5f,-0.5f,0.0f,0.0f);
+    delo2d_vertex_set_element(&vertex_array,1, 0.5f,-0.5f,1.0f,0.0f);
+    delo2d_vertex_set_element(&vertex_array,2, 0.5f, 0.5f,1.0f,1.0f);    
+    delo2d_vertex_set_element(&vertex_array,3,-0.5f, 0.5f,0.0f,1.0f);
     
     delo2d_vertex_array_set_data(&vertex_array);    
 
     unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
-    
-    int location = glGetUniformLocation(shader,"u_color");
 
+
+    Texture texture;
+    delo2d_load_texture(&texture,"test.png");
+
+    
+        
     
     glBindVertexArray(0);
     glUseProgram(0);
     glBindBuffer(GL_ARRAY_BUFFER,0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
-
-
-
+glEnable(GL_TEXTURE_2D);
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
-
-        glUseProgram(shader);    
-        glUniform4f(location,0.2f,0.3f,0.8,1.0f);
-
-        //glBindVertexArray(vao);
-        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibo);
-        //glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,NULL);
+        glClearColor(1,0,0,1);
+          
+        
+        delo2d_bind_texture(&texture,0); 
+        
+        glUseProgram(shader); 
+        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
+        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
 
         delo2d_vertex_array_bind(&vertex_array);
+
+
+        GLClearError();
         delo2d_vertex_array_draw(&vertex_array);
+        GLCheckError();
+
+        delo2d_unbind_texture();
 
         glfwSwapBuffers(window);
+
 
         glfwPollEvents();
     }

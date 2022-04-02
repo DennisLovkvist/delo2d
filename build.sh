@@ -1,1 +1,1 @@
-gcc main.c delo2d.c -Ilibs -lglfw -lGLEW -lGL; ./a.out
+gcc stb_image.c main.c delo2d.c  -Ilibs -lglfw -lGLEW -lGL -msse2 -lm -ldl -w; ./a.out

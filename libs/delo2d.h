@@ -31,13 +31,34 @@ struct VertexArray
     unsigned int count_index;
     unsigned int count_position;
     unsigned int count_color;
+    unsigned int layout_float_count;
 
     float *buffer_position;
     float *buffer_color;
     unsigned int *buffer_index;
 };
+
+typedef struct Texture Texture;
+struct Texture
+{
+    unsigned int renderer_id;
+    unsigned char* local_buffer;
+    int width,height,bytes_per_pixel;
+
+};
+
+void GLClearError();
+void GLCheckError();
+
+void delo2d_load_texture(Texture *texture, char file_path[]);
+void delo2d_bind_texture(Texture *texture, unsigned int slot);
+void delo2d_unbind_texture();
+void delo2d_delete_texture(Texture *texture);
+
+
+
 //region vertex array code begin
-void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float r, float g, float b, float a);
+void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y,float tex_x,float tex_y);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
