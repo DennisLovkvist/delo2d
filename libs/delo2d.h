@@ -50,6 +50,10 @@ struct Texture
 void GLClearError();
 void GLCheckError();
 
+int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
+int delo2d_render_initialize();
+void delo2d_render(VertexArray *vertex_array,Texture *texture, unsigned int shader);
+
 void delo2d_load_texture(Texture *texture, char file_path[]);
 void delo2d_bind_texture(Texture *texture, unsigned int slot);
 void delo2d_unbind_texture();

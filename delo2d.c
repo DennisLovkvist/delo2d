@@ -1,4 +1,5 @@
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +21,53 @@ void GLCheckError()
         printf("%s",error);
         printf("%c",'\n');
     }
+}
+int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title)
+{
+    *window = glfwCreateWindow(width, height, title, NULL, NULL);
+
+    if (!*window)
+    {
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(*window);
+    return 0;
+}
+int delo2d_render_initialize()
+{
+    if(glewInit() != GLEW_OK)
+    {
+        return -1;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+    glEnable(GL_TEXTURE_2D);
+
+    return 0;
+}
+void delo2d_render(VertexArray *vertex_array,Texture *texture, unsigned int shader)
+{   
+        delo2d_bind_texture(texture,0); 
+        
+        glUseProgram(shader); 
+        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
+        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
+
+        delo2d_vertex_array_bind(vertex_array);
+
+        GLClearError();
+        delo2d_vertex_array_draw(vertex_array);
+        GLCheckError();
+
+        delo2d_unbind_texture();
 }
 
 void delo2d_load_texture(Texture *texture, char file_path[])
