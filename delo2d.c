@@ -45,19 +45,19 @@ void sprite_batch_create(SpriteBatch *sprite_batch, unsigned int count)
 }
 void delo2d_render_sprite_batch(SpriteBatch *sprite_batch,Texture *texture, unsigned int shader)
 {   
-        delo2d_bind_texture(texture,0); 
-        
-        glUseProgram(shader); 
-        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
-        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
+    delo2d_bind_texture(texture,0); 
+    
+    glUseProgram(shader); 
+    glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
+    glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
 
-        delo2d_vertex_array_bind(sprite_batch->vertex_array);
+    delo2d_vertex_array_bind(sprite_batch->vertex_array);
 
-        GLClearError();
-        delo2d_vertex_array_draw(sprite_batch->vertex_array);
-        GLCheckError();
+    GLClearError();
+    delo2d_vertex_array_draw(sprite_batch->vertex_array);
+    GLCheckError();
 
-        delo2d_unbind_texture();
+    delo2d_unbind_texture();
 }
 //render code begin
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title)
@@ -155,16 +155,14 @@ void delo2d_vertex_array_draw(VertexArray *vertex_array)
     int draw_index_count = vertex_array->indices_per_element * vertex_array->count_elements;
     glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,NULL);
 }
-void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y)
+void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot)
 {
     int index = position * vertex_array->layout_float_count;
    vertex_array->buffer_position[index + 0] = x;
    vertex_array->buffer_position[index + 1] = y;
-
-
-
    vertex_array->buffer_position[index + 2] = tex_x;
    vertex_array->buffer_position[index + 3] = tex_y;
+   vertex_array->buffer_position[index + 4] = texture_slot;
 }
 void delo2d_vertex_array_delete(VertexArray *vertex_array)
 {
@@ -176,7 +174,7 @@ void delo2d_vertex_array_delete(VertexArray *vertex_array)
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count)
 {
 
-    vertex_array->layout_float_count = 4;
+    vertex_array->layout_float_count = 5;
     vertex_array->type = type;
     vertex_array->count_elements = element_count;
     vertex_array->count_position = element_count * (type*vertex_array->layout_float_count);
@@ -228,12 +226,19 @@ void delo2d_vertex_array_set_data(VertexArray *vertex_array)
     
     glBufferData(GL_ARRAY_BUFFER,(vertex_array->indices_per_element * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW);    
     
+    //void glVertexAttribPointer(	GLuint index, 	GLint size, 	GLenum type, 	GLboolean normalized, 	GLsizei stride, 	const void * pointer);
+    //stride = size of one vertex in bytes
+    //pointer = beginning of attribute
+    //size = element count
+    
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*4,0);
-
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*5,0);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*4,(GLvoid*)(2 * sizeof(GLfloat)));
+    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*5,(GLvoid*)(2 * sizeof(GLfloat)));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*5,(GLvoid*)(4 * sizeof(GLfloat)));
 
 
 

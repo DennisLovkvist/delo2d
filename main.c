@@ -23,10 +23,10 @@ int main(void)
     //load and initialize game
     VertexArray vertex_array;
     delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,1);
-    delo2d_vertex_set_element(&vertex_array,0,-1.0f,-1.0f,0.0f,0.0f);
-    delo2d_vertex_set_element(&vertex_array,1, 1.0f,-1.0f,1.0f,0.0f);
-    delo2d_vertex_set_element(&vertex_array,2, 1.0f, 1.0f,1.0f,1.0f);    
-    delo2d_vertex_set_element(&vertex_array,3,-1.0f, 1.0f,0.0f,1.0f);    
+    delo2d_vertex_set_element(&vertex_array,0,-1.0f,-1.0f,0.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,1, 1.0f,-1.0f,1.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,2, 1.0f, 1.0f,1.0f,1.0f,0);    
+    delo2d_vertex_set_element(&vertex_array,3,-1.0f, 1.0f,0.0f,1.0f,0);    
     delo2d_vertex_array_set_data(&vertex_array);    
     unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
     Texture texture;

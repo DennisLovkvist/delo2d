@@ -3,14 +3,17 @@
 
 layout(location = 0) in vec4 position;
 layout(location = 1) in vec2 tex_coord;
+layout(location = 2) in float tex_index;
 
 out vec2 v_tex_coord;
+out float v_tex_index;
 
 void main()
 { 
     
     gl_Position = position;
     v_tex_coord = tex_coord;
+    v_tex_index = tex_index;
 
 }
 
@@ -23,6 +26,7 @@ uniform sampler2D u_texture;
 
 layout(location = 0) out vec4 color;
 in vec2 v_tex_coord;
+in float v_tex_index;
 
 void main()
 { 
