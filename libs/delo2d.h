@@ -4,17 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Vertex Vertex;
-
 #define DELO_LINE_LIST 2
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
-struct Vertex
-{
-    float x,y;
-    int r,g,b,a;
-};
 typedef struct VertexArray VertexArray;
 struct VertexArray
 {
@@ -46,9 +39,27 @@ struct Texture
     int width,height,bytes_per_pixel;
 
 };
+typedef struct Rectangle Rectangle;
+struct Rectangle
+{
+    int x,y, width,height;
+};
+typedef struct SpriteBatch SpriteBatch;
+struct SpriteBatch
+{
+    unsigned int count;
+    Rectangle *rectangle_destination;
+    Rectangle *rectangle_source;
+    VertexArray *vertex_array;
+
+};
 
 void GLClearError();
 void GLCheckError();
+
+void delo2d_render_sprite_batch(SpriteBatch *sprite_batch,Texture *texture, unsigned int shader);
+void rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
+void sprite_batch_create(SpriteBatch *sprite_batch, unsigned int count);
 
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 int delo2d_render_initialize();

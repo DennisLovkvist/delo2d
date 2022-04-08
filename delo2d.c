@@ -7,7 +7,7 @@
 #include "stb_image.h"
 
 
-//texture code begin
+
 
 void GLClearError()
 {
@@ -22,6 +22,44 @@ void GLCheckError()
         printf("%c",'\n');
     }
 }
+void rectangle_set(Rectangle *rectengle, int x, int y,int width, int height)
+{
+    rectengle->x = x;
+    rectengle->y = y;
+    rectengle->width = width;
+    rectengle->height = height;
+}
+void sprite_batch_create(SpriteBatch *sprite_batch, unsigned int count)
+{
+    sprite_batch->count = count;
+    delo2d_vertex_array_create(&sprite_batch->vertex_array,DELO_QUAD_LIST,count);
+    sprite_batch->rectangle_source = malloc(sizeof(Rectangle)*count);
+    sprite_batch->rectangle_destination = malloc(sizeof(Rectangle)*count);
+
+    for(int i = 0;i < count;i++)
+    {
+        rectangle_set(sprite_batch->rectangle_source,0,0,0,0);
+        rectangle_set(sprite_batch->rectangle_destination,0,0,0,0);
+    }
+
+}
+void delo2d_render_sprite_batch(SpriteBatch *sprite_batch,Texture *texture, unsigned int shader)
+{   
+        delo2d_bind_texture(texture,0); 
+        
+        glUseProgram(shader); 
+        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
+        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
+
+        delo2d_vertex_array_bind(sprite_batch->vertex_array);
+
+        GLClearError();
+        delo2d_vertex_array_draw(sprite_batch->vertex_array);
+        GLCheckError();
+
+        delo2d_unbind_texture();
+}
+//render code begin
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title)
 {
     *window = glfwCreateWindow(width, height, title, NULL, NULL);
@@ -69,7 +107,9 @@ void delo2d_render(VertexArray *vertex_array,Texture *texture, unsigned int shad
 
         delo2d_unbind_texture();
 }
+//render code end
 
+//texture code begin
 void delo2d_load_texture(Texture *texture, char file_path[])
 {
     stbi_set_flip_vertically_on_load(1);
@@ -106,7 +146,6 @@ void delo2d_delete_texture(Texture *texture)
 {
     glDeleteTextures(1,texture->renderer_id);
 }
-
 //texture code end
 
 
@@ -202,7 +241,7 @@ void delo2d_vertex_array_set_data(VertexArray *vertex_array)
 }
 void delo2d_vertex_array_bind(VertexArray *vertex_array)
 {
-    glBindVertexArray(&(vertex_array->vao));
+    glBindVertexArray(&(vertex_array->vao));//Does this matter?
     glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
 }
