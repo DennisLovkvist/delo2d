@@ -8,10 +8,12 @@ layout(location = 2) in float tex_index;
 out vec2 v_tex_coord;
 out float v_tex_index;
 
+uniform mat4 u_mvp;
+
 void main()
 { 
     
-    gl_Position = position;
+    gl_Position = position * u_mvp;
     v_tex_coord = tex_coord;
     v_tex_index = tex_index;
 
