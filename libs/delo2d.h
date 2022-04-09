@@ -20,14 +20,11 @@ struct VertexArray
 
     unsigned int count_elements;
     unsigned int indices_per_element;
-    unsigned int count_vertex;
     unsigned int count_index;
     unsigned int count_position;
-    unsigned int count_color;
     unsigned int layout_float_count;
 
     float *buffer_position;
-    float *buffer_color;
     unsigned int *buffer_index;
 };
 
@@ -48,8 +45,8 @@ typedef struct SpriteBatch SpriteBatch;
 struct SpriteBatch
 {
     unsigned int count;
-    Rectangle *rectangle_destination;
-    Rectangle *rectangle_source;
+    Rectangle *rect_des;
+    Rectangle *rect_src;
     VertexArray *vertex_array;
 
 };
@@ -57,9 +54,8 @@ struct SpriteBatch
 void GLClearError();
 void GLCheckError();
 
-void delo2d_render_sprite_batch(SpriteBatch *sprite_batch,Texture *texture, unsigned int shader);
-void rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
-void sprite_batch_create(SpriteBatch *sprite_batch, unsigned int count);
+
+void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
 
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 int delo2d_render_initialize();

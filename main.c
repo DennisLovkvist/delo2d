@@ -21,16 +21,54 @@ int main(void)
     
 
     //load and initialize game
+    
     VertexArray vertex_array;
-    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,1);
-    delo2d_vertex_set_element(&vertex_array,0,-1.0f,-1.0f,0.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,1, 1.0f,-1.0f,1.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,2, 1.0f, 1.0f,1.0f,1.0f,0);    
-    delo2d_vertex_set_element(&vertex_array,3,-1.0f, 1.0f,0.0f,1.0f,0);    
+    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,2);
+
+
+
+
+
+
+    delo2d_vertex_set_element(&vertex_array,0,0.0f,0.0f,0.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,1,0.4f,0.0f,1.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,2,0.4f,0.4f,1.0f,1.0f,0);
+    delo2d_vertex_set_element(&vertex_array,3,0.0f,0.4f,0.0f,1.0f,0);
+
+
+
+    delo2d_vertex_set_element(&vertex_array,4,0.6f,0.0f,0.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,5,0.9f,0.0f,1.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,6,0.9f,0.3f,1.0f,1.0f,0);
+    delo2d_vertex_set_element(&vertex_array,7,0.6f,0.3f,0.0f,1.0f,0);
+
+
+
+   
+
+/*
+    SpriteBatch sprite_batch;
+    Rectangle src;
+    Rectangle des;
+
+    delo2d_sprite_batch_create(&sprite_batch,2);
+    delo2d_rectangle_set(&src,0,0,100,100);
+    delo2d_rectangle_set(&des,0,0,100,100);
+    delo2d_sprite_batch_modify_sprite(&sprite_batch,&src,&des);*/
+
+    
+
+
+
+
+
+
     delo2d_vertex_array_set_data(&vertex_array);    
     unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
     Texture texture;
+    Texture texture2;
     delo2d_load_texture(&texture,"test.png");  
+    delo2d_load_texture(&texture2,"test2.png");  
         
     
     

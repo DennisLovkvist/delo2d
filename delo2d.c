@@ -22,43 +22,14 @@ void GLCheckError()
         printf("%c",'\n');
     }
 }
-void rectangle_set(Rectangle *rectengle, int x, int y,int width, int height)
+void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height)
 {
     rectengle->x = x;
     rectengle->y = y;
     rectengle->width = width;
     rectengle->height = height;
 }
-void sprite_batch_create(SpriteBatch *sprite_batch, unsigned int count)
-{
-    sprite_batch->count = count;
-    delo2d_vertex_array_create(&sprite_batch->vertex_array,DELO_QUAD_LIST,count);
-    sprite_batch->rectangle_source = malloc(sizeof(Rectangle)*count);
-    sprite_batch->rectangle_destination = malloc(sizeof(Rectangle)*count);
 
-    for(int i = 0;i < count;i++)
-    {
-        rectangle_set(sprite_batch->rectangle_source,0,0,0,0);
-        rectangle_set(sprite_batch->rectangle_destination,0,0,0,0);
-    }
-
-}
-void delo2d_render_sprite_batch(SpriteBatch *sprite_batch,Texture *texture, unsigned int shader)
-{   
-    delo2d_bind_texture(texture,0); 
-    
-    glUseProgram(shader); 
-    glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
-    glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
-
-    delo2d_vertex_array_bind(sprite_batch->vertex_array);
-
-    GLClearError();
-    delo2d_vertex_array_draw(sprite_batch->vertex_array);
-    GLCheckError();
-
-    delo2d_unbind_texture();
-}
 //render code begin
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title)
 {
@@ -124,8 +95,6 @@ void delo2d_load_texture(Texture *texture, char file_path[])
 
     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,texture->width,texture->height,1,GL_RGBA,GL_UNSIGNED_BYTE,texture->local_buffer);
 
-    printf("%d",texture->bytes_per_pixel);
-
 
     glBindTexture(GL_TEXTURE_2D,0);
     if(texture->local_buffer)
@@ -153,22 +122,21 @@ void delo2d_delete_texture(Texture *texture)
 void delo2d_vertex_array_draw(VertexArray *vertex_array)
 {
     int draw_index_count = vertex_array->indices_per_element * vertex_array->count_elements;
-    glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,NULL);
+    glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,0);
 }
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot)
 {
     int index = position * vertex_array->layout_float_count;
-   vertex_array->buffer_position[index + 0] = x;
-   vertex_array->buffer_position[index + 1] = y;
-   vertex_array->buffer_position[index + 2] = tex_x;
-   vertex_array->buffer_position[index + 3] = tex_y;
-   vertex_array->buffer_position[index + 4] = texture_slot;
+    vertex_array->buffer_position[index + 0] = x;
+    vertex_array->buffer_position[index + 1] = y;
+    vertex_array->buffer_position[index + 2] = tex_x;
+    vertex_array->buffer_position[index + 3] = tex_y;
+    vertex_array->buffer_position[index + 4] = texture_slot;
 }
 void delo2d_vertex_array_delete(VertexArray *vertex_array)
 {
     delo2d_vertex_array_unbind(vertex_array);
     free(vertex_array->buffer_position);
-    free(vertex_array->buffer_color);
     free(vertex_array->buffer_index);
 }
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count)
@@ -179,7 +147,10 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
     vertex_array->count_elements = element_count;
     vertex_array->count_position = element_count * (type*vertex_array->layout_float_count);
     vertex_array->buffer_position = malloc(vertex_array->count_position * sizeof(float));
-    vertex_array->indices_per_element = type == DELO_TRIANGLE_LIST ? 3:6;
+
+
+
+    vertex_array->indices_per_element = 6;
     
     int length = vertex_array->count_position;
     for (size_t i = 0; i < length; i++)
@@ -188,59 +159,49 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
     } 
 
     vertex_array->count_index = vertex_array->indices_per_element * element_count;
-    vertex_array->buffer_index = malloc(vertex_array->count_index * sizeof(unsigned int));    
-
-    
-    if(vertex_array->type == DELO_TRIANGLE_LIST)
+    vertex_array->buffer_index = malloc(vertex_array->count_index * sizeof(unsigned int)); 
+            
+            
+    for (size_t i = 0; i < element_count; i++)
     {
-        length = vertex_array->count_index;
+        int index = i * 6;
+        int vertex_index = i*4;
+        vertex_array->buffer_index[index + 0] = vertex_index + 0;
+        vertex_array->buffer_index[index + 1] = vertex_index + 1;
+        vertex_array->buffer_index[index + 2] = vertex_index + 2;
+        vertex_array->buffer_index[index + 3] = vertex_index + 2;
+        vertex_array->buffer_index[index + 4] = vertex_index + 3;
+        vertex_array->buffer_index[index + 5] = vertex_index + 0;
+    }     
 
-        for (size_t i = 0; i < length; i++)
-        {
-            vertex_array->buffer_index[i] = i;
-        } 
-    }    
-    if(vertex_array->type == DELO_QUAD_LIST)
-    {        
-        for (size_t i = 0; i < element_count; i++)
-        {
-            int index = i * 6;
-            int pos_index = i*4;
-            vertex_array->buffer_index[index + 0] = pos_index + 0;
-            vertex_array->buffer_index[index + 1] = pos_index + 1;
-            vertex_array->buffer_index[index + 2] = pos_index + 2;
-            vertex_array->buffer_index[index + 3] = pos_index + 2;
-            vertex_array->buffer_index[index + 4] = pos_index + 3;
-            vertex_array->buffer_index[index + 5] = pos_index + 0;
-        } 
-    }
+    glGenVertexArrays(1,&(vertex_array->vao)); 
+    glBindVertexArray(&(vertex_array->vao));
 
-    glGenVertexArrays(1,&(vertex_array->vao));
     glGenBuffers(1,&(vertex_array->buffer));
     glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+
     glGenBuffers(1,&(vertex_array->ibo));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
 }
 void delo2d_vertex_array_set_data(VertexArray *vertex_array)
 {   
     delo2d_vertex_array_bind(vertex_array);
-    
-    glBufferData(GL_ARRAY_BUFFER,(vertex_array->indices_per_element * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW);    
-    
+        
     //void glVertexAttribPointer(	GLuint index, 	GLint size, 	GLenum type, 	GLboolean normalized, 	GLsizei stride, 	const void * pointer);
     //stride = size of one vertex in bytes
     //pointer = beginning of attribute
     //size = element count
-    
+
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*5,0);
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*5,(GLvoid*)(2 * sizeof(GLfloat)));
+    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));
 
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*5,(GLvoid*)(4 * sizeof(GLfloat)));
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
 
-
+    glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW); 
 
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
 }
