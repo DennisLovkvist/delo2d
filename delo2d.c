@@ -67,8 +67,7 @@ void delo2d_render(VertexArray *vertex_array,Texture *texture, unsigned int shad
         delo2d_bind_texture(texture,0); 
         
         glUseProgram(shader); 
-        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
-        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);    
+         
 
         delo2d_vertex_array_bind(vertex_array);
 
@@ -117,6 +116,30 @@ void delo2d_delete_texture(Texture *texture)
 }
 //texture code end
 
+void delo2d_matrix_ortho_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n)
+{
+    //[columns][rows]
+
+    (*matrix)[0][0] = 2.0f/(r-l); 
+    (*matrix)[0][1] = 0;              
+    (*matrix)[0][2] = 0;                    
+    (*matrix)[0][3] = -((r+l)/(r-l));
+
+    (*matrix)[1][0] = 0; 
+    (*matrix)[1][1] = 2/(t-b);              
+    (*matrix)[1][2] = 0;                    
+    (*matrix)[1][3] = -((t+b)/(t-b));
+
+    (*matrix)[2][0] = 0; 
+    (*matrix)[2][1] = 0;              
+    (*matrix)[2][2] = 2 / (f-n);                    
+    (*matrix)[2][3] = -((f+n)/(f-n));
+
+    (*matrix)[3][0] = 0; 
+    (*matrix)[3][1] = 0;              
+    (*matrix)[3][2] = 0;                    
+    (*matrix)[3][3] = 1;
+}
 
 //vertex array code begin
 void delo2d_vertex_array_draw(VertexArray *vertex_array)

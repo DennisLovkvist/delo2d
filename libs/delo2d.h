@@ -51,6 +51,9 @@ struct SpriteBatch
 
 };
 
+
+void delo2d_matrix_ortho_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
+
 void GLClearError();
 void GLCheckError();
 
