@@ -15,7 +15,7 @@ int main(void)
     //opengl setup begin
     if (!glfwInit()){return -1;}
     GLFWwindow *window;
-    delo2d_render_setup(&window, 800, 600,"OpenGl Test");  
+    delo2d_render_setup(&window, 960, 540,"OpenGl Test");  
     if(delo2d_render_initialize() == -1){return -1;}
 
     
@@ -23,25 +23,21 @@ int main(void)
     //load and initialize game
     
     VertexArray vertex_array;
-    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,2);
+    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,1);
 
 
 
 
 
 
-    delo2d_vertex_set_element(&vertex_array,0,0.0f,0.0f,0.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,1,0.4f,0.0f,1.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,2,0.4f,0.4f,1.0f,1.0f,0);
-    delo2d_vertex_set_element(&vertex_array,3,0.0f,0.4f,0.0f,1.0f,0);
+    delo2d_vertex_set_element(&vertex_array,0,100.0f,100.0f,0.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,1,200.0f,100.0f,1.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,2,200.0f,200.0f,1.0f,1.0f,0);
+    delo2d_vertex_set_element(&vertex_array,3,100.0f,200.0f,0.0f,1.0f,0);
 
-
-
-    delo2d_vertex_set_element(&vertex_array,4,0.6f,0.0f,0.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,5,0.9f,0.0f,1.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,6,0.9f,0.3f,1.0f,1.0f,0);
-    delo2d_vertex_set_element(&vertex_array,7,0.6f,0.3f,0.0f,1.0f,0);
-
+    
+    float ortho_proj[4][4];
+    delo2d_matrix_ortho_projection(&ortho_proj,0.0f,960.0f,0.0f,540.0f,1,-1);
 
 
    
@@ -80,6 +76,13 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         glClearColor(1,0,0,1);
+
+        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
+        glUniformMatrix4fv(glGetUniformLocation(shader,"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
+        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);   
+
+
+        
 
         delo2d_render(&vertex_array,&texture,shader);
 
