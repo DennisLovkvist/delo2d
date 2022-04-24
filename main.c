@@ -23,7 +23,7 @@ int main(void)
     //load and initialize game
     
     VertexArray vertex_array;
-    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,1);
+    delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,2);
 
 
 
@@ -31,13 +31,18 @@ int main(void)
 
 
     delo2d_vertex_set_element(&vertex_array,0,100.0f,100.0f,0.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,1,200.0f,100.0f,1.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,2,200.0f,200.0f,1.0f,1.0f,0);
-    delo2d_vertex_set_element(&vertex_array,3,100.0f,200.0f,0.0f,1.0f,0);
+    delo2d_vertex_set_element(&vertex_array,1,300.0f,100.0f,1.0f,0.0f,0);
+    delo2d_vertex_set_element(&vertex_array,2,300.0f,300.0f,1.0f,1.0f,0);
+    delo2d_vertex_set_element(&vertex_array,3,100.0f,300.0f,0.0f,1.0f,0);
+
+    delo2d_vertex_set_element(&vertex_array,4,300.0f,300.0f,0.0f,0.0f,1);
+    delo2d_vertex_set_element(&vertex_array,5,400.0f,300.0f,1.0f,0.0f,1);
+    delo2d_vertex_set_element(&vertex_array,6,400.0f,400.0f,1.0f,1.0f,1);
+    delo2d_vertex_set_element(&vertex_array,7,300.0f,400.0f,0.0f,1.0f,1);
 
     
     float ortho_proj[4][4];
-    delo2d_matrix_ortho_projection(&ortho_proj,0.0f,960.0f,0.0f,540.0f,1,-1);
+    delo2d_matrix_orthographic_projection(&ortho_proj,0.0f,960.0f,0.0f,540.0f,1,-1);
 
 
    
@@ -79,12 +84,13 @@ int main(void)
 
         glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader,"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
-        glUniform1i(glGetUniformLocation(shader,"u_texture"),0);   
-
+        //glUniform1i(glGetUniformLocation(shader,"u_texture"),0);   
+        int samplers[2] = {0,1};
+        glUniform1iv(glGetUniformLocation(shader,"u_textures"),2,samplers);  
 
         
 
-        delo2d_render(&vertex_array,&texture,shader);
+        delo2d_render(&vertex_array,&texture,&texture2,shader);
 
         glfwSwapBuffers(window);
 

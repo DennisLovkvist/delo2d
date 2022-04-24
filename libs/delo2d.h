@@ -52,7 +52,7 @@ struct SpriteBatch
 };
 
 
-void delo2d_matrix_ortho_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
+void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
 
 void GLClearError();
 void GLCheckError();
@@ -62,7 +62,7 @@ void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int heig
 
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 int delo2d_render_initialize();
-void delo2d_render(VertexArray *vertex_array,Texture *texture, unsigned int shader);
+void delo2d_render(VertexArray *vertex_array,Texture *texture,Texture *texture2, unsigned int shader);
 
 void delo2d_load_texture(Texture *texture, char file_path[]);
 void delo2d_bind_texture(Texture *texture, unsigned int slot);

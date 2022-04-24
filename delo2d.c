@@ -62,27 +62,28 @@ int delo2d_render_initialize()
 
     return 0;
 }
-void delo2d_render(VertexArray *vertex_array,Texture *texture, unsigned int shader)
+void delo2d_render(VertexArray *vertex_array,Texture *texture,Texture *texture2, unsigned int shader)
 {   
-        delo2d_bind_texture(texture,0); 
+    delo2d_bind_texture(texture,0); 
+    delo2d_bind_texture(texture2,1); 
+    
+    glUseProgram(shader); 
         
-        glUseProgram(shader); 
-         
 
-        delo2d_vertex_array_bind(vertex_array);
+    delo2d_vertex_array_bind(vertex_array);
 
-        GLClearError();
-        delo2d_vertex_array_draw(vertex_array);
-        GLCheckError();
+    GLClearError();
+    delo2d_vertex_array_draw(vertex_array);
+    GLCheckError();
 
-        delo2d_unbind_texture();
+    delo2d_unbind_texture();
 }
 //render code end
 
 //texture code begin
 void delo2d_load_texture(Texture *texture, char file_path[])
 {
-    stbi_set_flip_vertically_on_load(1);
+    stbi_set_flip_vertically_on_load(0);
     texture->local_buffer = stbi_load(file_path,&texture->width,&texture->height,&texture->bytes_per_pixel,4);
     glGenTextures(1,&texture->renderer_id);
     glBindTexture(GL_TEXTURE_2D,texture->renderer_id);
@@ -116,9 +117,10 @@ void delo2d_delete_texture(Texture *texture)
 }
 //texture code end
 
-void delo2d_matrix_ortho_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n)
+void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n)
 {
     //[columns][rows]
+    //Flipped to avoid transposing when setting uniform
 
     (*matrix)[0][0] = 2.0f/(r-l); 
     (*matrix)[0][1] = 0;              
