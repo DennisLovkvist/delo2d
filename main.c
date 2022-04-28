@@ -40,6 +40,21 @@ int main(void)
     delo2d_vertex_set_element(&vertex_array,6,400.0f,400.0f,1.0f,1.0f,1);
     delo2d_vertex_set_element(&vertex_array,7,300.0f,400.0f,0.0f,1.0f,1);
 
+
+    Quad quad;
+
+    delo2d_get_quad(&quad,&vertex_array,0);
+
+
+    delo2d_quad_translate(&quad,10,10);
+
+     delo2d_get_quad(&quad,&vertex_array,1);
+
+
+    //delo2d_quad_translate(&quad,10,10);
+    
+    //delo2d_quad_rotate(&quad,0.5f);
+
     
     float ortho_proj[4][4];
     delo2d_matrix_orthographic_projection(&ortho_proj,0.0f,960.0f,0.0f,540.0f,1,-1);

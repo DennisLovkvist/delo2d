@@ -144,6 +144,41 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
 }
 
 //vertex array code begin
+
+void delo2d_quad_translate(Quad *quad,float tx, float ty)
+{
+    *(quad->v0.x) += tx;
+    *(quad->v0.y) += ty;
+    *(quad->v1.x) += tx;
+    *(quad->v1.y) += ty;
+    *(quad->v2.x) += tx;
+    *(quad->v2.y) += ty;
+    *(quad->v3.x) += tx;
+    *(quad->v3.y) += ty;
+}
+void delo2d_quad_rotate(Quad *quad, float theta)
+{
+
+}
+void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
+{
+    int quad_index = element_index*5*4;
+    int stride = vertex_array->layout_float_count;
+    int vertex_index = quad_index;
+
+    quad->v0.x = &(vertex_array->buffer_position[quad_index]);
+    quad->v0.y = &(vertex_array->buffer_position[quad_index+1]);
+
+    quad->v1.x = &(vertex_array->buffer_position[quad_index + (stride)]);
+    quad->v1.y = &(vertex_array->buffer_position[quad_index + (stride+1)]); 
+
+    quad->v2.x = &(vertex_array->buffer_position[quad_index + (stride*2)]);
+    quad->v2.y = &(vertex_array->buffer_position[quad_index + (stride*2+1)]); 
+
+
+    quad->v3.x = &(vertex_array->buffer_position[quad_index + (stride*3)]);
+    quad->v3.y = &(vertex_array->buffer_position[quad_index + (stride*3+1)]); 
+}
 void delo2d_vertex_array_draw(VertexArray *vertex_array)
 {
     int draw_index_count = vertex_array->indices_per_element * vertex_array->count_elements;
@@ -207,6 +242,7 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
 
     glGenBuffers(1,&(vertex_array->ibo));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
+
 }
 void delo2d_vertex_array_set_data(VertexArray *vertex_array)
 {   

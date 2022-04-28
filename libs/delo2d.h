@@ -8,6 +8,21 @@
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
+typedef struct Vector2fp Vector2fp;
+struct Vector2fp
+{
+    float* x;
+    float* y;
+};
+typedef struct Quad Quad;
+struct Quad
+{
+    Vector2fp v0;
+    Vector2fp v1;
+    Vector2fp v2;
+    Vector2fp v3;
+};
+
 typedef struct VertexArray VertexArray;
 struct VertexArray
 {
@@ -72,6 +87,9 @@ void delo2d_delete_texture(Texture *texture);
 
 
 //region vertex array code begin
+void delo2d_quad_translate(Quad *quad,float x, float y);
+void delo2d_quad_rotate(Quad *quad, float theta);
+void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
