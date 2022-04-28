@@ -53,7 +53,7 @@ int main(void)
 
     //delo2d_quad_translate(&quad,10,10);
     
-    //delo2d_quad_rotate(&quad,0.5f);
+    delo2d_quad_rotate(&quad,-0.9f);
 
     
     float ortho_proj[4][4];

@@ -14,6 +14,12 @@ struct Vector2fp
     float* x;
     float* y;
 };
+typedef struct Vector2f Vector2f;
+struct Vector2f
+{
+    float x;
+    float y;
+};
 typedef struct Quad Quad;
 struct Quad
 {
@@ -66,7 +72,7 @@ struct SpriteBatch
 
 };
 
-
+void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty);
 void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
 
 void GLClearError();
@@ -89,6 +95,7 @@ void delo2d_delete_texture(Texture *texture);
 //region vertex array code begin
 void delo2d_quad_translate(Quad *quad,float x, float y);
 void delo2d_quad_rotate(Quad *quad, float theta);
+void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3]);
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);

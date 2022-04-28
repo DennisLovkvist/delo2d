@@ -6,6 +6,8 @@
 #include "libs/delo2d.h"
 #include "stb_image.h"
 
+#include <math.h>
+
 
 
 
@@ -156,8 +158,59 @@ void delo2d_quad_translate(Quad *quad,float tx, float ty)
     *(quad->v3.x) += tx;
     *(quad->v3.y) += ty;
 }
+void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty)
+{
+    (*R)[0][0] = cos(theta);
+    (*R)[0][1] = sin(theta);
+    (*R)[0][2] = tx;
+
+    (*R)[1][0] = -sin(theta);
+    (*R)[1][1] = cos(theta);
+    (*R)[1][2] = ty;
+
+    (*R)[2][0] = 0;
+    (*R)[2][1] = 0;
+    (*R)[2][2] = 1;
+}
+void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3])
+{
+    float x =  ((*vector->x) * (*R)[0][0]) + ((*vector->y) * (*R)[0][1]) + (1 * (*R)[0][2]);
+    float y = ((*vector->x) * (*R)[1][0]) + ((*vector->y) * (*R)[1][1]) + (1 * (*R)[1][2]);
+    (*vector->x) = x;
+    (*vector->y) = y;
+}
 void delo2d_quad_rotate(Quad *quad, float theta)
 {
+    Vector2f center;
+    center.x = (*(quad->v0.x) + *(quad->v1.x) + *(quad->v2.x) + *(quad->v3.x))/4;
+    center.y = (*(quad->v0.y) + *(quad->v1.y) + *(quad->v2.y) + *(quad->v3.y))/4;
+
+
+    float R[3][3];
+    delo2d_rotation_matrix(&R, 0,-center.x,-center.y);
+
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+
+    delo2d_rotation_matrix(&R, theta,0,0);
+
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+
+    delo2d_rotation_matrix(&R, 0,center.x,center.y);
+
+
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+
+    
+    
 
 }
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
