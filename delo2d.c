@@ -5,11 +5,7 @@
 #include <string.h>
 #include "libs/delo2d.h"
 #include "stb_image.h"
-
 #include <math.h>
-
-
-
 
 void GLClearError()
 {
@@ -119,11 +115,9 @@ void delo2d_delete_texture(Texture *texture)
 }
 //texture code end
 
+//region matrices begin
 void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n)
 {
-    //[columns][rows]
-    //Flipped to avoid transposing when setting uniform
-
     (*matrix)[0][0] = 2.0f/(r-l); 
     (*matrix)[0][1] = 0;              
     (*matrix)[0][2] = 0;                    
@@ -143,20 +137,6 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
     (*matrix)[3][1] = 0;              
     (*matrix)[3][2] = 0;                    
     (*matrix)[3][3] = 1;
-}
-
-//vertex array code begin
-
-void delo2d_quad_translate(Quad *quad,float tx, float ty)
-{
-    *(quad->v0.x) += tx;
-    *(quad->v0.y) += ty;
-    *(quad->v1.x) += tx;
-    *(quad->v1.y) += ty;
-    *(quad->v2.x) += tx;
-    *(quad->v2.y) += ty;
-    *(quad->v3.x) += tx;
-    *(quad->v3.y) += ty;
 }
 void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty)
 {
@@ -178,6 +158,20 @@ void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3])
     float y = ((*vector->x) * (*R)[1][0]) + ((*vector->y) * (*R)[1][1]) + (1 * (*R)[1][2]);
     (*vector->x) = x;
     (*vector->y) = y;
+}
+//region matrices end
+
+//region quads begin
+void delo2d_quad_translate(Quad *quad,float tx, float ty)
+{
+    *(quad->v0.x) += tx;
+    *(quad->v0.y) += ty;
+    *(quad->v1.x) += tx;
+    *(quad->v1.y) += ty;
+    *(quad->v2.x) += tx;
+    *(quad->v2.y) += ty;
+    *(quad->v3.x) += tx;
+    *(quad->v3.y) += ty;
 }
 void delo2d_quad_rotate(Quad *quad, float theta)
 {
@@ -232,6 +226,9 @@ void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
     quad->v3.x = &(vertex_array->buffer_position[quad_index + (stride*3)]);
     quad->v3.y = &(vertex_array->buffer_position[quad_index + (stride*3+1)]); 
 }
+//region quads end
+
+//vertex array code begin
 void delo2d_vertex_array_draw(VertexArray *vertex_array)
 {
     int draw_index_count = vertex_array->indices_per_element * vertex_array->count_elements;
