@@ -72,31 +72,38 @@ struct SpriteBatch
 
 };
 
-void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty);
-void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
 
 void GLClearError();
 void GLCheckError();
 
-
+//region rendering begin
 void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
-
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 int delo2d_render_initialize();
 void delo2d_render(VertexArray *vertex_array,Texture *texture,Texture *texture2, unsigned int shader);
+//region rendering end
 
+//region texture begin
 void delo2d_load_texture(Texture *texture, char file_path[]);
 void delo2d_bind_texture(Texture *texture, unsigned int slot);
 void delo2d_unbind_texture();
 void delo2d_delete_texture(Texture *texture);
+//region texture end
 
+//region matrices begin
+void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3]);
+void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty);
+void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
+//region matrices end
+
+//region quads begin
+void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
+void delo2d_quad_translate(Quad *quad,float x, float y);
+void delo2d_quad_rotate(Quad *quad, float theta);
+//region quads end
 
 
 //region vertex array code begin
-void delo2d_quad_translate(Quad *quad,float x, float y);
-void delo2d_quad_rotate(Quad *quad, float theta);
-void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3]);
-void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
