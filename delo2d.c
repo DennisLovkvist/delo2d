@@ -258,8 +258,6 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
     vertex_array->count_position = element_count * (type*vertex_array->layout_float_count);
     vertex_array->buffer_position = malloc(vertex_array->count_position * sizeof(float));
 
-
-
     vertex_array->indices_per_element = 6;
     
     int length = vertex_array->count_position;
@@ -293,6 +291,20 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
     glGenBuffers(1,&(vertex_array->ibo));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
 
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
+
+    //glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW); 
+    glBufferData(GL_ARRAY_BUFFER,vertex_array->count_position * sizeof(float),NULL,GL_DYNAMIC_DRAW); 
+
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
+
 }
 void delo2d_vertex_array_set_data(VertexArray *vertex_array)
 {   
@@ -312,7 +324,8 @@ void delo2d_vertex_array_set_data(VertexArray *vertex_array)
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
 
-    glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW); 
+    //glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW); 
+    glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),NULL,GL_DYNAMIC_DRAW); 
 
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
 }

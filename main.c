@@ -79,7 +79,7 @@ int main(void)
 
 
 
-    delo2d_vertex_array_set_data(&vertex_array);    
+    //delo2d_vertex_array_set_data(&vertex_array);    
     unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
     Texture texture;
     Texture texture2;
@@ -87,7 +87,7 @@ int main(void)
     delo2d_load_texture(&texture2,"test2.png");  
         
     
-    
+    float rotation = 0;
 
 
     //main loop begin
@@ -95,6 +95,12 @@ int main(void)
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
+
+
+        glBindBuffer(GL_ARRAY_BUFFER,vertex_array.buffer);
+        glBufferSubData(GL_ARRAY_BUFFER,0,vertex_array.count_position * sizeof(float),vertex_array.buffer_position);
+    rotation = 0.01f;
+    delo2d_quad_rotate(&quad,rotation);
         glClearColor(1,0,0,1);
 
         glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
