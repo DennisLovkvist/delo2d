@@ -97,8 +97,8 @@ int main(void)
 
 
 
-        glBindBuffer(GL_ARRAY_BUFFER,vertex_array.buffer);
-        glBufferSubData(GL_ARRAY_BUFFER,0,vertex_array.count_position * sizeof(float),vertex_array.buffer_position);
+        //glBindBuffer(GL_ARRAY_BUFFER,vertex_array.buffer);
+        delo2d_vertex_array_to_graphics_device(&vertex_array,0);
     rotation = 0.01f;
     delo2d_quad_rotate(&quad,rotation);
         glClearColor(1,0,0,1);

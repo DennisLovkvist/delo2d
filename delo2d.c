@@ -306,28 +306,10 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
 
 }
-void delo2d_vertex_array_set_data(VertexArray *vertex_array)
+void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset)
 {   
-    delo2d_vertex_array_bind(vertex_array);
-        
-    //void glVertexAttribPointer(	GLuint index, 	GLint size, 	GLenum type, 	GLboolean normalized, 	GLsizei stride, 	const void * pointer);
-    //stride = size of one vertex in bytes
-    //pointer = beginning of attribute
-    //size = element count
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
-
-    //glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW); 
-    glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),NULL,GL_DYNAMIC_DRAW); 
-
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+    glBufferSubData(GL_ARRAY_BUFFER,offset,vertex_array->count_position * sizeof(float),vertex_array->buffer_position);
 }
 void delo2d_vertex_array_bind(VertexArray *vertex_array)
 {
