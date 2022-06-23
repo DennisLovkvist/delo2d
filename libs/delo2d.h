@@ -46,9 +46,9 @@ struct VertexArray
     unsigned int layout_float_count;
 
     float *buffer_position;
+    //[0,1]=position, [2,3]=texture coordinates [4]=texture index
     unsigned int *buffer_index;
 };
-
 typedef struct Texture Texture;
 struct Texture
 {
@@ -62,14 +62,17 @@ struct Rectangle
 {
     int x,y, width,height;
 };
+typedef struct Rectangle_f Rectangle_f;
+struct Rectangle_f
+{
+    float x,y, width,height;
+};
 typedef struct SpriteBatch SpriteBatch;
 struct SpriteBatch
 {
     unsigned int count;
-    Rectangle *rect_des;
-    Rectangle *rect_src;
-    VertexArray *vertex_array;
-
+    Rectangle_f *rect_des;
+    Rectangle_f *rect_src;
 };
 
 
@@ -100,15 +103,15 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_quad_translate(Quad *quad,float x, float y);
 void delo2d_quad_rotate(Quad *quad, float theta);
+void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index);
 //region quads end
-
 
 //region vertex array code begin
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
-void delo2d_vertex_array_set_data(VertexArray *vertex_array);
+void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
 void delo2d_vertex_array_bind(VertexArray *vertex_array);
 void delo2d_vertex_array_unbind(VertexArray *vertex_array);
 //region vertex array code end
@@ -121,3 +124,9 @@ static int delo2d_find_keyword(char *string, char *sub_string,int tag);
 static char* delo2d_parse_shader(char *source_full,char *keyword_begin,char *keyword_end);
 unsigned int delo2d_shader_from_file(char *path_shader);
 //region shader code end
+
+//region sprites code begin
+void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
+void delo2d_set_rect_src(SpriteBatch *sprite_batch,int index,float x,float y,float width,float height,float tex_width, float tex_height);
+void delo2d_set_rect_des(SpriteBatch *sprite_batch,int index,int x,int y,int width,int height);
+//region sprites code end

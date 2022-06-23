@@ -306,6 +306,64 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
 
 }
+void delo2d_set_quad_center_position(VertexArray *vertex_array, int quad_index, Vector2f *center)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        center->x += vertex_array->buffer_position[quad_index + (5*i)];
+        center->y += vertex_array->buffer_position[(quad_index + (5*i)) + 1];
+    }
+    center->x /= 4;
+    center->y /= 4;      
+}
+void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index)
+{
+    int n = quad_index * 4;
+
+    delo2d_vertex_set_element(vertex_array,n,rect_des->x,rect_des->y,rect_src->x,rect_src->y,texture_index);
+    delo2d_vertex_set_element(vertex_array,n + 1,rect_des->x + rect_des->width,rect_des->y,rect_src->x + rect_src->width,rect_src->y,texture_index);
+    delo2d_vertex_set_element(vertex_array,n + 2,rect_des->x + rect_des->width,rect_des->y + rect_des->height,rect_src->x + rect_src->width,rect_src->y + rect_src->height,texture_index);
+    delo2d_vertex_set_element(vertex_array,n + 3,rect_des->x,rect_des->y + rect_des->height,rect_src->x,rect_src->y + rect_src->height,texture_index);
+}
+void delo2d_translate_quad(VertexArray *vertex_array, int quad_index, float delta_x, float delta_y)
+{
+    for (int i = 0; i < 4; i++)
+    {
+        vertex_array->buffer_position[quad_index + (5*i)] += delta_x;
+        vertex_array->buffer_position[(quad_index + (5*i)) + 1]+= delta_y;
+    }
+}
+void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
+{
+    sprite_batch->count = capacity;
+    sprite_batch->rect_des = malloc(sizeof(Rectangle_f)*capacity);
+    sprite_batch->rect_src = malloc(sizeof(Rectangle_f)*capacity);
+}
+void delo2d_set_rect_src(SpriteBatch *sprite_batch,int index,float x,float y,float width,float height,float tex_width, float tex_height)
+{
+    sprite_batch->rect_src[index].x = x / tex_width;
+    sprite_batch->rect_src[index].y = y / tex_height;
+    sprite_batch->rect_src[index].width = (x + width) / tex_width;
+    sprite_batch->rect_src[index].height = (y + height) / tex_height;
+}
+void delo2d_set_rect_des(SpriteBatch *sprite_batch,int index,int x,int y,int width,int height)
+{
+    sprite_batch->rect_des[index].x = x;
+    sprite_batch->rect_des[index].y = y;
+    sprite_batch->rect_des[index].width = width;
+    sprite_batch->rect_des[index].height = height;
+}
+void delo2d_set_quad_position(VertexArray *vertex_array, int quad_index,int x,int y,int w, int h,Rectangle *rect_src)
+{
+    Vector2f center;
+    delo2d_set_quad_center_position(vertex_array,quad_index,&center);
+
+    Vector2f delta;
+    delta.x = center.x - x;
+    delta.y = center.y - y;
+
+    delo2d_translate_quad(vertex_array,quad_index,delta.x,delta.y);
+}
 void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset)
 {   
     glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);

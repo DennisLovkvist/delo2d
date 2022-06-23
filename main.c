@@ -26,19 +26,34 @@ int main(void)
     delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,2);
 
 
+    Rectangle_f rect_src;
+    Rectangle_f rect_des;
+
+    //delo2d_set_quad(&vertex_array,0,0,rect_src);
+
+    rect_des.x = 0;
+    rect_des.y = 0;
+    rect_des.width = 400;
+    rect_des.height = 400;
+
+    rect_src.x = 0;
+    rect_src.y = 0;
+    rect_src.width = 0.1f;
+    rect_src.height = 0.1f;
 
 
+    SpriteBatch sprite_batch;
+    delo2d_create_sprite_batch(&sprite_batch,2);
 
+    delo2d_set_rect_src(&sprite_batch,0,0,0,300,300,4096,2048);
+    delo2d_set_rect_des(&sprite_batch,0,200,0,300,300);  
+    delo2d_define_quad(&vertex_array,0,&sprite_batch.rect_des[0],&sprite_batch.rect_src[0],0);
 
-    delo2d_vertex_set_element(&vertex_array,0,100.0f,100.0f,0.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,1,300.0f,100.0f,1.0f,0.0f,0);
-    delo2d_vertex_set_element(&vertex_array,2,300.0f,300.0f,1.0f,1.0f,0);
-    delo2d_vertex_set_element(&vertex_array,3,100.0f,300.0f,0.0f,1.0f,0);
+    delo2d_set_rect_src(&sprite_batch,1,0,0,1136,1420,1136,1420);
+    delo2d_set_rect_des(&sprite_batch,1,500,300,100,100);
+    delo2d_define_quad(&vertex_array,1,&sprite_batch.rect_des[1],&sprite_batch.rect_src[1],1);
+    
 
-    delo2d_vertex_set_element(&vertex_array,4,300.0f,300.0f,0.0f,0.0f,1);
-    delo2d_vertex_set_element(&vertex_array,5,400.0f,300.0f,1.0f,0.0f,1);
-    delo2d_vertex_set_element(&vertex_array,6,400.0f,400.0f,1.0f,1.0f,1);
-    delo2d_vertex_set_element(&vertex_array,7,300.0f,400.0f,0.0f,1.0f,1);
 
 
     Quad quad;
@@ -48,12 +63,14 @@ int main(void)
 
     delo2d_quad_translate(&quad,10,10);
 
-     delo2d_get_quad(&quad,&vertex_array,1);
+    delo2d_get_quad(&quad,&vertex_array,1);
 
 
     //delo2d_quad_translate(&quad,10,10);
     
     delo2d_quad_rotate(&quad,-0.9f);
+
+
 
     
     float ortho_proj[4][4];
@@ -95,21 +112,15 @@ int main(void)
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
-
-
-        //glBindBuffer(GL_ARRAY_BUFFER,vertex_array.buffer);
         delo2d_vertex_array_to_graphics_device(&vertex_array,0);
-    rotation = 0.01f;
-    delo2d_quad_rotate(&quad,rotation);
+        rotation = 0.01f;
+        delo2d_quad_rotate(&quad,rotation);
         glClearColor(1,0,0,1);
 
-        glUniform4f(glGetUniformLocation(shader,"u_color"),0.2f,0.3f,0.8,1.0f);
+        glUniform4f(glGetUniformLocation(shader,"u_color"),1.0f,1.0f,1.0,1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader,"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
-        //glUniform1i(glGetUniformLocation(shader,"u_texture"),0);   
         int samplers[2] = {0,1};
         glUniform1iv(glGetUniformLocation(shader,"u_textures"),2,samplers);  
-
-        
 
         delo2d_render(&vertex_array,&texture,&texture2,shader);
 
