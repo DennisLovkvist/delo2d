@@ -18,92 +18,55 @@ int main(void)
     delo2d_render_setup(&window, 960, 540,"OpenGl Test");  
     if(delo2d_render_initialize() == -1){return -1;}
 
-    
+     
+    unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
+    Texture textures[2];
+    delo2d_load_texture(&textures[0],"test.png");  
+    delo2d_load_texture(&textures[1],"test2.png"); 
 
     //load and initialize game
     
     VertexArray vertex_array;
     delo2d_vertex_array_create(&vertex_array,DELO_QUAD_LIST,2);
 
+    
 
-    Rectangle_f rect_src;
-    Rectangle_f rect_des;
 
-    //delo2d_set_quad(&vertex_array,0,0,rect_src);
-
-    rect_des.x = 0;
-    rect_des.y = 0;
-    rect_des.width = 400;
-    rect_des.height = 400;
-
-    rect_src.x = 0;
-    rect_src.y = 0;
-    rect_src.width = 0.1f;
-    rect_src.height = 0.1f;
-
+    Sprite sprites[2];     
+    delo2d_define_sprite(&sprites[0], 0,0,128,128,64,0,228,228,0,textures[0].width,textures[0].height);      
+    delo2d_define_sprite(&sprites[1], 500,300,100,100,0,0,1000,1000,1,textures[1].width,textures[1].height);
+    
 
     SpriteBatch sprite_batch;
     delo2d_create_sprite_batch(&sprite_batch,2);
 
-    delo2d_set_rect_src(&sprite_batch,0,0,0,300,300,4096,2048);
-    delo2d_set_rect_des(&sprite_batch,0,200,0,300,300);  
-    delo2d_define_quad(&vertex_array,0,&sprite_batch.rect_des[0],&sprite_batch.rect_src[0],0);
 
-    delo2d_set_rect_src(&sprite_batch,1,0,0,1136,1420,1136,1420);
-    delo2d_set_rect_des(&sprite_batch,1,500,300,100,100);
-    delo2d_define_quad(&vertex_array,1,&sprite_batch.rect_des[1],&sprite_batch.rect_src[1],1);
-    
+    delo2d_sprite_batch_add(&sprite_batch,&sprites[0],0);
+    delo2d_sprite_batch_add(&sprite_batch,&sprites[1],1);
+   
 
+   
 
-
-    Quad quad;
-
-    delo2d_get_quad(&quad,&vertex_array,0);
+   delo2d_define_quad(&vertex_array,0,&sprite_batch.rect_des[0],&sprite_batch.rect_src_normalized[0],sprite_batch.texture_index[0]);
+   delo2d_define_quad(&vertex_array,1,&sprite_batch.rect_des[1],&sprite_batch.rect_src_normalized[1],sprite_batch.texture_index[1]);
 
 
-    delo2d_quad_translate(&quad,10,10);
-
-    delo2d_get_quad(&quad,&vertex_array,1);
 
 
-    //delo2d_quad_translate(&quad,10,10);
-    
-    delo2d_quad_rotate(&quad,-0.9f);
 
-
+    //delo2d_sprite_batch_to_vertex_array(&sprite_batch,&vertex_array);
 
     
     float ortho_proj[4][4];
     delo2d_matrix_orthographic_projection(&ortho_proj,0.0f,960.0f,0.0f,540.0f,1,-1);
 
 
-   
 
-/*
-    SpriteBatch sprite_batch;
-    Rectangle src;
-    Rectangle des;
-
-    delo2d_sprite_batch_create(&sprite_batch,2);
-    delo2d_rectangle_set(&src,0,0,100,100);
-    delo2d_rectangle_set(&des,0,0,100,100);
-    delo2d_sprite_batch_modify_sprite(&sprite_batch,&src,&des);*/
-
-    
-
-
-
-
-
-
-    //delo2d_vertex_array_set_data(&vertex_array);    
-    unsigned int shader = delo2d_shader_from_file("default_shader.glsl");
-    Texture texture;
-    Texture texture2;
-    delo2d_load_texture(&texture,"test.png");  
-    delo2d_load_texture(&texture2,"test2.png");  
+     
         
+    Quad quad;
     
+    delo2d_get_quad(&quad,&vertex_array,1);
     float rotation = 0;
 
 
@@ -122,7 +85,7 @@ int main(void)
         int samplers[2] = {0,1};
         glUniform1iv(glGetUniformLocation(shader,"u_textures"),2,samplers);  
 
-        delo2d_render(&vertex_array,&texture,&texture2,shader);
+        delo2d_render(&vertex_array,&textures,2,shader);
 
         glfwSwapBuffers(window);
 

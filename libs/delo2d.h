@@ -70,11 +70,21 @@ struct Rectangle_f
 typedef struct SpriteBatch SpriteBatch;
 struct SpriteBatch
 {
+    unsigned int capacity;
     unsigned int count;
     Rectangle_f *rect_des;
-    Rectangle_f *rect_src;
+    Rectangle_f *rect_src_normalized;
+    unsigned int *texture_index;
+    unsigned int *quad_index;
 };
-
+typedef struct Sprite Sprite;
+struct Sprite
+{
+    unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height;
+    float rotation;
+    Rectangle_f rect_src;
+    Rectangle_f rect_des;
+};
 
 void GLClearError();
 void GLCheckError();
@@ -83,7 +93,7 @@ void GLCheckError();
 void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 int delo2d_render_initialize();
-void delo2d_render(VertexArray *vertex_array,Texture *texture,Texture *texture2, unsigned int shader);
+void delo2d_render(VertexArray *vertex_array,Texture *textures,int texture_count, unsigned int shader);
 //region rendering end
 
 //region texture begin
@@ -127,6 +137,7 @@ unsigned int delo2d_shader_from_file(char *path_shader);
 
 //region sprites code begin
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
-void delo2d_set_rect_src(SpriteBatch *sprite_batch,int index,float x,float y,float width,float height,float tex_width, float tex_height);
-void delo2d_set_rect_des(SpriteBatch *sprite_batch,int index,int x,int y,int width,int height);
+void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height);
+void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
+void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
 //region sprites code end

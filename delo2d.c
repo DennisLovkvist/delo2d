@@ -60,10 +60,10 @@ int delo2d_render_initialize()
 
     return 0;
 }
-void delo2d_render(VertexArray *vertex_array,Texture *texture,Texture *texture2, unsigned int shader)
+void delo2d_render(VertexArray *vertex_array,Texture *textures,int texture_count, unsigned int shader)
 {   
-    delo2d_bind_texture(texture,0); 
-    delo2d_bind_texture(texture2,1); 
+    delo2d_bind_texture(&textures[0],0); 
+    delo2d_bind_texture(&textures[1],1); 
     
     glUseProgram(shader); 
         
@@ -335,23 +335,54 @@ void delo2d_translate_quad(VertexArray *vertex_array, int quad_index, float delt
 }
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
 {
-    sprite_batch->count = capacity;
+    sprite_batch->capacity = capacity;
     sprite_batch->rect_des = malloc(sizeof(Rectangle_f)*capacity);
-    sprite_batch->rect_src = malloc(sizeof(Rectangle_f)*capacity);
+    sprite_batch->rect_src_normalized = malloc(sizeof(Rectangle_f)*capacity);
+    sprite_batch->texture_index = malloc(sizeof(unsigned int)*capacity);
+    sprite_batch->quad_index = malloc(sizeof(unsigned int)*capacity);
+
+    for (size_t i = 0; i < capacity; i++)
+    {
+        sprite_batch->texture_index[i] = 0;
+        sprite_batch->quad_index[i] = 0;
+        sprite_batch->rect_des[i].x = sprite_batch->rect_des[i].y = 0;
+        sprite_batch->rect_des[i].width = sprite_batch->rect_des[i].height = 100;
+
+        sprite_batch->rect_src_normalized[i].x = sprite_batch->rect_src_normalized[i].y = 0;
+        sprite_batch->rect_src_normalized[i].width = sprite_batch->rect_src_normalized[i].height = 1;
+    }
+    
 }
-void delo2d_set_rect_src(SpriteBatch *sprite_batch,int index,float x,float y,float width,float height,float tex_width, float tex_height)
+void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height)
 {
-    sprite_batch->rect_src[index].x = x / tex_width;
-    sprite_batch->rect_src[index].y = y / tex_height;
-    sprite_batch->rect_src[index].width = (x + width) / tex_width;
-    sprite_batch->rect_src[index].height = (y + height) / tex_height;
+    sprite->rect_des.x = dx;
+    sprite->rect_des.y = dy;
+    sprite->rect_des.width = dw;
+    sprite->rect_des.height = dh;
+
+    sprite->rect_src.x = sx;
+    sprite->rect_src.y = sy;
+    sprite->rect_src.width = sw;
+    sprite->rect_src.height = sh;
+
+    sprite->texture_index = texture_index;
+    sprite->texture_width = texture_width;
+    sprite->texture_height = texture_height;
 }
-void delo2d_set_rect_des(SpriteBatch *sprite_batch,int index,int x,int y,int width,int height)
+void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index)
 {
-    sprite_batch->rect_des[index].x = x;
-    sprite_batch->rect_des[index].y = y;
-    sprite_batch->rect_des[index].width = width;
-    sprite_batch->rect_des[index].height = height;
+    sprite_batch->rect_src_normalized[index].x = sprite->rect_src.x / sprite->texture_width;
+    sprite_batch->rect_src_normalized[index].y = sprite->rect_src.y / sprite->texture_height;
+    sprite_batch->rect_src_normalized[index].width = (sprite->rect_src.x + sprite->rect_src.width) / sprite->texture_width;
+    sprite_batch->rect_src_normalized[index].height = (sprite->rect_src.y + sprite->rect_src.height) / sprite->texture_height;
+
+    sprite_batch->rect_des[index].x = sprite->rect_des.x;
+    sprite_batch->rect_des[index].y = sprite->rect_des.y;
+    sprite_batch->rect_des[index].width = sprite->rect_des.width;
+    sprite_batch->rect_des[index].height = sprite->rect_des.height;
+
+    sprite->batch_index = index;
+    sprite_batch->texture_index[index] = sprite->texture_index;
 }
 void delo2d_set_quad_position(VertexArray *vertex_array, int quad_index,int x,int y,int w, int h,Rectangle *rect_src)
 {
