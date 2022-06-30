@@ -31,7 +31,6 @@ int main(void)
 
     
 
-
     Sprite sprites[2];     
     delo2d_define_sprite(&sprites[0], 0,0,128,128,64,0,228,228,0,textures[0].width,textures[0].height);      
     delo2d_define_sprite(&sprites[1], 500,300,100,100,0,0,1000,1000,1,textures[1].width,textures[1].height);
@@ -40,21 +39,13 @@ int main(void)
     SpriteBatch sprite_batch;
     delo2d_create_sprite_batch(&sprite_batch,2);
 
+    
 
     delo2d_sprite_batch_add(&sprite_batch,&sprites[0],0);
     delo2d_sprite_batch_add(&sprite_batch,&sprites[1],1);
    
 
-   
-
-   delo2d_define_quad(&vertex_array,0,&sprite_batch.rect_des[0],&sprite_batch.rect_src_normalized[0],sprite_batch.texture_index[0]);
-   delo2d_define_quad(&vertex_array,1,&sprite_batch.rect_des[1],&sprite_batch.rect_src_normalized[1],sprite_batch.texture_index[1]);
-
-
-
-
-
-    //delo2d_sprite_batch_to_vertex_array(&sprite_batch,&vertex_array);
+    delo2d_sprite_batch_to_vertex_array(&sprite_batch,&vertex_array);
 
     
     float ortho_proj[4][4];
@@ -78,6 +69,7 @@ int main(void)
         delo2d_vertex_array_to_graphics_device(&vertex_array,0);
         rotation = 0.01f;
         delo2d_quad_rotate(&quad,rotation);
+        delo2d_quad_translate(&quad,1,0);
         glClearColor(1,0,0,1);
 
         glUniform4f(glGetUniformLocation(shader,"u_color"),1.0f,1.0f,1.0,1.0f);

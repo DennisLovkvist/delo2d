@@ -319,7 +319,6 @@ void delo2d_set_quad_center_position(VertexArray *vertex_array, int quad_index, 
 void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index)
 {
     int n = quad_index * 4;
-
     delo2d_vertex_set_element(vertex_array,n,rect_des->x,rect_des->y,rect_src->x,rect_src->y,texture_index);
     delo2d_vertex_set_element(vertex_array,n + 1,rect_des->x + rect_des->width,rect_des->y,rect_src->x + rect_src->width,rect_src->y,texture_index);
     delo2d_vertex_set_element(vertex_array,n + 2,rect_des->x + rect_des->width,rect_des->y + rect_des->height,rect_src->x + rect_src->width,rect_src->y + rect_src->height,texture_index);
@@ -336,6 +335,7 @@ void delo2d_translate_quad(VertexArray *vertex_array, int quad_index, float delt
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
 {
     sprite_batch->capacity = capacity;
+    sprite_batch->count = 0;
     sprite_batch->rect_des = malloc(sizeof(Rectangle_f)*capacity);
     sprite_batch->rect_src_normalized = malloc(sizeof(Rectangle_f)*capacity);
     sprite_batch->texture_index = malloc(sizeof(unsigned int)*capacity);
@@ -369,6 +369,15 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
     sprite->texture_width = texture_width;
     sprite->texture_height = texture_height;
 }
+void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *vertex_array)
+{    
+    int length = sprite_batch->count;
+    for(int i = 0; i < length; i++)
+    {        
+        delo2d_define_quad(vertex_array,i,&(sprite_batch->rect_des)[i],&(sprite_batch->rect_src_normalized)[i],sprite_batch->texture_index[i]);
+    }
+    
+}
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index)
 {
     sprite_batch->rect_src_normalized[index].x = sprite->rect_src.x / sprite->texture_width;
@@ -383,6 +392,7 @@ void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index
 
     sprite->batch_index = index;
     sprite_batch->texture_index[index] = sprite->texture_index;
+    sprite_batch->count ++;
 }
 void delo2d_set_quad_position(VertexArray *vertex_array, int quad_index,int x,int y,int w, int h,Rectangle *rect_src)
 {
