@@ -8,13 +8,22 @@
 #include "libs/delo2d.h"
 
 #define GLEW_STATIC 1
+#define SHADERS_COUNT 1
+#define TEXTURES_COUNT 2
+#define SPRITES_COUNT 2
+#define SPRITEBATCH_CAPACITY 2
+
+#define WINDOW_TITLE "OpenGl Test"
+#define WINDOW_WIDTH 960
+#define WINDOW_HEIGHT 540
+
 
 int init(GLFWwindow **window,VertexArray *vertex_array, float *ortho_proj)
 {    
     if (!glfwInit()){return -1;}    
-    delo2d_render_setup(window, 960, 540,"OpenGl Test");  
+    delo2d_render_setup(window, WINDOW_WIDTH, WINDOW_HEIGHT,WINDOW_TITLE);  
     if(delo2d_render_initialize() == -1){return -1;}    
-    delo2d_matrix_orthographic_projection(ortho_proj,0.0f,960.0f,0.0f,540.0f,1,-1);
+    delo2d_matrix_orthographic_projection(ortho_proj,0.0f,(float)WINDOW_WIDTH,0.0f,(float)WINDOW_HEIGHT,1,-1);
     delo2d_vertex_array_create(vertex_array,DELO_QUAD_LIST,2);
     return 0;
 }
@@ -29,7 +38,7 @@ int game_setup(SpriteBatch *sprite_batch,VertexArray *vertex_array,Sprite *sprit
 {
     delo2d_define_sprite(&sprites[0], 0,0,128,128,64,0,228,228,0,textures[0].width,textures[0].height);      
     delo2d_define_sprite(&sprites[1], 500,300,100,100,0,0,1000,1000,1,textures[1].width,textures[1].height);
-    delo2d_create_sprite_batch(sprite_batch,2);
+    delo2d_create_sprite_batch(sprite_batch,SPRITEBATCH_CAPACITY);
 
     delo2d_sprite_batch_add(sprite_batch,&sprites[0],0);
     delo2d_sprite_batch_add(sprite_batch,&sprites[1],1); 
@@ -54,15 +63,31 @@ void game_update(VertexArray *vertex_array,Sprite *sprites)
     delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
     delo2d_sprite_translate(&sprites[1],1,0,vertex_array);
 }
+void unload(Texture *textures,unsigned int *shaders)
+{ 
+    for (int i = 0; i < TEXTURES_COUNT; i++)
+    {
+        //not implemented
+        //delo2d_unload_texture(&textures[i]);  
+    }
+
+    for (int i = 0; i < SHADERS_COUNT; i++)
+    {
+        glDeleteProgram(shaders[i]);
+    }
+    
+    
+    glfwTerminate();
+}
 int main(void)
 {  
     //variables
     GLFWwindow *window;
     VertexArray vertex_array;
     SpriteBatch sprite_batch;
-    Sprite sprites[2];  
-    Texture textures[2]; 
-    unsigned int shaders[1];
+    Sprite sprites[SPRITES_COUNT];  
+    Texture textures[TEXTURES_COUNT]; 
+    unsigned int shaders[SHADERS_COUNT];
     float ortho_proj[4][4];
     
     //init graphics
@@ -85,8 +110,7 @@ int main(void)
     }
 
     //unload and exit
-    glDeleteProgram(shaders[0]);
-    glfwTerminate();
+    unload(&textures,&shaders);
 
 
     return 0;
