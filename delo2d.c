@@ -226,6 +226,7 @@ void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
     quad->v3.x = &(vertex_array->buffer_position[quad_index + (stride*3)]);
     quad->v3.y = &(vertex_array->buffer_position[quad_index + (stride*3+1)]); 
 }
+
 //region quads end
 
 //vertex array code begin
@@ -365,6 +366,7 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
     sprite->rect_src.width = sw;
     sprite->rect_src.height = sh;
 
+    sprite->quad_index = 0;
     sprite->texture_index = texture_index;
     sprite->texture_width = texture_width;
     sprite->texture_height = texture_height;
@@ -391,8 +393,21 @@ void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index
     sprite_batch->rect_des[index].height = sprite->rect_des.height;
 
     sprite->batch_index = index;
+    sprite->quad_index = index;
     sprite_batch->texture_index[index] = sprite->texture_index;
     sprite_batch->count ++;
+}
+void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array)
+{
+    Quad quad;
+    delo2d_get_quad(&quad,vertex_array,sprite->quad_index);
+    delo2d_quad_rotate(&quad,rotation);
+}
+void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array)
+{
+    Quad quad;
+    delo2d_get_quad(&quad,vertex_array,sprite->quad_index);
+    delo2d_quad_translate(&quad,tx,ty);
 }
 void delo2d_set_quad_position(VertexArray *vertex_array, int quad_index,int x,int y,int w, int h,Rectangle *rect_src)
 {

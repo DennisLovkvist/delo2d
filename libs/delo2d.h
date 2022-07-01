@@ -80,7 +80,7 @@ struct SpriteBatch
 typedef struct Sprite Sprite;
 struct Sprite
 {
-    unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height;
+    unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height,quad_index;
     float rotation;
     Rectangle_f rect_src;
     Rectangle_f rect_des;
@@ -140,4 +140,6 @@ void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
 void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
+void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array);
+void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array);
 //region sprites code end
