@@ -81,9 +81,10 @@ typedef struct Sprite Sprite;
 struct Sprite
 {
     unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height,quad_index;
-    float rotation;
+    float rotation,time,duration;
     Rectangle_f rect_src;
     Rectangle_f rect_des;
+    unsigned int tex_coords_updated;
 };
 
 void GLClearError();
@@ -118,6 +119,7 @@ void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *
 
 //region vertex array code begin
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot);
+void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
@@ -137,9 +139,11 @@ unsigned int delo2d_shader_from_file(char *path_shader);
 
 //region sprites code begin
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
-void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height);
+void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array);
 void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array);
+void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array);
+void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index);
 //region sprites code end

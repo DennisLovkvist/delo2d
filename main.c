@@ -37,8 +37,8 @@ int load(Texture *textures,unsigned int *shaders)
 }
 int game_setup(SpriteBatch *sprite_batch,VertexArray *vertex_array,Sprite *sprites,Texture *textures)
 {
-    delo2d_define_sprite(&sprites[0], 0,0,128,128,64,0,228,228,0,textures[0].width,textures[0].height);      
-    delo2d_define_sprite(&sprites[1], 500,300,100,100,0,0,1000,1000,1,textures[1].width,textures[1].height);
+    delo2d_define_sprite(&sprites[0], 0,0,512,256,0,0,512,256,0,textures[0].width,textures[0].height,8,25,0.1);      
+    delo2d_define_sprite(&sprites[1], 500,300,100,100,0,0,1000,1000,1,textures[1].width,textures[1].height,1,1,0);
     delo2d_create_sprite_batch(sprite_batch,SPRITEBATCH_CAPACITY);
 
     delo2d_sprite_batch_add(sprite_batch,&sprites[0],0);
@@ -47,7 +47,7 @@ int game_setup(SpriteBatch *sprite_batch,VertexArray *vertex_array,Sprite *sprit
     return 0;
 }
 void game_render(GLFWwindow **window,VertexArray *vertex_array, Texture *textures,unsigned int *shaders,float *ortho_proj)
-{
+{    
     glClear(GL_COLOR_BUFFER_BIT);
     delo2d_vertex_array_to_graphics_device(vertex_array,0);
     glClearColor(1,0,0,1);
@@ -60,10 +60,11 @@ void game_render(GLFWwindow **window,VertexArray *vertex_array, Texture *texture
 }
 void game_update(float dt,VertexArray *vertex_array,Sprite *sprites)
 {
-    
     delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
     delo2d_sprite_translate(&sprites[1],1,0,vertex_array);
-    //delo2d_sprite_animate(&sprites[0],vertex_array);
+    delo2d_sprite_animate(&sprites[0],dt,vertex_array);
+
+   
 
 }
 void unload(Texture *textures,unsigned int *shaders)
@@ -81,6 +82,17 @@ void unload(Texture *textures,unsigned int *shaders)
     
     
     glfwTerminate();
+}
+void game_update_render_state(VertexArray *vertex_array, SpriteBatch *sprite_batch,Sprite *sprites)
+{
+    for (int i = 0; i < SPRITES_COUNT; i++)
+    {
+        if(sprites[i].tex_coords_updated)
+        {
+            delo2d_sprite_batch_update_tex_coords(vertex_array,sprite_batch,&sprites[i],i);
+            sprites[i].tex_coords_updated = 0;
+        }
+    }
 }
 int main(void)
 {  
@@ -115,11 +127,14 @@ int main(void)
         t = (float)clock()/CLOCKS_PER_SEC;
         //game logic
         game_update(dt,&vertex_array,&sprites);
+
+        game_update_render_state(&vertex_array,&sprite_batch,&sprites);
+
         //rendering
         game_render(window,&vertex_array,&textures,&shaders,&ortho_proj);
 
         dt = (float)clock()/CLOCKS_PER_SEC - t;
-        
+
         glfwPollEvents();
     }
 

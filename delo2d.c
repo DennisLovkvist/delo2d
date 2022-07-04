@@ -244,6 +244,13 @@ void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, 
     vertex_array->buffer_position[index + 3] = tex_y;
     vertex_array->buffer_position[index + 4] = texture_slot;
 }
+void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot)
+{
+    int index = position * vertex_array->layout_float_count;
+    vertex_array->buffer_position[index + 2] = tex_x;
+    vertex_array->buffer_position[index + 3] = tex_y;
+    vertex_array->buffer_position[index + 4] = texture_slot;
+}
 void delo2d_vertex_array_delete(VertexArray *vertex_array)
 {
     delo2d_vertex_array_unbind(vertex_array);
@@ -354,8 +361,12 @@ void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
     }
     
 }
-void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height)
+void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration)
 {
+    sprite->frame = 0;
+    sprite->time = 0;
+    sprite->tex_coords_updated = 0;
+    sprite->duration = duration;
     sprite->rect_des.x = dx;
     sprite->rect_des.y = dy;
     sprite->rect_des.width = dw;
@@ -367,25 +378,43 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
     sprite->rect_src.height = sh;
 
     sprite->quad_index = 0;
+    sprite->stride = stride;
+    sprite->frames = frames;
     sprite->texture_index = texture_index;
     sprite->texture_width = texture_width;
     sprite->texture_height = texture_height;
 }
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *vertex_array)
 {    
-    int length = sprite_batch->count;
+    int length = sprite_batch->capacity;
     for(int i = 0; i < length; i++)
     {        
         delo2d_define_quad(vertex_array,i,&(sprite_batch->rect_des)[i],&(sprite_batch->rect_src_normalized)[i],sprite_batch->texture_index[i]);
     }
     
 }
+void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index)
+{
+    sprite_batch->rect_src_normalized[index].x = sprite->rect_src.x / sprite->texture_width;
+    sprite_batch->rect_src_normalized[index].y = sprite->rect_src.y / sprite->texture_height;
+    sprite_batch->rect_src_normalized[index].width = (sprite->rect_src.width) / sprite->texture_width;
+    sprite_batch->rect_src_normalized[index].height = (sprite->rect_src.height) / sprite->texture_height;
+
+    int n = index * 4;
+    unsigned int texture_index = sprite[index].texture_index;
+    delo2d_vertex_set_tex_data(vertex_array,n,    sprite_batch->rect_src_normalized[index].x,sprite_batch->rect_src_normalized[index].y,texture_index);
+    delo2d_vertex_set_tex_data(vertex_array,n + 1,sprite_batch->rect_src_normalized[index].x + sprite_batch->rect_src_normalized[index].width,sprite_batch->rect_src_normalized[index].y,texture_index);
+    delo2d_vertex_set_tex_data(vertex_array,n + 2,sprite_batch->rect_src_normalized[index].x + sprite_batch->rect_src_normalized[index].width,sprite_batch->rect_src_normalized[index].y + sprite_batch->rect_src_normalized[index].height,texture_index);
+    delo2d_vertex_set_tex_data(vertex_array,n + 3,sprite_batch->rect_src_normalized[index].x,sprite_batch->rect_src_normalized[index].y + sprite_batch->rect_src_normalized[index].height,texture_index);
+
+
+}
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index)
 {
     sprite_batch->rect_src_normalized[index].x = sprite->rect_src.x / sprite->texture_width;
     sprite_batch->rect_src_normalized[index].y = sprite->rect_src.y / sprite->texture_height;
-    sprite_batch->rect_src_normalized[index].width = (sprite->rect_src.x + sprite->rect_src.width) / sprite->texture_width;
-    sprite_batch->rect_src_normalized[index].height = (sprite->rect_src.y + sprite->rect_src.height) / sprite->texture_height;
+    sprite_batch->rect_src_normalized[index].width = (sprite->rect_src.width) / sprite->texture_width;
+    sprite_batch->rect_src_normalized[index].height = (sprite->rect_src.height) / sprite->texture_height;
 
     sprite_batch->rect_des[index].x = sprite->rect_des.x;
     sprite_batch->rect_des[index].y = sprite->rect_des.y;
@@ -394,8 +423,7 @@ void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index
 
     sprite->batch_index = index;
     sprite->quad_index = index;
-    sprite_batch->texture_index[index] = sprite->texture_index;
-    sprite_batch->count ++;
+    sprite_batch->texture_index[index] = sprite->texture_index;    
 }
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array)
 {
@@ -543,4 +571,20 @@ unsigned int delo2d_shader_from_file(char *path_shader)
         return 0;
     }    
 }
-//shader code end
+void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array)
+{
+    sprite->time +=0.0016f;
+
+    if(sprite->time > sprite->duration)
+    {
+        sprite->time = 0;
+    }
+
+    sprite->frame = (sprite->time / sprite->duration)*(float)sprite->frames;
+
+    sprite->rect_src.x = (sprite->frame % sprite->stride)* sprite->rect_src.width;
+    
+    sprite->rect_src.y = (sprite->frame/sprite->stride) * sprite->rect_src.height;
+
+    sprite->tex_coords_updated = 1;    
+}
