@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "libs/delo2d.h"
+#include <time.h>
 
 #define GLEW_STATIC 1
 #define SHADERS_COUNT 1
@@ -57,11 +58,13 @@ void game_render(GLFWwindow **window,VertexArray *vertex_array, Texture *texture
     delo2d_render(vertex_array,textures,2,shaders[0]);
     glfwSwapBuffers(window);
 }
-void game_update(VertexArray *vertex_array,Sprite *sprites)
+void game_update(float dt,VertexArray *vertex_array,Sprite *sprites)
 {
     
     delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
     delo2d_sprite_translate(&sprites[1],1,0,vertex_array);
+    //delo2d_sprite_animate(&sprites[0],vertex_array);
+
 }
 void unload(Texture *textures,unsigned int *shaders)
 { 
@@ -89,6 +92,9 @@ int main(void)
     Texture textures[TEXTURES_COUNT]; 
     unsigned int shaders[SHADERS_COUNT];
     float ortho_proj[4][4];
+
+    float dt = 0;
+    float t = 0;
     
     //init graphics
     init(&window,&vertex_array,&ortho_proj);
@@ -98,13 +104,21 @@ int main(void)
     //setup game
     game_setup(&sprite_batch,&vertex_array,&sprites,&textures);
 
+
+    clock_t initial_time = clock();
+
+    int n = 0;
     //main loop begin
     while (!glfwWindowShouldClose(window))
     {
+
+        t = (float)clock()/CLOCKS_PER_SEC;
         //game logic
-        game_update(&vertex_array,&sprites);
+        game_update(dt,&vertex_array,&sprites);
         //rendering
         game_render(window,&vertex_array,&textures,&shaders,&ortho_proj);
+
+        dt = (float)clock()/CLOCKS_PER_SEC - t;
         
         glfwPollEvents();
     }
