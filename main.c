@@ -26,6 +26,9 @@ int init(GLFWwindow **window,VertexArray *vertex_array, float *ortho_proj)
     if(delo2d_render_initialize() == -1){return -1;}    
     delo2d_matrix_orthographic_projection(ortho_proj,0.0f,(float)WINDOW_WIDTH,0.0f,(float)WINDOW_HEIGHT,1,-1);
     delo2d_vertex_array_create(vertex_array,DELO_QUAD_LIST,2);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
     return 0;
 }
 int load(Texture *textures,unsigned int *shaders)
