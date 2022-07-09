@@ -118,13 +118,13 @@ void delo2d_delete_texture(Texture *texture)
 //region matrices begin
 void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n)
 {
-    (*matrix)[0][0] = 2.0f/(r-l); 
+    (*matrix)[0][0] = 2.0f/(r-l);  //Scale?  
     (*matrix)[0][1] = 0;              
     (*matrix)[0][2] = 0;                    
     (*matrix)[0][3] = -((r+l)/(r-l));
 
     (*matrix)[1][0] = 0; 
-    (*matrix)[1][1] = 2/(t-b);              
+    (*matrix)[1][1] = 2.0/(t-b); //Scale?             
     (*matrix)[1][2] = 0;                    
     (*matrix)[1][3] = -((t+b)/(t-b));
 
@@ -197,15 +197,10 @@ void delo2d_quad_rotate(Quad *quad, float theta)
 
     delo2d_rotation_matrix(&R, 0,center.x,center.y);
 
-
     delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
     delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
     delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
     delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
-
-    
-    
-
 }
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
 {
@@ -587,4 +582,9 @@ void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array)
     sprite->rect_src.y = (sprite->frame/sprite->stride) * sprite->rect_src.height;
 
     sprite->tex_coords_updated = 1;    
+}
+void delo2d_camera_move(float *ortho_proj, float tx, float ty)
+{
+    ortho_proj[3] += tx;
+    ortho_proj[7] -= ty;
 }

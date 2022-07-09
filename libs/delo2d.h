@@ -147,3 +147,5 @@ void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *verte
 void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array);
 void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index);
 //region sprites code end
+
+void delo2d_camera_move(float *ortho_proj, float tx, float ty);

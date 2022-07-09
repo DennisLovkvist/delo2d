@@ -66,9 +66,6 @@ void game_update(float dt,VertexArray *vertex_array,Sprite *sprites)
     delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
     delo2d_sprite_translate(&sprites[1],1,0,vertex_array);
     delo2d_sprite_animate(&sprites[0],dt,vertex_array);
-
-   
-
 }
 void unload(Texture *textures,unsigned int *shaders)
 { 
@@ -126,12 +123,13 @@ int main(void)
     //main loop begin
     while (!glfwWindowShouldClose(window))
     {
-
         t = (float)clock()/CLOCKS_PER_SEC;
         //game logic
         game_update(dt,&vertex_array,&sprites);
 
         game_update_render_state(&vertex_array,&sprite_batch,&sprites);
+
+        delo2d_camera_move(&ortho_proj,-0.001f,-0.0010f);
 
         //rendering
         game_render(window,&vertex_array,&textures,&shaders,&ortho_proj);
@@ -143,7 +141,6 @@ int main(void)
 
     //unload and exit
     unload(&textures,&shaders);
-
 
     return 0;
 }
