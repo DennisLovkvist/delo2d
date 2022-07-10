@@ -149,3 +149,5 @@ void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch
 //region sprites code end
 
 void delo2d_camera_move(float *ortho_proj, float tx, float ty);
+void delo2d_camera_set_zoom(float *ortho_proj, float z);
+void delo2d_camera_set_position(float *ortho_proj, float x, float y);

@@ -7,6 +7,9 @@
 #include "stb_image.h"
 #include <math.h>
 
+#define WINDOW_WIDTH 960
+#define WINDOW_HEIGHT 540
+
 void GLClearError()
 {
     while(!glGetError());
@@ -587,4 +590,14 @@ void delo2d_camera_move(float *ortho_proj, float tx, float ty)
 {
     ortho_proj[3] += tx;
     ortho_proj[7] -= ty;
+}
+void delo2d_camera_set_position(float *ortho_proj, float x, float y)
+{
+    ortho_proj[3] = x;
+    ortho_proj[7] = y;
+}
+void delo2d_camera_set_zoom(float *ortho_proj, float z)
+{    
+    ortho_proj[0] = z/WINDOW_WIDTH;
+    ortho_proj[5] = z/(0-WINDOW_HEIGHT);   
 }
