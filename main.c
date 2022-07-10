@@ -51,9 +51,9 @@ int game_setup(SpriteBatch *sprite_batch,VertexArray *vertex_array,Sprite *sprit
 }
 void game_render(GLFWwindow **window,VertexArray *vertex_array, Texture *textures,unsigned int *shaders,float *ortho_proj)
 {    
+    glClearColor(1,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT);
     delo2d_vertex_array_to_graphics_device(vertex_array,0);
-    glClearColor(1,0,0,1);
     glUniform4f(glGetUniformLocation(shaders[0],"u_color"),1.0f,1.0f,1.0,1.0f);
     glUniformMatrix4fv(glGetUniformLocation(shaders[0],"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
     int samplers[2] = {0,1};
@@ -74,13 +74,10 @@ void unload(Texture *textures,unsigned int *shaders)
         //not implemented
         //delo2d_unload_texture(&textures[i]);  
     }
-
     for (int i = 0; i < SHADERS_COUNT; i++)
     {
         glDeleteProgram(shaders[i]);
-    }
-    
-    
+    }        
     glfwTerminate();
 }
 void game_update_render_state(VertexArray *vertex_array, SpriteBatch *sprite_batch,Sprite *sprites)
@@ -94,6 +91,25 @@ void game_update_render_state(VertexArray *vertex_array, SpriteBatch *sprite_bat
         }
     }
 }
+void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *ortho_proj)
+{
+    if (ki->move_up == GLFW_PRESS)
+    {
+        delo2d_camera_move(ortho_proj,0,-0.02f);
+    }
+    if (ki->move_dn == GLFW_PRESS)
+    {
+        delo2d_camera_move(ortho_proj,0,0.02f);
+    }
+    if (ki->move_l == GLFW_PRESS)
+    {
+        delo2d_camera_move(ortho_proj,-0.02f,0);
+    }
+    if (ki->move_r == GLFW_PRESS)
+    {
+        delo2d_camera_move(ortho_proj,0.02f,0);
+    }
+} 
 int main(void)
 {  
     //variables
@@ -104,18 +120,20 @@ int main(void)
     Texture textures[TEXTURES_COUNT]; 
     unsigned int shaders[SHADERS_COUNT];
     float ortho_proj[4][4];
+    KeyboardInput ki;
+    KeyboardInput ki_prev;
 
     float dt = 0;
     float t = 0;
     
     //init graphics
     init(&window,&vertex_array,&ortho_proj);
-
+    //init input
+    delo2d_input_init(&ki,&ki_prev);
     //load game resources
     load(&textures,&shaders);
     //setup game
     game_setup(&sprite_batch,&vertex_array,&sprites,&textures);
-
 
     clock_t initial_time = clock();
 
@@ -129,8 +147,8 @@ int main(void)
 
         game_update_render_state(&vertex_array,&sprite_batch,&sprites);
 
-        delo2d_camera_move(&ortho_proj,0.001f,0.001f);
-        delo2d_camera_set_zoom(&ortho_proj,1);
+        //delo2d_camera_move(&ortho_proj,0.001f,0.001f);
+       // delo2d_camera_set_zoom(&ortho_proj,1);
 
         //rendering
         game_render(window,&vertex_array,&textures,&shaders,&ortho_proj);
@@ -138,6 +156,9 @@ int main(void)
         dt = (float)clock()/CLOCKS_PER_SEC - t;
 
         glfwPollEvents();
+
+        delo2d_input_update(window,&ki,&ki_prev);
+        game_update_controls(&ki,&ki_prev,&ortho_proj);
     }
 
     //unload and exit

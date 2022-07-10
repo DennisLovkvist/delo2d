@@ -601,3 +601,22 @@ void delo2d_camera_set_zoom(float *ortho_proj, float z)
     ortho_proj[0] = z/WINDOW_WIDTH;
     ortho_proj[5] = z/(0-WINDOW_HEIGHT);   
 }
+void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev)
+{
+    ki->move_up = glfwGetKey(window, GLFW_KEY_W);
+    ki->move_l = glfwGetKey(window, GLFW_KEY_A);
+    ki->move_dn = glfwGetKey(window, GLFW_KEY_S);
+    ki->move_r = glfwGetKey(window, GLFW_KEY_D);
+
+    ki_prev->move_up = ki->move_up;
+    ki_prev->move_l = ki->move_l;
+    ki_prev->move_dn = ki->move_dn;
+    ki_prev->move_r = ki->move_r;
+}   
+void delo2d_input_init(KeyboardInput *ki,KeyboardInput *ki_prev)
+{
+    ki_prev->move_up = GLFW_RELEASE;
+    ki_prev->move_l = GLFW_RELEASE;
+    ki_prev->move_dn = GLFW_RELEASE;
+    ki_prev->move_r = GLFW_RELEASE;
+}  

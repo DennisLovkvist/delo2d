@@ -8,6 +8,14 @@
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
+typedef struct KeyboardInput KeyboardInput;
+struct KeyboardInput
+{
+    unsigned int move_l;
+    unsigned int move_r;
+    unsigned int move_up;
+    unsigned int move_dn;
+};
 typedef struct Vector2fp Vector2fp;
 struct Vector2fp
 {
@@ -148,6 +156,13 @@ void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array);
 void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index);
 //region sprites code end
 
+//region camera code begin
 void delo2d_camera_move(float *ortho_proj, float tx, float ty);
 void delo2d_camera_set_zoom(float *ortho_proj, float z);
 void delo2d_camera_set_position(float *ortho_proj, float x, float y);
+//region camera code end
+
+//region input code begin
+void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev); 
+void delo2d_input_init(KeyboardInput *ki,KeyboardInput *ki_prev);
+//region input code end
