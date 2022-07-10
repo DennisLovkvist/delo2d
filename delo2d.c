@@ -10,6 +10,9 @@
 #define WINDOW_WIDTH 960
 #define WINDOW_HEIGHT 540
 
+const unsigned int screen_width = 960;
+const unsigned int screen_height = 540;
+
 void GLClearError()
 {
     while(!glGetError());
@@ -588,18 +591,18 @@ void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array)
 }
 void delo2d_camera_move(float *ortho_proj, float tx, float ty)
 {
-    ortho_proj[3] += tx;
-    ortho_proj[7] -= ty;
+    ortho_proj[3] += tx/screen_width;
+    ortho_proj[7] -= ty/screen_height;
 }
 void delo2d_camera_set_position(float *ortho_proj, float x, float y)
 {
-    ortho_proj[3] = x;
-    ortho_proj[7] = y;
+    ortho_proj[3] = x/screen_width;
+    ortho_proj[7] = y/screen_height;
 }
 void delo2d_camera_set_zoom(float *ortho_proj, float z)
 {    
-    ortho_proj[0] = z/WINDOW_WIDTH;
-    ortho_proj[5] = z/(0-WINDOW_HEIGHT);   
+    ortho_proj[0] = z/screen_width;;
+    ortho_proj[5] = z/(0-screen_height);   
 }
 void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev)
 {

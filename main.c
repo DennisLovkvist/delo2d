@@ -61,7 +61,7 @@ void game_render(GLFWwindow **window,VertexArray *vertex_array, Texture *texture
     delo2d_render(vertex_array,textures,2,shaders[0]);
     glfwSwapBuffers(window);
 }
-void game_update(float dt,VertexArray *vertex_array,Sprite *sprites)
+void game_update_logic(float dt,VertexArray *vertex_array,Sprite *sprites)
 {
     delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
     delo2d_sprite_translate(&sprites[1],1,0,vertex_array);
@@ -95,19 +95,19 @@ void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *ortho
 {
     if (ki->move_up == GLFW_PRESS)
     {
-        delo2d_camera_move(ortho_proj,0,-0.02f);
+        delo2d_camera_move(ortho_proj,0,-1.0f);
     }
     if (ki->move_dn == GLFW_PRESS)
     {
-        delo2d_camera_move(ortho_proj,0,0.02f);
+        delo2d_camera_move(ortho_proj,0,1.0f);
     }
     if (ki->move_l == GLFW_PRESS)
     {
-        delo2d_camera_move(ortho_proj,-0.02f,0);
+        delo2d_camera_move(ortho_proj,-1,0);
     }
     if (ki->move_r == GLFW_PRESS)
     {
-        delo2d_camera_move(ortho_proj,0.02f,0);
+        delo2d_camera_move(ortho_proj,1,0);
     }
 } 
 int main(void)
@@ -118,10 +118,10 @@ int main(void)
     SpriteBatch sprite_batch;
     Sprite sprites[SPRITES_COUNT];  
     Texture textures[TEXTURES_COUNT]; 
-    unsigned int shaders[SHADERS_COUNT];
-    float ortho_proj[4][4];
     KeyboardInput ki;
     KeyboardInput ki_prev;
+    unsigned int shaders[SHADERS_COUNT];
+    float ortho_proj[4][4];
 
     float dt = 0;
     float t = 0;
@@ -142,23 +142,13 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
         t = (float)clock()/CLOCKS_PER_SEC;
-        //game logic
-        game_update(dt,&vertex_array,&sprites);
-
+        game_update_controls(&ki,&ki_prev,&ortho_proj);       
+        game_update_logic(dt,&vertex_array,&sprites);
         game_update_render_state(&vertex_array,&sprite_batch,&sprites);
-
-        //delo2d_camera_move(&ortho_proj,0.001f,0.001f);
-       // delo2d_camera_set_zoom(&ortho_proj,1);
-
-        //rendering
         game_render(window,&vertex_array,&textures,&shaders,&ortho_proj);
-
         dt = (float)clock()/CLOCKS_PER_SEC - t;
-
         glfwPollEvents();
-
         delo2d_input_update(window,&ki,&ki_prev);
-        game_update_controls(&ki,&ki_prev,&ortho_proj);
     }
 
     //unload and exit
