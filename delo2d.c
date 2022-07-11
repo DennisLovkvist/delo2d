@@ -601,8 +601,8 @@ void delo2d_camera_set_position(float *ortho_proj, float x, float y)
 }
 void delo2d_camera_set_zoom(float *ortho_proj, float z)
 {    
-    ortho_proj[0] = z/screen_width;;
-    ortho_proj[5] = z/(0-screen_height);   
+    ortho_proj[0] = z/screen_width;
+    ortho_proj[5] = z/(-screen_height);   
 }
 void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev)
 {
