@@ -122,11 +122,11 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_quad_translate(Quad *quad,float x, float y);
 void delo2d_quad_rotate(Quad *quad, float theta);
-void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index);
+void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,float color[4]);
 //region quads end
 
 //region vertex array code begin
-void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot);
+void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,float color[4]);
 void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
