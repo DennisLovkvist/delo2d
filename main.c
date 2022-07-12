@@ -54,7 +54,7 @@ void game_render(GLFWwindow **window,VertexArray *vertex_array, Texture *texture
     glClearColor(1,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT);
     delo2d_vertex_array_to_graphics_device(vertex_array,0);
-    glUniform4f(glGetUniformLocation(shaders[0],"u_color"),1.0f,1.0f,1.0,1.0f);
+    //glUniform4f(glGetUniformLocation(shaders[0],"u_color"),1.0f,1.0f,1.0,1.0f);
     glUniformMatrix4fv(glGetUniformLocation(shaders[0],"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
     int samplers[2] = {0,1};
     glUniform1iv(glGetUniformLocation(shaders[0],"u_textures"),2,samplers);  
