@@ -8,6 +8,12 @@
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
+typedef struct RenderTarget RenderTarget;
+struct RenderTarget
+{
+    unsigned int frame_buffer;
+    unsigned int texture;
+};
 typedef struct KeyboardInput KeyboardInput;
 struct KeyboardInput
 {
@@ -101,7 +107,7 @@ void GLCheckError();
 //region rendering begin
 void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
-int delo2d_render_initialize();
+int delo2d_render_initialize(RenderTarget *render_targets, unsigned int render_target_count);
 void delo2d_render(VertexArray *vertex_array,Texture *textures,int texture_count, unsigned int shader);
 //region rendering end
 
@@ -126,6 +132,7 @@ void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *
 //region quads end
 
 //region vertex array code begin
+void delo2d_vertex_array_set_attrib_pointer(VertexArray *vertex_array);
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,float color[4]);
 void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);

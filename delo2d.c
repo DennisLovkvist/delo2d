@@ -47,7 +47,7 @@ int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int he
     glfwMakeContextCurrent(*window);
     return 0;
 }
-int delo2d_render_initialize()
+int delo2d_render_initialize(RenderTarget *render_targets, unsigned int render_target_count)
 {
     if(glewInit() != GLEW_OK)
     {
@@ -58,27 +58,7 @@ int delo2d_render_initialize()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
     glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
     
-    //https://learnopengl.com/Advanced-OpenGL/Framebuffers
-    //test
-    unsigned int FBO;
-    glGenFramebuffers(1, &FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);  
-
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-    //test
-
-
+    delo2d_create_render_target(&render_targets[0]);    
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -87,6 +67,23 @@ int delo2d_render_initialize()
     glEnable(GL_TEXTURE_2D);
 
     return 0;
+}
+void delo2d_create_render_target(RenderTarget *render_target)
+{
+    glGenFramebuffers(1, &render_target->frame_buffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, render_target->frame_buffer);  
+
+    glGenTextures(1, &render_target->texture);
+    glBindTexture(GL_TEXTURE_2D, render_target->texture);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_target->texture, 0);
 }
 void delo2d_render(VertexArray *vertex_array,Texture *textures,int texture_count, unsigned int shader)
 {   
@@ -283,6 +280,18 @@ void delo2d_vertex_array_delete(VertexArray *vertex_array)
     delo2d_vertex_array_unbind(vertex_array);
     free(vertex_array->buffer_position);
     free(vertex_array->buffer_index);
+}
+void delo2d_vertex_array_set_attrib_pointer(VertexArray *vertex_array)
+{
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);
+
+    //texture coordinate float2
+    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));
+
+    //texture index float
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
+
+    glVertexAttribPointer(3,4,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(5 * sizeof(GLfloat)));
 }
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count)
 {
