@@ -8,12 +8,8 @@
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
-typedef struct RenderTarget RenderTarget;
-struct RenderTarget
-{
-    unsigned int frame_buffer;
-    unsigned int texture;
-};
+
+
 typedef struct KeyboardInput KeyboardInput;
 struct KeyboardInput
 {
@@ -48,7 +44,7 @@ struct VertexArray
 {
     unsigned int ibo;
     unsigned int vao;
-    unsigned int buffer;
+    unsigned int vbo;
 
     unsigned int id;
     unsigned int type;
@@ -63,6 +59,7 @@ struct VertexArray
     //[0,1]=position, [2,3]=texture coordinates [4]=texture index
     unsigned int *buffer_index;
 };
+
 typedef struct Texture Texture;
 struct Texture
 {
@@ -70,6 +67,13 @@ struct Texture
     unsigned char* local_buffer;
     int width,height,bytes_per_pixel;
 
+};
+typedef struct RenderTarget RenderTarget;
+struct RenderTarget
+{
+    unsigned int vao,vbo,fbo,framebufferTexture,rbo;
+    GLenum status;
+    float vertices[24];
 };
 typedef struct Rectangle Rectangle;
 struct Rectangle
@@ -107,13 +111,14 @@ void GLCheckError();
 //region rendering begin
 void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
-int delo2d_render_initialize(RenderTarget *render_targets, unsigned int render_target_count);
+int delo2d_render_initialize();
 void delo2d_render(VertexArray *vertex_array,Texture *textures,int texture_count, unsigned int shader);
+void delo2d_render_target_create(RenderTarget *render_target);
 //region rendering end
 
 //region texture begin
 void delo2d_load_texture(Texture *texture, char file_path[]);
-void delo2d_bind_texture(Texture *texture, unsigned int slot);
+void delo2d_bind_texture(unsigned int texture, unsigned int slot);
 void delo2d_unbind_texture();
 void delo2d_delete_texture(Texture *texture);
 //region texture end
@@ -132,7 +137,6 @@ void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *
 //region quads end
 
 //region vertex array code begin
-void delo2d_vertex_array_set_attrib_pointer(VertexArray *vertex_array);
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,float color[4]);
 void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_vertex_array_draw(VertexArray *vertex_array);
@@ -140,7 +144,7 @@ void delo2d_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
 void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
 void delo2d_vertex_array_bind(VertexArray *vertex_array);
-void delo2d_vertex_array_unbind(VertexArray *vertex_array);
+void delo2d_vertex_array_unbind();
 //region vertex array code end
 
 //region shader code begin

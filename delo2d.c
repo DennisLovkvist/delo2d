@@ -47,7 +47,7 @@ int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int he
     glfwMakeContextCurrent(*window);
     return 0;
 }
-int delo2d_render_initialize(RenderTarget *render_targets, unsigned int render_target_count)
+int delo2d_render_initialize()
 {
     if(glewInit() != GLEW_OK)
     {
@@ -57,8 +57,6 @@ int delo2d_render_initialize(RenderTarget *render_targets, unsigned int render_t
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
     glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
-    
-    delo2d_create_render_target(&render_targets[0]);    
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -68,36 +66,61 @@ int delo2d_render_initialize(RenderTarget *render_targets, unsigned int render_t
 
     return 0;
 }
-void delo2d_create_render_target(RenderTarget *render_target)
+void delo2d_render_target_create(RenderTarget *rt)
 {
-    glGenFramebuffers(1, &render_target->frame_buffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, render_target->frame_buffer);  
+    rt->vertices[0] = 1.0f;rt->vertices[1] = -1.0f;rt->vertices[2] = 1.0f;rt->vertices[3] = 0.0f;
+    rt->vertices[4] = -1.0f;rt->vertices[5] = -1.0f;rt->vertices[6] = 0.0f;rt->vertices[7] = 0.0f;
+    rt->vertices[8] = -1.0f;rt->vertices[9] = 1.0f;rt->vertices[10] = 0.0f;rt->vertices[11] = 1.0f;
 
-    glGenTextures(1, &render_target->texture);
-    glBindTexture(GL_TEXTURE_2D, render_target->texture);
+    rt->vertices[12] = 1.0f;rt->vertices[13] = 1.0f;rt->vertices[14] = 1.0f;rt->vertices[15] = 1.0f;
+    rt->vertices[16] = 1.0f;rt->vertices[17] = -1.0f;rt->vertices[18] = 1.0f;rt->vertices[19] = 0.0f;
+    rt->vertices[20] = -1.0f;rt->vertices[21] = 1.0f;rt->vertices[22] = 0.0f;rt->vertices[23] = 1.0f;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glGenVertexArrays(1, &rt->vao);
+	glGenBuffers(1, &rt->vbo);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindVertexArray(rt->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, rt->vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rt->vertices), &rt->vertices, GL_STATIC_DRAW);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_target->texture, 0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	glGenFramebuffers(1, &rt->fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, rt->fbo);
+
+	// Create Framebuffer Texture
+	glGenTextures(1, &rt->framebufferTexture);
+	glBindTexture(GL_TEXTURE_2D, rt->framebufferTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 960,  540, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt->framebufferTexture, 0);
+
+    
+	glGenRenderbuffers(1, &rt->rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rt->rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 960,  540);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rt->rbo);
+
+    rt->status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	glBindVertexArray(0);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    
 }
 void delo2d_render(VertexArray *vertex_array,Texture *textures,int texture_count, unsigned int shader)
 {   
-    delo2d_bind_texture(&textures[0],0); 
-    delo2d_bind_texture(&textures[1],1); 
+    delo2d_bind_texture(textures[0].renderer_id,0); 
+    delo2d_bind_texture(textures[1].renderer_id,1); 
     
     glUseProgram(shader); 
-        
 
-    delo2d_vertex_array_bind(vertex_array);
-
-    GLClearError();
     delo2d_vertex_array_draw(vertex_array);
-    GLCheckError();
 
     delo2d_unbind_texture();
 }
@@ -125,13 +148,13 @@ void delo2d_load_texture(Texture *texture, char file_path[])
         stbi_image_free(texture->local_buffer);
     }
 }
-void delo2d_bind_texture(Texture *texture, unsigned int slot)
+void delo2d_bind_texture(unsigned int texture, unsigned int slot)
 {
     glActiveTexture(GL_TEXTURE0 + slot);
-    glBindTexture(GL_TEXTURE_2D,texture->renderer_id);
+    glBindTexture(GL_TEXTURE_2D,texture);
 }
 void delo2d_unbind_texture()
-{
+{    
     glBindTexture(GL_TEXTURE_2D,0);
 }
 void delo2d_delete_texture(Texture *texture)
@@ -253,7 +276,7 @@ void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
 void delo2d_vertex_array_draw(VertexArray *vertex_array)
 {
     int draw_index_count = vertex_array->indices_per_element * vertex_array->count_elements;
-    glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,0);
+    glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,NULL);
 }
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,float color[4])
 {
@@ -280,18 +303,6 @@ void delo2d_vertex_array_delete(VertexArray *vertex_array)
     delo2d_vertex_array_unbind(vertex_array);
     free(vertex_array->buffer_position);
     free(vertex_array->buffer_index);
-}
-void delo2d_vertex_array_set_attrib_pointer(VertexArray *vertex_array)
-{
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);
-
-    //texture coordinate float2
-    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));
-
-    //texture index float
-    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
-
-    glVertexAttribPointer(3,4,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(5 * sizeof(GLfloat)));
 }
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count)
 {
@@ -327,36 +338,33 @@ void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, uns
         vertex_array->buffer_index[index + 5] = vertex_index + 0;
     }     
 
-    glGenVertexArrays(1,&(vertex_array->vao)); 
-    glBindVertexArray(&(vertex_array->vao));
 
-    glGenBuffers(1,&(vertex_array->buffer));
-    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+    glGenVertexArrays(1,&vertex_array->vao); 
+    glBindVertexArray(vertex_array->vao); 
 
-    glGenBuffers(1,&(vertex_array->ibo));
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
-
-    //vertex position float2
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);
-
-    //texture coordinate float2
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));
-
-    //texture index float
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));
-
-    //color float4
-    glEnableVertexAttribArray(3);
+    glGenBuffers(1,&vertex_array->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->vbo);
+    glBufferData(GL_ARRAY_BUFFER,vertex_array->count_position * sizeof(float),NULL,GL_DYNAMIC_DRAW);     
+    glEnableVertexAttribArray(0);//vertex position float2
+    glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,0);    
+    glEnableVertexAttribArray(1);//texture coordinate float2
+    glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE, sizeof(float)*vertex_array->layout_float_count,(GLvoid*)(sizeof(float)*2));    
+    glEnableVertexAttribArray(2);//texture index float
+    glVertexAttribPointer(2,1,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(4 * sizeof(GLfloat)));    
+    glEnableVertexAttribArray(3);//color float4
     glVertexAttribPointer(3,4,GL_FLOAT,GL_FALSE, sizeof(GLfloat)*vertex_array->layout_float_count,(GLvoid*)(5 * sizeof(GLfloat)));
 
-    //glBufferData(GL_ARRAY_BUFFER,(4 *vertex_array->count_elements * vertex_array->layout_float_count) * sizeof(float),vertex_array->buffer_position,GL_DYNAMIC_DRAW); 
-    glBufferData(GL_ARRAY_BUFFER,vertex_array->count_position * sizeof(float),NULL,GL_DYNAMIC_DRAW); 
 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(unsigned int),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
+    glGenBuffers(1,&vertex_array->ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,vertex_array->count_index * sizeof(GLuint),vertex_array->buffer_index,GL_DYNAMIC_DRAW);
+    
 
+
+    glBindVertexArray(0); 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+
+   // glBindBuffer(GL_ARRAY_BUFFER,0);//Fucks up when unbinded
 }
 void delo2d_set_quad_center_position(VertexArray *vertex_array, int quad_index, Vector2f *center)
 {
@@ -465,7 +473,7 @@ void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index
 
     sprite->batch_index = index;
     sprite->quad_index = index;
-    sprite_batch->texture_index[index] = sprite->texture_index;    
+    sprite_batch->texture_index[index] = sprite->texture_index; 
 }
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array)
 {
@@ -492,20 +500,20 @@ void delo2d_set_quad_position(VertexArray *vertex_array, int quad_index,int x,in
 }
 void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset)
 {   
-    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+    //delo2d_vertex_array_bind(vertex_array);
     glBufferSubData(GL_ARRAY_BUFFER,offset,vertex_array->count_position * sizeof(float),vertex_array->buffer_position);
 }
 void delo2d_vertex_array_bind(VertexArray *vertex_array)
 {
-    glBindVertexArray(&(vertex_array->vao));//Does this matter?
-    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->buffer);
+    glBindVertexArray(vertex_array->vao);
+    glBindBuffer(GL_ARRAY_BUFFER,vertex_array->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,vertex_array->ibo);
 }
-void delo2d_vertex_array_unbind(VertexArray *vertex_array)
+void delo2d_vertex_array_unbind()
 {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER,0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0); 
 }
 //vertex array code end
 
