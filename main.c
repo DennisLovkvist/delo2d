@@ -74,10 +74,11 @@ int game_setup(Graphics *graphics)
 }
 void game_render(Graphics *graphics)
 {   
-    delo2d_vertex_array_to_graphics_device(&graphics->vertex_array,0);
     
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(1,0,0,1);
+    
+    
+	glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target.fbo);
+    glClearColor(0,1,0,1);
     glClear(GL_COLOR_BUFFER_BIT); 
 
     glUseProgram(graphics->shaders[0]); 
@@ -86,9 +87,19 @@ void game_render(Graphics *graphics)
     glUniform1iv(glGetUniformLocation(graphics->shaders[0],"u_textures"),2,samplers);  
 
     glBindVertexArray(graphics->vertex_array.vao); 
-    glBindBuffer(GL_ARRAY_BUFFER,graphics->vertex_array.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER,graphics->vertex_array.vbo);//Bind to update with delo2d_vertex_array_to_graphics_device
+    delo2d_vertex_array_to_graphics_device(&graphics->vertex_array,0);
     delo2d_render(&graphics->vertex_array,graphics->textures,2,graphics->shaders[0]);
     
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT); 
+
+    glBindVertexArray(graphics->render_target.vao); 
+    delo2d_bind_texture(graphics->render_target.framebufferTexture,0); 
+    glUseProgram(graphics->shaders[1]); 
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
     glfwSwapBuffers(graphics->window);
 }
