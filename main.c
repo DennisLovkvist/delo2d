@@ -139,6 +139,8 @@ int game_setup(Graphics *graphics)
     delo2d_define_sprite(&graphics->sprites[47], 758,388,400*SD,770*SD,0*SS,0*SS,400*SS,770*SS,0,graphics->textures[0].width,graphics->textures[0].height,16,56,0.7,palette_orange[7]);//Fire 
     delo2d_define_sprite(&graphics->sprites[48], 738,726,486*SD,208*SD,1434*SS,298*SS,486*SS,208*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Bonfire front 
 
+    graphics->sprites[29].flip_horizontally = 1;
+    graphics->sprites[29].flip_vertically = 1;
  
  
 

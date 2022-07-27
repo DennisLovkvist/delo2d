@@ -98,17 +98,21 @@ struct SpriteBatch
     unsigned int *texture_index;
     unsigned int *quad_index;
     Color *color;
+    unsigned int *flip_horizontally;
+    unsigned int *flip_vertically;
+
 };
 typedef struct Sprite Sprite;
 struct Sprite
 {
-    unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height,quad_index;
+    unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height,quad_index,flip_horizontally,flip_vertically;
     float rotation,time,duration;
     Rectangle_f rect_src;
     Rectangle_f rect_des;
     unsigned int tex_coords_updated;
     Color color;
     Vector2f position;
+    Vector2f scale;
 };
 
 
@@ -140,7 +144,7 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_quad_translate(Quad *quad,float x, float y);
 void delo2d_quad_rotate(Quad *quad, float theta);
-void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,Color color);
+void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,Color color,int flip_horizontally,int flip_vertically);
 void delo2d_quad_get_center(Quad *quad,Vector2f *center);
 //region quads end
 
