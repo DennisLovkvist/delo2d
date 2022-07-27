@@ -106,10 +106,10 @@ typedef struct Sprite Sprite;
 struct Sprite
 {
     unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height,quad_index,flip_horizontally,flip_vertically;
-    float rotation,time,duration;
+    float orientation,time,duration;
     Rectangle_f rect_src;
     Rectangle_f rect_des;
-    unsigned int tex_coords_updated;
+    unsigned int updated_tex_coords;
     Color color;
     Vector2f position;
     Vector2f scale;
@@ -174,6 +174,7 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array);
+void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray *vertex_array);
 void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array);
 void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array);
 void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index);

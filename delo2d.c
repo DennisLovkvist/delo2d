@@ -448,7 +448,7 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
 {
     sprite->frame = 0;
     sprite->time = 0;
-    sprite->tex_coords_updated = 0;
+    sprite->updated_tex_coords = 0;
     sprite->duration = duration;
     sprite->rect_des.x = dx;
     sprite->rect_des.y = dy;
@@ -474,6 +474,7 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
     sprite->color.b = color.b;
     sprite->color.a = color.a;
     sprite->flip_horizontally = sprite->flip_vertically = 0;
+    sprite->updated_tex_coords = 0;
 }
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *vertex_array)
 {    
@@ -524,6 +525,12 @@ void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_arra
     Quad quad;
     delo2d_get_quad(&quad,vertex_array,sprite->quad_index);
     delo2d_quad_rotate(&quad,rotation);
+    sprite->orientation += rotation;
+}
+void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray *vertex_array)
+{
+    float delta = orientation - sprite->orientation;
+    delo2d_sprite_rotate(sprite,delta,vertex_array);
 }
 void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array)
 {
@@ -531,8 +538,8 @@ void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *verte
     delo2d_get_quad(&quad,vertex_array,sprite->quad_index);
     delo2d_quad_translate(&quad,tx,ty);
 
-sprite->position.x = *quad.v0.x;
-sprite->position.y = *quad.v0.y;
+    sprite->position.x = *quad.v0.x;
+    sprite->position.y = *quad.v0.y;
 
     //delo2d_quad_get_center(&quad,&sprite->position);    
 }
@@ -685,7 +692,7 @@ void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array)
     
     sprite->rect_src.y = (sprite->frame/sprite->stride) * sprite->rect_src.height;
 
-    sprite->tex_coords_updated = 1;    
+    sprite->updated_tex_coords = 1;    
 }
 void delo2d_camera_move(float *ortho_proj, float tx, float ty, float screen_width, float screen_height)
 {
