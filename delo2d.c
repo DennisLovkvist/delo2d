@@ -492,7 +492,8 @@ void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch
     sprite_batch->rect_src_normalized[index].height = (sprite->rect_src.height) / sprite->texture_height;
 
     int n = index * 4;
-    unsigned int texture_index = sprite[index].texture_index;
+
+    unsigned int texture_index = sprite->texture_index;
     delo2d_vertex_set_tex_data(vertex_array,n,    sprite_batch->rect_src_normalized[index].x,sprite_batch->rect_src_normalized[index].y,texture_index);
     delo2d_vertex_set_tex_data(vertex_array,n + 1,sprite_batch->rect_src_normalized[index].x + sprite_batch->rect_src_normalized[index].width,sprite_batch->rect_src_normalized[index].y,texture_index);
     delo2d_vertex_set_tex_data(vertex_array,n + 2,sprite_batch->rect_src_normalized[index].x + sprite_batch->rect_src_normalized[index].width,sprite_batch->rect_src_normalized[index].y + sprite_batch->rect_src_normalized[index].height,texture_index);
@@ -519,6 +520,7 @@ void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index
     sprite_batch->color[index].a = sprite->color.a;
     sprite_batch->flip_horizontally[index] = sprite->flip_horizontally;
     sprite_batch->flip_vertically[index] = sprite->flip_vertically;
+
 }
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array)
 {
@@ -692,7 +694,7 @@ void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array)
     
     sprite->rect_src.y = (sprite->frame/sprite->stride) * sprite->rect_src.height;
 
-    sprite->updated_tex_coords = 1;    
+    sprite->updated_tex_coords = 1;      
 }
 void delo2d_camera_move(float *ortho_proj, float tx, float ty, float screen_width, float screen_height)
 {

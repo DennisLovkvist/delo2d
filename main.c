@@ -11,8 +11,8 @@
 #define GLEW_STATIC 1
 #define SHADERS_COUNT 2
 #define TEXTURES_COUNT 2
-#define SPRITES_COUNT 49
-#define SPRITEBATCH_CAPACITY 49
+#define SPRITES_COUNT 56
+#define SPRITEBATCH_CAPACITY 56
 #define WINDOW_TITLE "OpenGl Test"
 
 
@@ -88,7 +88,7 @@ int game_setup(Graphics *graphics)
     delo2d_color_set_f(&color_white,1,1,1,1);
     
     delo2d_define_sprite(&graphics->sprites[0], 906,138,610*SD,562*SD,2098*SS,910*SS,610*SS,562*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,color_white);
-    delo2d_define_sprite(&graphics->sprites[1], 136,532,2872*SD,918*SD,0*SS,3082*SS,2872*SS,918*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[2]);//Ground
+    delo2d_define_sprite(&graphics->sprites[1], 4,540,3554*SD,918*SD,0*SS,3082*SS,3554*SS,918*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[2]);//Ground
     delo2d_define_sprite(&graphics->sprites[2], 470,242,406*SD,86*SD,1624*SS,2130*SS,406*SS,86*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Cloud
     delo2d_define_sprite(&graphics->sprites[3], 754,212,238*SD,146*SD,1386*SS,2130*SS,238*SS,146*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Cloud
     delo2d_define_sprite(&graphics->sprites[4], 1012,202,344*SD,164*SD,1042*SS,2130*SS,344*SS,164*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Cloud
@@ -112,35 +112,47 @@ int game_setup(Graphics *graphics)
     delo2d_define_sprite(&graphics->sprites[21], 1476,36,372*SD,1092*SD,2872*SS,1990*SS,372*SS,1092*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Tree
     delo2d_define_sprite(&graphics->sprites[22], 1552,36,438*SD,1092*SD,3244*SS,1990*SS,438*SS,1092*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Tree
 
-    delo2d_define_sprite(&graphics->sprites[23], 292,544,652*SD,134*SD,356*SS,776*SS,652*SS,134*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Grass
-    delo2d_define_sprite(&graphics->sprites[24], 1000,512,1102*SD,134*SD,1008*SS,776*SS,1102*SS,134*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Grass
-    delo2d_define_sprite(&graphics->sprites[25], 886,312,610*SD,604*SD,2098*SS,1472*SS,610*SS,604*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Tree leafless
-    delo2d_define_sprite(&graphics->sprites[26], 480,380,342*SD,460*SD,1750*SS,1670*SS,342*SS,460*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[27], 484,482,158*SD,318*SD,642*SS,2130*SS,158*SS,318*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[28], 520,588,864*SD,204*SD,0*SS,538*SS,864*SS,204*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[3]);//Ground
-    delo2d_define_sprite(&graphics->sprites[29], 546,404,864*SD,538*SD,0*SS,0*SS,864*SS,538*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//VAN
-    delo2d_define_sprite(&graphics->sprites[30], 560,494,252*SD,402*SD,390*SS,2130*SS,252*SS,402*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[31], 972,526,242*SD,318*SD,800*SS,2130*SS,242*SS,318*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[32], 342,564,328*SD,296*SD,1000*SS,2294*SS,328*SS,296*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[33], 480,722,116*SD,120*SD,0*SS,742*SS,116*SS,120*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Rock
-    delo2d_define_sprite(&graphics->sprites[34], 616,716,118*SD,102*SD,116*SS,742*SS,118*SS,102*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Rock
-    delo2d_define_sprite(&graphics->sprites[35], 502,626,90*SD,48*SD,0*SS,862*SS,90*SS,48*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[5]);//Rock
-    delo2d_define_sprite(&graphics->sprites[36], 618,672,88*SD,66*SD,116*SS,844*SS,88*SS,66*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[5]);//Rock
-    delo2d_define_sprite(&graphics->sprites[37], 380,688,152*SD,66*SD,204*SS,844*SS,152*SS,66*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[5]);//Rock
-    delo2d_define_sprite(&graphics->sprites[38], 912,570,320*SD,236*SD,864*SS,418*SS,320*SS,236*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dog
-    delo2d_define_sprite(&graphics->sprites[39], 898,652,386*SD,78*SD,864*SS,654*SS,386*SS,78*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[2]);//Dog grass
-    delo2d_define_sprite(&graphics->sprites[40], 748,542,404*SD,418*SD,866*SS,0*SS,404*SS,418*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[41], 750,486,178*SD,194*SD,1742*SS,0*SS,178*SS,194*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[42], 764,542,470*SD,296*SD,1270,0*SS,470*SS,296*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[43], 826,596,86*SD,68*SD,1270*SS,298*SS,86*SS,68*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[44], 752,606,178*SD,102*SD,1742*SS,194*SS,178*SS,102*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[45], 910,562,76*SD,92*SD,1356*SS,298*SS,76*SS,92*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[46], 792,682,250*SD,236*SD,1182*SS,418*SS,250*SS,236*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Bonfire back
-    delo2d_define_sprite(&graphics->sprites[47], 758,388,400*SD,770*SD,0*SS,0*SS,400*SS,770*SS,0,graphics->textures[0].width,graphics->textures[0].height,16,56,0.7,palette_orange[7]);//Fire 
-    delo2d_define_sprite(&graphics->sprites[48], 738,726,486*SD,208*SD,1434*SS,298*SS,486*SS,208*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Bonfire front 
+    delo2d_define_sprite(&graphics->sprites[23], 128,68,372*SD,1092*SD,2872*SS,1990*SS,372*SS,1092*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites[24], 24,70,438*SD,1092*SD,3244*SS,1990*SS,438*SS,1092*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Tree
 
-    graphics->sprites[29].flip_horizontally = 1;
-    graphics->sprites[29].flip_vertically = 1;
+    delo2d_define_sprite(&graphics->sprites[25], 292,544,652*SD,134*SD,356*SS,776*SS,652*SS,134*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Grass
+    delo2d_define_sprite(&graphics->sprites[26], 1000,512,1102*SD,134*SD,1008*SS,776*SS,1102*SS,134*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[0]);//Grass
+    delo2d_define_sprite(&graphics->sprites[27], 886,312,610*SD,604*SD,2098*SS,1472*SS,610*SS,604*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[3]);//Tree leafless
+    delo2d_define_sprite(&graphics->sprites[28], 480,380,342*SD,460*SD,1750*SS,1670*SS,342*SS,460*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tree leafless
+    delo2d_define_sprite(&graphics->sprites[29], 512,588,864*SD,204*SD,0*SS,538*SS,864*SS,204*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[3]);//Ground    
+    delo2d_define_sprite(&graphics->sprites[30], 484,482,158*SD,318*SD,642*SS,2130*SS,158*SS,318*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites[31], 546,404,864*SD,538*SD,0*SS,0*SS,864*SS,538*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//VAN
+
+    delo2d_define_sprite(&graphics->sprites[32], 598,732,118*SD,78*SD,1248*SS,654*SS,118*SS,78*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[1]);//Rock shadow
+    delo2d_define_sprite(&graphics->sprites[33], 596,686,118*SD,44*SD,1248*SS,732*SS,118*SS,44*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[1]);//Rock shadow
+    delo2d_define_sprite(&graphics->sprites[34], 450,740,160*SD,84*SD,1366*SS,692*SS,160*SS,84*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[1]);//Rock shadow
+    delo2d_define_sprite(&graphics->sprites[35], 362,678,160*SD,84*SD,1526*SS,692*SS,160*SS,84*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[1]);//Rock shadow
+
+    delo2d_define_sprite(&graphics->sprites[36], 560,494,252*SD,402*SD,390*SS,2130*SS,252*SS,402*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites[37], 972,526,242*SD,318*SD,800*SS,2130*SS,242*SS,318*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites[38], 342,564,328*SD,296*SD,1000*SS,2294*SS,328*SS,296*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites[39], 480,722,116*SD,120*SD,0*SS,742*SS,116*SS,120*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Rock
+    delo2d_define_sprite(&graphics->sprites[40], 616,716,118*SD,102*SD,116*SS,742*SS,118*SS,102*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Rock
+    delo2d_define_sprite(&graphics->sprites[41], 502,626,90*SD,48*SD,0*SS,862*SS,90*SS,48*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[5]);//Rock
+    delo2d_define_sprite(&graphics->sprites[42], 618,672,88*SD,66*SD,116*SS,844*SS,88*SS,66*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[5]);//Rock
+    delo2d_define_sprite(&graphics->sprites[43], 380,688,152*SD,66*SD,204*SS,844*SS,152*SS,66*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[5]);//Rock
+    delo2d_define_sprite(&graphics->sprites[44], 912,570,320*SD,236*SD,864*SS,418*SS,320*SS,236*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dog
+    delo2d_define_sprite(&graphics->sprites[45], 898,652,386*SD,78*SD,864*SS,654*SS,386*SS,78*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[2]);//Dog grass
+    delo2d_define_sprite(&graphics->sprites[46], 748,542,404*SD,418*SD,866*SS,0*SS,404*SS,418*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites[47], 750,486,178*SD,194*SD,1742*SS,0*SS,178*SS,194*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites[48], 764,542,470*SD,296*SD,1270,0*SS,470*SS,296*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites[49], 826,596,86*SD,68*SD,1270*SS,298*SS,86*SS,68*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites[50], 752,606,178*SD,102*SD,1742*SS,194*SS,178*SS,102*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites[51], 910,562,76*SD,92*SD,1356*SS,298*SS,76*SS,92*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[7]);//Dave
+
+    delo2d_define_sprite(&graphics->sprites[52], 738,772,486*SD,128*SD,1434*SS,504*SS,486*SS,128*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[1]);//Bonfire shadow
+
+    delo2d_define_sprite(&graphics->sprites[53], 792,682,250*SD,236*SD,1182*SS,418*SS,250*SS,236*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Bonfire back
+    delo2d_define_sprite(&graphics->sprites[54], 758,388,400*SD,770*SD,0*SS,0*SS,400*SS,770*SS,0,graphics->textures[0].width,graphics->textures[0].height,16,56,0.5,palette_orange[7]);//Fire 
+    delo2d_define_sprite(&graphics->sprites[55], 738,726,486*SD,208*SD,1434*SS,298*SS,486*SS,208*SS,1,graphics->textures[1].width,graphics->textures[1].height,1,1,0,palette_orange[6]);//Bonfire front 
+
+    graphics->sprites[23].flip_horizontally = 1;
+    graphics->sprites[24].flip_horizontally = 1;
  
  
 
@@ -159,7 +171,7 @@ int game_setup(Graphics *graphics)
     return 0;
 }
 
-    int n = 22;
+    int n = 32;
 void game_render(Graphics *graphics)
 {   
     glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target.fbo);
@@ -176,9 +188,12 @@ void game_update_logic(float dt,VertexArray *vertex_array,Sprite *sprites)
 {
     //delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
     //delo2d_sprite_translate(&sprites[0],1,0,vertex_array);
-    delo2d_sprite_animate(&sprites[47],dt,vertex_array);
+    
+    
+    delo2d_sprite_set_orientation(&sprites[1],0.5f,vertex_array);
 
-    //delo2d_sprite_animate(&sprites[26],dt,vertex_array);
+    delo2d_sprite_animate(&sprites[54],dt,vertex_array);
+
 }
 void unload(Texture *textures,unsigned int *shaders)
 { 
@@ -197,10 +212,10 @@ void game_update_render_state(Graphics *graphics)
 {
     for (int i = 0; i < SPRITES_COUNT; i++)
     {
-        if(graphics->sprites[i].tex_coords_updated)
+        if(graphics->sprites[i].updated_tex_coords)
         {
             delo2d_sprite_batch_update_tex_coords(&graphics->vertex_array,&graphics->sprite_batch,&graphics->sprites[i],i);
-            graphics->sprites[i].tex_coords_updated = 0;
+            graphics->sprites[i].updated_tex_coords = 0;
         }
     }
 }
