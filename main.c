@@ -16,6 +16,9 @@
 #define WINDOW_TITLE "OpenGl Test"
 
 
+#define TREE_COUNT 15
+
+
 typedef struct Graphics Graphics;
 struct Graphics
 {
@@ -30,6 +33,14 @@ struct Graphics
     unsigned int shaders[SHADERS_COUNT];
     float ortho_proj[4][4];
     RenderTarget render_target;
+};
+
+typedef struct Tree Tree;
+struct Tree
+{
+    unsigned int sprite_index;
+    float sway;
+    unsigned int flag;
 };
 
 const unsigned int screen_width = 1920;
@@ -58,7 +69,7 @@ int load(Texture *textures,unsigned int *shaders)
     delo2d_load_texture(&textures[1],"textures/sprite_sheet_scene.png"); 
     return 0;
 }
-int game_setup(Graphics *graphics)
+int game_setup(Graphics *graphics, Tree *trees)
 {
     float SD = 0.5f;
     float SS = 1.0f; 
@@ -153,10 +164,30 @@ int game_setup(Graphics *graphics)
 
     graphics->sprites[23].flip_horizontally = 1;
     graphics->sprites[24].flip_horizontally = 1;
- 
- 
 
+    srand(time(NULL));
 
+    trees[0].sprite_index = 10;
+    trees[1].sprite_index = 11;
+    trees[2].sprite_index = 12;
+    trees[3].sprite_index = 13;
+    trees[4].sprite_index = 14;
+    trees[5].sprite_index = 15;
+    trees[6].sprite_index = 16;
+    trees[7].sprite_index = 17;
+    trees[8].sprite_index = 18;
+    trees[9].sprite_index = 19;
+    trees[10].sprite_index = 20;
+    trees[11].sprite_index = 21;
+    trees[12].sprite_index = 22;
+    trees[13].sprite_index = 23;
+    trees[14].sprite_index = 24;
+
+    for (int i = 0; i < TREE_COUNT; i++)
+    { 
+        trees[i].sway = sin(rand());
+        trees[i].flag = 0;
+    }
 
 
     delo2d_create_sprite_batch(&graphics->sprite_batch,SPRITES_COUNT);
@@ -184,20 +215,32 @@ void game_render(Graphics *graphics)
 
     glfwSwapBuffers(graphics->window);
 }
-
-void game_update_logic(float t,float dt,VertexArray *vertex_array,Sprite *sprites)
+void game_update_logic(float t,float dt,Tree *trees,VertexArray *vertex_array,SpriteBatch *sprite_batch,Sprite *sprites)
 {
-    //delo2d_sprite_rotate_around_point(&sprites[54],cos(dt),sprites[54].position.x,sprites[54].position.y + 300,vertex_array);
 
+
+    for (int i = 0; i < TREE_COUNT; i++)
+    {  
+        trees[i].sway += (trees[i].flag) ? 0.01f:-0.01f;
+
+        if(trees[i].sway < -0.5f)
+        {
+            trees[i].sway = -0.5f;
+            trees[i].flag = 1;
+        }
+        else if (trees[i].sway > 0.5f)
+        {
+            trees[i].sway = 0.5f;
+            trees[i].flag = 0;
+        }
+
+        sprites[trees[i].sprite_index].skew.x = trees[i].sway*5*cos(t);
+        delo2d_sprite_batch_add(sprite_batch,&sprites[trees[i].sprite_index],trees[i].sprite_index);
+
+    }
     
 
-    delo2d_sprite_set_orientation_around_point(&sprites[20],lol,sprites[20].position.x,sprites[20].position.y + 300,vertex_array);
-
-
-    //delo2d_sprite_translate(&sprites[0],1,0,vertex_array);
-    
-    
-    //delo2d_sprite_set_orientation(&sprites[1],0.5f,vertex_array);
+     
 
     delo2d_sprite_animate(&sprites[54],dt,vertex_array);
 
@@ -217,6 +260,9 @@ void unload(Texture *textures,unsigned int *shaders)
 }
 void game_update_render_state(Graphics *graphics)
 {
+
+    delo2d_sprite_batch_to_vertex_array(&graphics->sprite_batch,&graphics->vertex_array); 
+    
     for (int i = 0; i < SPRITES_COUNT; i++)
     {
         if(graphics->sprites[i].updated_tex_coords)
@@ -264,6 +310,8 @@ int main(void)
     KeyboardInput ki;
     KeyboardInput ki_prev;
 
+    Tree trees[TREE_COUNT];
+
     float dt = 0;
     float t = 0;
     //init graphics
@@ -273,7 +321,7 @@ int main(void)
     //load game resources
     load(&graphics.textures,&graphics.shaders);
     //setup game
-    game_setup(&graphics);
+    game_setup(&graphics,&trees);
 
     clock_t initial_time = clock();      
     
@@ -289,7 +337,7 @@ int main(void)
 
         game_update_controls(&ki,&ki_prev,&graphics.ortho_proj,&graphics);   
 
-        game_update_logic(t,dt,&graphics.vertex_array,&graphics.sprites);
+        game_update_logic(t,dt,&trees,&graphics.vertex_array,&graphics.sprite_batch,&graphics.sprites);
 
         game_update_render_state(&graphics);
 

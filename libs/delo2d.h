@@ -100,6 +100,12 @@ struct SpriteBatch
     Color *color;
     unsigned int *flip_horizontally;
     unsigned int *flip_vertically;
+    unsigned int *updated;
+    Vector2f *scale;
+    Vector2f *skew;
+    Vector2f *pivot_point;
+    Vector2f *position;
+    float *orientation;
 
 };
 typedef struct Sprite Sprite;
@@ -113,6 +119,8 @@ struct Sprite
     Color color;
     Vector2f position;
     Vector2f scale;
+    Vector2f skew;
+    Vector2f pivot_point;
 };
 
 
@@ -141,8 +149,10 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
 //region matrices end
 
 //region quads begin
+void delo2d_quad_skew_top(Quad *quad,float skew);
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
-void delo2d_quad_translate(Quad *quad,float x, float y);
+void delo2d_translate_quad(Quad *quad, float delta_x, float delta_y);
+void delo2d_quad_set_position(Quad *quad,int x,int y);
 void delo2d_quad_rotate(Quad *quad, float theta);
 void delo2d_quad_rotate_around_point(Quad *quad, float theta,float point_x, float point_y);
 void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,Color color,int flip_horizontally,int flip_vertically);

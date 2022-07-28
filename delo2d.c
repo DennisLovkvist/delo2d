@@ -417,25 +417,28 @@ void delo2d_set_quad_center_position(VertexArray *vertex_array, int quad_index, 
 void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,Color color,int flip_horizontally,int flip_vertically)
 {
     int n = quad_index * 4;
-    /*
-    delo2d_vertex_set_element(vertex_array,n,rect_des->x,rect_des->y,rect_src->x,rect_src->y,texture_index,color);
-    delo2d_vertex_set_element(vertex_array,n + 1,rect_des->x + rect_des->width,rect_des->y,rect_src->x + rect_src->width,rect_src->y,texture_index,color);
-    delo2d_vertex_set_element(vertex_array,n + 2,rect_des->x + rect_des->width,rect_des->y + rect_des->height,rect_src->x + rect_src->width,rect_src->y + rect_src->height,texture_index,color);
-    delo2d_vertex_set_element(vertex_array,n + 3,rect_des->x,rect_des->y + rect_des->height,rect_src->x,rect_src->y + rect_src->height,texture_index,color);*/
-
 
     delo2d_vertex_set_element(vertex_array,n,rect_des->x,rect_des->y,(rect_src->x + rect_src->width*flip_horizontally),(rect_src->y + rect_src->height*flip_vertically),texture_index,color);
     delo2d_vertex_set_element(vertex_array,n + 1,rect_des->x + rect_des->width,rect_des->y,rect_src->x + rect_src->width * !flip_horizontally,rect_src->y + rect_src->height * flip_vertically,texture_index,color);
     delo2d_vertex_set_element(vertex_array,n + 2,rect_des->x + rect_des->width,rect_des->y + rect_des->height,rect_src->x + rect_src->width * !flip_horizontally,rect_src->y + rect_src->height * !flip_vertically,texture_index,color);    
     delo2d_vertex_set_element(vertex_array,n + 3,rect_des->x,rect_des->y + rect_des->height,rect_src->x + rect_src->width*flip_horizontally ,rect_src->y + rect_src->height * !flip_vertically,texture_index,color);
+
 }
-void delo2d_translate_quad(VertexArray *vertex_array, int quad_index, float delta_x, float delta_y)
+void delo2d_translate_quad(Quad *quad, float delta_x, float delta_y)
 {
-    for (int i = 0; i < 4; i++)
-    {
-        vertex_array->buffer_position[quad_index + (vertex_array->layout_float_count*i)] += delta_x;
-        vertex_array->buffer_position[(quad_index + (vertex_array->layout_float_count*i)) + 1]+= delta_y;
-    }
+    *quad->v0.x += delta_x;
+    *quad->v0.y += delta_y;
+    *quad->v1.x += delta_x;
+    *quad->v1.y += delta_y;
+    *quad->v2.x += delta_x;
+    *quad->v2.y += delta_y;
+    *quad->v3.x += delta_x;
+    *quad->v3.y += delta_y;
+}
+void delo2d_quad_skew_top(Quad *quad,float skew)
+{
+    *quad->v0.x += skew;
+    *quad->v1.x += skew;
 }
 void delo2d_quad_get_center(Quad *quad,Vector2f *center)
 {
@@ -452,7 +455,13 @@ void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
     sprite_batch->quad_index = malloc(sizeof(unsigned int)*capacity);
     sprite_batch->flip_horizontally = malloc(sizeof(unsigned int)*capacity);
     sprite_batch->flip_vertically = malloc(sizeof(unsigned int)*capacity);
+    sprite_batch->updated = malloc(sizeof(unsigned int)*capacity);
     sprite_batch->color = malloc(sizeof(Color)*capacity);
+    sprite_batch->scale = malloc(sizeof(Vector2f)*capacity);
+    sprite_batch->skew = malloc(sizeof(Vector2f)*capacity);
+    sprite_batch->position = malloc(sizeof(Vector2f)*capacity);
+    sprite_batch->pivot_point = malloc(sizeof(Vector2f)*capacity);
+    sprite_batch->orientation = malloc(sizeof(float)*capacity);
 
     for (size_t i = 0; i < capacity; i++)
     {
@@ -465,6 +474,11 @@ void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
         sprite_batch->rect_src_normalized[i].width = sprite_batch->rect_src_normalized[i].height = 1;
         sprite_batch->color[i].r = sprite_batch->color[i].g = sprite_batch->color[i].b = sprite_batch->color[i].a = 0;
         sprite_batch->flip_horizontally[i] = sprite_batch->flip_vertically[i] = 0;
+        sprite_batch->scale[i].x = sprite_batch->scale[i].y = 1;
+        sprite_batch->skew[i].x = sprite_batch->skew[i].y = 0;
+        sprite_batch->pivot_point[i].x = sprite_batch->pivot_point[i].y = 0;
+        sprite_batch->position[i].x = sprite_batch->position[i].y = 0;
+        sprite_batch->updated[i] = 1;
     }
     
 }
@@ -499,13 +513,33 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
     sprite->color.a = color.a;
     sprite->flip_horizontally = sprite->flip_vertically = 0;
     sprite->updated_tex_coords = 0;
+    sprite->orientation = 0;
+    sprite->scale.x = sprite->scale.y = 1;
+    sprite->skew.x = sprite->skew.y = 0;
+    sprite->pivot_point.x = sprite->pivot_point.y = 0;
 }
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *vertex_array)
 {    
     int length = sprite_batch->capacity;
     for(int i = 0; i < length; i++)
     {
-        delo2d_define_quad(vertex_array,i,&(sprite_batch->rect_des)[i],&(sprite_batch->rect_src_normalized)[i],sprite_batch->texture_index[i],sprite_batch->color[i],sprite_batch->flip_horizontally[i],sprite_batch->flip_vertically[i]);
+        if(sprite_batch->updated[i])
+        {
+            delo2d_define_quad(vertex_array,i,&(sprite_batch->rect_des)[i],&(sprite_batch->rect_src_normalized)[i],sprite_batch->texture_index[i],sprite_batch->color[i],sprite_batch->flip_horizontally[i],sprite_batch->flip_vertically[i]);
+            Quad quad;
+            delo2d_get_quad(&quad,vertex_array,i);
+
+
+            delo2d_quad_set_position(&quad,sprite_batch->position[i].x,sprite_batch->position[i].y);  
+
+            delo2d_quad_skew_top(&quad,sprite_batch->skew[i].x);
+
+
+            Vector2f center;
+            delo2d_quad_get_center(&quad,&center);
+            delo2d_quad_rotate_around_point(&quad,sprite_batch->orientation[i], center.x + sprite_batch->pivot_point[i].x, center.y + sprite_batch->pivot_point[i].y);
+              
+        }
     }    
 }
 void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index)
@@ -545,6 +579,21 @@ void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index
     sprite_batch->flip_horizontally[index] = sprite->flip_horizontally;
     sprite_batch->flip_vertically[index] = sprite->flip_vertically;
 
+    sprite_batch->scale[index].x = sprite->scale.x;
+    sprite_batch->scale[index].y = sprite->scale.y;
+
+    sprite_batch->skew[index].x = sprite->skew.x;
+    sprite_batch->skew[index].y = sprite->skew.y;
+
+    sprite_batch->pivot_point[index].x = sprite->pivot_point.x;
+    sprite_batch->pivot_point[index].y = sprite->pivot_point.y;
+
+    sprite_batch->position[index].x = sprite->position.x;
+    sprite_batch->position[index].y = sprite->position.y;
+
+    sprite_batch->orientation[index] = sprite->orientation;
+    sprite_batch->updated[index] = 1;
+
 }
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array)
 {
@@ -581,16 +630,16 @@ void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *verte
 
     //delo2d_quad_get_center(&quad,&sprite->position);    
 }
-void delo2d_set_quad_position(VertexArray *vertex_array, int quad_index,int x,int y,int w, int h,Rectangle *rect_src)
+void delo2d_quad_set_position(Quad *quad,int x,int y)
 {
     Vector2f center;
-    delo2d_set_quad_center_position(vertex_array,quad_index,&center);
+    delo2d_quad_get_center(quad,&center);
 
     Vector2f delta;
     delta.x = center.x - x;
     delta.y = center.y - y;
 
-    delo2d_translate_quad(vertex_array,quad_index,delta.x,delta.y);
+    delo2d_translate_quad(quad,delta.x,delta.y);
 }
 void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset)
 {   
