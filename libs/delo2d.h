@@ -144,6 +144,7 @@ void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float 
 void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index);
 void delo2d_quad_translate(Quad *quad,float x, float y);
 void delo2d_quad_rotate(Quad *quad, float theta);
+void delo2d_quad_rotate_around_point(Quad *quad, float theta,float point_x, float point_y);
 void delo2d_define_quad(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,Color color,int flip_horizontally,int flip_vertically);
 void delo2d_quad_get_center(Quad *quad,Vector2f *center);
 //region quads end
@@ -174,6 +175,8 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array);
+void delo2d_sprite_rotate_around_point(Sprite *sprite,float rotation,float point_x, float point_y, VertexArray *vertex_array);
+void delo2d_sprite_set_orientation_around_point(Sprite *sprite,float orientation,float point_x, float point_y,VertexArray *vertex_array);
 void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray *vertex_array);
 void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array);
 void delo2d_sprite_animate(Sprite *sprite,float dt,VertexArray *vertex_array);

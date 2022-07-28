@@ -215,6 +215,30 @@ void delo2d_quad_translate(Quad *quad,float tx, float ty)
     *(quad->v3.x) += tx;
     *(quad->v3.y) += ty;
 }
+void delo2d_quad_rotate_around_point(Quad *quad, float theta,float point_x, float point_y)
+{
+    float R[3][3];
+    delo2d_rotation_matrix(&R, 0,-(point_x),-(point_y));
+
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+
+    delo2d_rotation_matrix(&R, theta,0,0);
+
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+
+    delo2d_rotation_matrix(&R, 0,(point_x),(point_y));
+
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
+    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+}
 void delo2d_quad_rotate(Quad *quad, float theta)
 {
     Vector2f center;
@@ -529,6 +553,18 @@ void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_arra
     delo2d_quad_rotate(&quad,rotation);
     sprite->orientation += rotation;
 }
+void delo2d_sprite_rotate_around_point(Sprite *sprite,float rotation,float point_x, float point_y,VertexArray *vertex_array)
+{
+    Quad quad;
+    delo2d_get_quad(&quad,vertex_array,sprite->quad_index);
+    delo2d_quad_rotate_around_point(&quad,rotation, point_x, point_y);
+    sprite->orientation += rotation;
+}
+void delo2d_sprite_set_orientation_around_point(Sprite *sprite,float orientation,float point_x, float point_y,VertexArray *vertex_array)
+{
+     float delta = orientation - sprite->orientation;
+    delo2d_sprite_rotate_around_point(sprite,delta,point_x,point_y,vertex_array);
+}
 void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray *vertex_array)
 {
     float delta = orientation - sprite->orientation;
@@ -540,8 +576,8 @@ void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *verte
     delo2d_get_quad(&quad,vertex_array,sprite->quad_index);
     delo2d_quad_translate(&quad,tx,ty);
 
-    sprite->position.x = *quad.v0.x;
-    sprite->position.y = *quad.v0.y;
+    sprite->position.x += tx;
+    sprite->position.y += ty;
 
     //delo2d_quad_get_center(&quad,&sprite->position);    
 }

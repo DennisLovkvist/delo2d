@@ -184,13 +184,20 @@ void game_render(Graphics *graphics)
 
     glfwSwapBuffers(graphics->window);
 }
-void game_update_logic(float dt,VertexArray *vertex_array,Sprite *sprites)
+
+void game_update_logic(float t,float dt,VertexArray *vertex_array,Sprite *sprites)
 {
-    //delo2d_sprite_rotate(&sprites[1],0.01f,vertex_array);
+    //delo2d_sprite_rotate_around_point(&sprites[54],cos(dt),sprites[54].position.x,sprites[54].position.y + 300,vertex_array);
+
+    
+
+    delo2d_sprite_set_orientation_around_point(&sprites[20],lol,sprites[20].position.x,sprites[20].position.y + 300,vertex_array);
+
+
     //delo2d_sprite_translate(&sprites[0],1,0,vertex_array);
     
     
-    delo2d_sprite_set_orientation(&sprites[1],0.5f,vertex_array);
+    //delo2d_sprite_set_orientation(&sprites[1],0.5f,vertex_array);
 
     delo2d_sprite_animate(&sprites[54],dt,vertex_array);
 
@@ -282,7 +289,7 @@ int main(void)
 
         game_update_controls(&ki,&ki_prev,&graphics.ortho_proj,&graphics);   
 
-        game_update_logic(dt,&graphics.vertex_array,&graphics.sprites);
+        game_update_logic(t,dt,&graphics.vertex_array,&graphics.sprites);
 
         game_update_render_state(&graphics);
 
