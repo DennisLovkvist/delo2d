@@ -79,6 +79,16 @@ struct Dog
     unsigned int flag_y;
 };
 
+typedef struct Scene Scene;
+struct Scene
+{
+    Tree trees[COUNT_TREES];
+    Shadow shadows[COUNT_SHADOWS];
+    Cloud clouds[COUNT_CLOUDS];
+    TallGrass tall_grass[COUNT_TALL_GRASS];
+    Dog dog;
+};
+
 const unsigned int screen_width = 1920;
 const unsigned int screen_height = 1080;
 
@@ -107,7 +117,84 @@ int load(Texture *textures,unsigned int *shaders)
     delo2d_load_texture(&textures[1],"textures/sprite_sheet_scene.png"); 
     return 0;
 }
-int game_setup(Graphics *graphics,Dog *dog,TallGrass *tall_grass,Cloud *clouds,Shadow *shadows, Tree *trees)
+void setup_dog(Dog *dog,Sprite *sprites)
+{  
+    dog->sprite_index = 58;
+    dog->min_scale_y = 1;
+    dog->max_scale_y = 1.04;
+    dog->scale_y = 1;
+    dog->flag_y = 0;    
+}
+void setup_tall_grass(TallGrass *tall_grass,Sprite *sprites)
+{
+    for (int i = 0; i < COUNT_TALL_GRASS; i++)
+    { 
+        tall_grass[i].sprite_index = 35+i;
+        tall_grass[i].min_sway = -0.01f;
+        tall_grass[i].max_sway = 0.01f;
+        tall_grass[i].speed = 5;
+        tall_grass[i].sway = sin(rand());
+        tall_grass[i].flag = 0;
+    }
+}
+void setup_clouds(Cloud *clouds,Sprite *sprites)
+{
+    for (int i = 0; i < COUNT_CLOUDS; i++)
+    { 
+        clouds[i].sprite_index = 2+i;
+        clouds[i].min_scale_x = 0.97f;
+        clouds[i].max_scale_x = 1.03f;
+        clouds[i].min_scale_y = 0.97f;
+        clouds[i].max_scale_y = 1.03f;
+        clouds[i].speed = 1;
+        clouds[i].scale_x = sin(rand());
+        clouds[i].scale_y = sin(rand());
+        clouds[i].flag_x = 0;
+        clouds[i].flag_y = 0;
+    }
+}
+void setup_shadows(Shadow *shadows,Sprite *sprites)
+{
+    shadows[0].sprite_index = 31;
+    shadows[1].sprite_index = 32;
+    shadows[2].sprite_index = 33;
+    shadows[3].sprite_index = 34;
+    shadows[4].sprite_index = 66;
+
+    for (int i = 0; i < COUNT_SHADOWS; i++)
+    { 
+        shadows[i].min_scale_x = 0.97f;
+        shadows[i].max_scale_x = 1.03f;
+        shadows[i].min_scale_y = 0.97f;
+        shadows[i].max_scale_y = 1.03f;
+        shadows[i].speed = 1;
+        shadows[i].scale_x = sin(rand());
+        shadows[i].scale_y = sin(rand());
+        shadows[i].flag_x = 0;
+        shadows[i].flag_y = 0;
+    }
+}
+void setup_trees(Tree *trees,Sprite *sprites)
+{
+    for (int i = 0; i < COUNT_TREES; i++)
+    { 
+        trees[i].sprite_index = 8+i;
+        trees[i].min_sway = -0.5f;
+        trees[i].max_sway = 0.5f;
+        trees[i].speed = 5;
+        trees[i].sway = sin(rand());
+        trees[i].flag = 0;
+    }
+
+    trees[0].speed = 3;
+    trees[0].min_sway = -0.5f;
+    trees[0].max_sway = 0.5f;
+
+    trees[1].speed = 4;
+    trees[1].min_sway = -0.5f;
+    trees[1].max_sway = 0.5f;
+}
+int game_setup(Graphics *graphics,Scene *scene)
 {
     Color palette[9];
     delo2d_color_set_i(&palette[0],49,17,38,255);
@@ -219,78 +306,12 @@ int game_setup(Graphics *graphics,Dog *dog,TallGrass *tall_grass,Cloud *clouds,S
 
     graphics->sprites[70].time = graphics->sprites[70].duration/2;
     graphics->sprites[70].color.a = 0.3f;
-
-
-    dog->sprite_index = 58;
-    dog->min_scale_y = 1;
-    dog->max_scale_y = 1.04;
-    dog->scale_y = 1;
-    dog->flag_y = 0;
-
-
     srand(time(NULL));
 
-    for (int i = 0; i < COUNT_TALL_GRASS; i++)
-    { 
-        tall_grass[i].sprite_index = 35+i;
-        tall_grass[i].min_sway = -0.01f;
-        tall_grass[i].max_sway = 0.01f;
-        tall_grass[i].speed = 5;
-        tall_grass[i].sway = sin(rand());
-        tall_grass[i].flag = 0;
-    }
-
-    for (int i = 0; i < COUNT_CLOUDS; i++)
-    { 
-        clouds[i].sprite_index = 2+i;
-        clouds[i].min_scale_x = 0.97f;
-        clouds[i].max_scale_x = 1.03f;
-        clouds[i].min_scale_y = 0.97f;
-        clouds[i].max_scale_y = 1.03f;
-        clouds[i].speed = 1;
-        clouds[i].scale_x = sin(rand());
-        clouds[i].scale_y = sin(rand());
-        clouds[i].flag_x = 0;
-        clouds[i].flag_y = 0;
-    }
-
-
-    shadows[0].sprite_index = 31;
-    shadows[1].sprite_index = 32;
-    shadows[2].sprite_index = 33;
-    shadows[3].sprite_index = 34;
-    shadows[4].sprite_index = 66;
-
-    for (int i = 0; i < COUNT_SHADOWS; i++)
-    { 
-        shadows[i].min_scale_x = 0.97f;
-        shadows[i].max_scale_x = 1.03f;
-        shadows[i].min_scale_y = 0.97f;
-        shadows[i].max_scale_y = 1.03f;
-        shadows[i].speed = 1;
-        shadows[i].scale_x = sin(rand());
-        shadows[i].scale_y = sin(rand());
-        shadows[i].flag_x = 0;
-        shadows[i].flag_y = 0;
-    }
-
-    for (int i = 0; i < COUNT_TREES; i++)
-    { 
-        trees[i].sprite_index = 8+i;
-        trees[i].min_sway = -0.5f;
-        trees[i].max_sway = 0.5f;
-        trees[i].speed = 5;
-        trees[i].sway = sin(rand());
-        trees[i].flag = 0;
-    }
-
-    trees[0].speed = 3;
-    trees[0].min_sway = -0.5f;
-    trees[0].max_sway = 0.5f;
-
-    trees[1].speed = 4;
-    trees[1].min_sway = -0.5f;
-    trees[1].max_sway = 0.5f;
+    setup_dog(&scene->dog,&graphics->sprites);
+    setup_tall_grass(&scene->tall_grass,&graphics->sprites);
+    setup_shadows(&scene->shadows,&graphics->sprites);
+    setup_trees(&scene->trees,&graphics->sprites);
 
     delo2d_create_sprite_batch(&graphics->sprite_batch,SPRITES_COUNT);
 
@@ -316,7 +337,7 @@ void game_render(Graphics *graphics)
 
     glfwSwapBuffers(graphics->window);
 }
-void UpdateDog(Dog *dog,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_dog(Dog *dog,SpriteBatch *sprite_batch,Sprite *sprites)
 {
     dog->scale_y += (dog->flag_y) ? 0.0002f:-0.0005f;
     if(dog->scale_y < dog->min_scale_y)
@@ -334,7 +355,7 @@ void UpdateDog(Dog *dog,SpriteBatch *sprite_batch,Sprite *sprites)
     sprites[index].scale.y = dog->scale_y;
     delo2d_sprite_batch_add(sprite_batch,&sprites[index],index);
 }
-void UpdateTallGrass(TallGrass *tall_grass,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_tall_grass(TallGrass *tall_grass,SpriteBatch *sprite_batch,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_TALL_GRASS; i++)  
     {          
@@ -358,7 +379,7 @@ void UpdateTallGrass(TallGrass *tall_grass,SpriteBatch *sprite_batch,Sprite *spr
         delo2d_sprite_batch_add(sprite_batch,&sprites[index],index);
     }
 }
-void UpdateClouds(Cloud *clouds,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_clouds(Cloud *clouds,SpriteBatch *sprite_batch,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_CLOUDS; i++)
     {          
@@ -401,7 +422,7 @@ void UpdateClouds(Cloud *clouds,SpriteBatch *sprite_batch,Sprite *sprites)
 
     } 
 }
-void UpdateShadows(Shadow *shadows,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_shadows(Shadow *shadows,SpriteBatch *sprite_batch,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_SHADOWS; i++)
     {          
@@ -439,7 +460,7 @@ void UpdateShadows(Shadow *shadows,SpriteBatch *sprite_batch,Sprite *sprites)
 
     }
 }
-void UpdateTrees(Tree *trees,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_trees(Tree *trees,SpriteBatch *sprite_batch,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_TREES; i++)
     {          
@@ -462,12 +483,12 @@ void UpdateTrees(Tree *trees,SpriteBatch *sprite_batch,Sprite *sprites)
 
     }
 }
-void game_update_logic(float t,float dt,Dog *dog,TallGrass *tall_grass,Cloud *clouds,Shadow *shadows, Tree *trees,VertexArray *vertex_array,SpriteBatch *sprite_batch,Sprite *sprites)
+void game_update_logic(float t,float dt,Scene *scene,VertexArray *vertex_array,SpriteBatch *sprite_batch,Sprite *sprites)
 {
-    UpdateDog(dog,sprite_batch,sprites);
-    UpdateTallGrass(tall_grass,sprite_batch,sprites);
-    UpdateShadows(shadows,sprite_batch,sprites);
-    UpdateTrees(trees,sprite_batch,sprites);     
+    update_dog(&scene->dog,sprite_batch,sprites);
+    update_tall_grass(&scene->tall_grass,sprite_batch,sprites);
+    update_shadows(&scene->shadows,sprite_batch,sprites);
+    update_trees(&scene->trees,sprite_batch,sprites);     
 
     delo2d_sprite_animate(&sprites[68],dt,vertex_array);
     delo2d_sprite_animate(&sprites[70],dt,vertex_array);
@@ -537,11 +558,7 @@ int main(void)
     KeyboardInput ki;
     KeyboardInput ki_prev;
 
-    Tree trees[COUNT_TREES];
-    Shadow shadows[COUNT_SHADOWS];
-    Cloud clouds[COUNT_CLOUDS];
-    TallGrass tall_grass[COUNT_TALL_GRASS];
-    Dog dog;
+    Scene scene;
 
     float dt = 0;
     float t = 0;
@@ -552,7 +569,7 @@ int main(void)
     //load game resources
     load(&graphics.textures,&graphics.shaders);
     //setup game
-    game_setup(&graphics,&dog,&tall_grass,&clouds,&shadows,&trees);
+    game_setup(&graphics,&scene);
 
     clock_t initial_time = clock();      
     
@@ -568,7 +585,7 @@ int main(void)
 
         game_update_controls(&ki,&ki_prev,&graphics.ortho_proj,&graphics);   
 
-        game_update_logic(t,dt,&dog,&tall_grass,&clouds,&shadows,&trees,&graphics.vertex_array,&graphics.sprite_batch,&graphics.sprites);
+        game_update_logic(t,dt,&scene,&graphics.vertex_array,&graphics.sprite_batch,&graphics.sprites);
 
         game_update_render_state(&graphics);
 
