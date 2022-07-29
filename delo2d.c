@@ -289,21 +289,19 @@ void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
 }
 
 //region quads end
-
 //vertex array code begin
 void delo2d_vertex_array_draw(unsigned int frame_buffer, VertexArray *vertex_array,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj)
 {
-    
 
     glUseProgram(shader_id); 
     glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
     int samplers[2] = {0,1};
     glUniform1iv(glGetUniformLocation(shader_id,"u_textures"),2,samplers);  
 
-    glBindVertexArray(vertex_array->vao); 
+    glBindVertexArray(vertex_array->vao);
+     
     glBindBuffer(GL_ARRAY_BUFFER,vertex_array->vbo);//Bind to update with delo2d_vertex_array_to_graphics_device
     delo2d_vertex_array_to_graphics_device(vertex_array,0);
-
     for (size_t i = 0; i < texture_count; i++)
     {        
         delo2d_bind_texture(textures[i].renderer_id,i); 
@@ -315,6 +313,7 @@ void delo2d_vertex_array_draw(unsigned int frame_buffer, VertexArray *vertex_arr
     glDrawElements(GL_TRIANGLES,draw_index_count,GL_UNSIGNED_INT,NULL);
 
     delo2d_unbind_texture();
+
 }
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,Color color)
 {
@@ -440,13 +439,40 @@ void delo2d_quad_skew_top(Quad *quad,float skew)
     *quad->v0.x += skew;
     *quad->v1.x += skew;
 }
+void delo2d_quad_scale(Quad *quad,float scale_x,float scale_y)
+{
+    float dx = *quad->v0.x - *quad->v1.x;
+    float diff = (dx-(dx*scale_x))/2;
+    *quad->v0.x -= diff;
+    *quad->v1.x += diff;
+    *quad->v3.x -= diff;
+    *quad->v2.x += diff;
+
+    float dy = *quad->v0.y - *quad->v3.y;
+    diff = (dy-(dy*scale_y))/2;
+    *quad->v0.y -= diff;
+    *quad->v3.y += diff;
+    *quad->v1.y -= diff;
+    *quad->v2.y += diff;
+
+}
 void delo2d_quad_get_center(Quad *quad,Vector2f *center)
 {
     center->x = (*quad->v0.x + *quad->v1.x + *quad->v2.x + *quad->v3.x)*0.25f;
     center->y = (*quad->v0.y + *quad->v1.y + *quad->v2.y + *quad->v3.y)*0.25f;
 }
+
+void delo2d_sprite_batch_draw(unsigned int frame_buffer, SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj)
+{
+
+    delo2d_sprite_batch_to_vertex_array(sprite_batch,&sprite_batch->vertex_array); 
+
+    delo2d_vertex_array_draw(frame_buffer,&sprite_batch->vertex_array,shader_id,textures,texture_count,ortho_proj);
+}
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
 {
+    delo2d_vertex_array_create(&sprite_batch->vertex_array,DELO_QUAD_LIST,capacity);
+
     sprite_batch->capacity = capacity;
     sprite_batch->count = 0;
     sprite_batch->rect_des = malloc(sizeof(Rectangle_f)*capacity);
@@ -529,16 +555,19 @@ void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *
             Quad quad;
             delo2d_get_quad(&quad,vertex_array,i);
 
-
-            delo2d_quad_set_position(&quad,sprite_batch->position[i].x,sprite_batch->position[i].y);  
+            delo2d_quad_set_position(&quad,sprite_batch->position[i].x,sprite_batch->position[i].y);
+            
 
             delo2d_quad_skew_top(&quad,sprite_batch->skew[i].x);
 
+
+            delo2d_quad_scale(&quad,sprite_batch->scale[i].x,sprite_batch->scale[i].y);
 
             Vector2f center;
             delo2d_quad_get_center(&quad,&center);
             delo2d_quad_rotate_around_point(&quad,sprite_batch->orientation[i], center.x + sprite_batch->pivot_point[i].x, center.y + sprite_batch->pivot_point[i].y);
               
+            
         }
     }    
 }
@@ -636,8 +665,8 @@ void delo2d_quad_set_position(Quad *quad,int x,int y)
     delo2d_quad_get_center(quad,&center);
 
     Vector2f delta;
-    delta.x = center.x - x;
-    delta.y = center.y - y;
+    delta.x = x-center.x;
+    delta.y = y-center.y;
 
     delo2d_translate_quad(quad,delta.x,delta.y);
 }

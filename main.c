@@ -24,12 +24,8 @@ typedef struct Graphics Graphics;
 struct Graphics
 {
     GLFWwindow *window;
-    VertexArray vertex_array;
-    VertexArray vertex_array2;
     SpriteBatch sprite_batch;
-    SpriteBatch sprite_batch2;
     Sprite sprites[SPRITES_COUNT];  
-    Sprite sprites2[1];  
     Texture textures[TEXTURES_COUNT]; 
     unsigned int shaders[SHADERS_COUNT];
     float ortho_proj[4][4];
@@ -100,8 +96,6 @@ int init(Graphics *graphics)
     
     delo2d_matrix_orthographic_projection(graphics->ortho_proj,0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);    
     
-    delo2d_vertex_array_create(&graphics->vertex_array,DELO_QUAD_LIST,SPRITES_COUNT);
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
@@ -319,7 +313,7 @@ int game_setup(Graphics *graphics,Scene *scene)
     {        
         delo2d_sprite_batch_add(&graphics->sprite_batch,&graphics->sprites[i],i);
     }   
-    delo2d_sprite_batch_to_vertex_array(&graphics->sprite_batch,&graphics->vertex_array); 
+    
 
     return 0;
 }
@@ -331,8 +325,8 @@ void game_render(Graphics *graphics)
     glClearColor(0.94,0.80,0.2,1);
     glClear(GL_COLOR_BUFFER_BIT);  
 
-    delo2d_vertex_array_draw(graphics->render_target.fbo,&graphics->vertex_array,graphics->shaders[0],&graphics->textures,2,&graphics->ortho_proj);
-
+    delo2d_sprite_batch_draw(graphics->render_target.fbo,&graphics->sprite_batch,&graphics->textures,2,graphics->shaders[0],&graphics->ortho_proj);
+    
     delo2d_render_target_draw(0,&graphics->render_target,graphics->shaders[1]);
 
     glfwSwapBuffers(graphics->window);
@@ -483,15 +477,15 @@ void update_trees(Tree *trees,SpriteBatch *sprite_batch,Sprite *sprites)
 
     }
 }
-void game_update_logic(float t,float dt,Scene *scene,VertexArray *vertex_array,SpriteBatch *sprite_batch,Sprite *sprites)
+void game_update_logic(float t,float dt,Scene *scene,SpriteBatch *sprite_batch,Sprite *sprites)
 {
     update_dog(&scene->dog,sprite_batch,sprites);
     update_tall_grass(&scene->tall_grass,sprite_batch,sprites);
     update_shadows(&scene->shadows,sprite_batch,sprites);
     update_trees(&scene->trees,sprite_batch,sprites);     
 
-    delo2d_sprite_animate(&sprites[68],dt,vertex_array);
-    delo2d_sprite_animate(&sprites[70],dt,vertex_array);
+    delo2d_sprite_animate(&sprites[68],dt,&sprite_batch->vertex_array);
+    delo2d_sprite_animate(&sprites[70],dt,&sprite_batch->vertex_array);
 }
 void unload(Texture *textures,unsigned int *shaders)
 { 
@@ -508,13 +502,12 @@ void unload(Texture *textures,unsigned int *shaders)
 }
 void game_update_render_state(Graphics *graphics)
 {
-    delo2d_sprite_batch_to_vertex_array(&graphics->sprite_batch,&graphics->vertex_array); 
     
     for (int i = 0; i < SPRITES_COUNT; i++)
     {
         if(graphics->sprites[i].updated_tex_coords)
         {
-            delo2d_sprite_batch_update_tex_coords(&graphics->vertex_array,&graphics->sprite_batch,&graphics->sprites[i],i);
+            delo2d_sprite_batch_update_tex_coords(&graphics->sprite_batch.vertex_array,&graphics->sprite_batch,&graphics->sprites[i],i);
             graphics->sprites[i].updated_tex_coords = 0;
         }
     }
@@ -545,10 +538,10 @@ void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *ortho
         delo2d_sprite_batch_add(&graphics->sprite_batch,&graphics->sprites[n],n);
     }
     Quad quad;
-    delo2d_get_quad(&quad,&graphics->vertex_array,n);
+    delo2d_get_quad(&quad,&graphics->sprite_batch.vertex_array,n);
     Vector2f c;
     delo2d_quad_get_center(&quad,&c);
-    printf("%.0f,%.0f\n",*quad.v0.x,*quad.v0.y);
+    //printf("%.0f,%.0f\n",*quad.v0.x,*quad.v0.y);
 } 
 
 int main(void)
@@ -585,7 +578,7 @@ int main(void)
 
         game_update_controls(&ki,&ki_prev,&graphics.ortho_proj,&graphics);   
 
-        game_update_logic(t,dt,&scene,&graphics.vertex_array,&graphics.sprite_batch,&graphics.sprites);
+        game_update_logic(t,dt,&scene,&graphics.sprite_batch,&graphics.sprites);
 
         game_update_render_state(&graphics);
 

@@ -91,6 +91,8 @@ struct Color
 typedef struct SpriteBatch SpriteBatch;
 struct SpriteBatch
 {
+    unsigned int shader_id;
+    VertexArray vertex_array;
     unsigned int capacity;
     unsigned int count;
     Rectangle_f *rect_des;
@@ -180,6 +182,7 @@ unsigned int delo2d_shader_from_file(char *path_shader);
 //region shader code end
 
 //region sprites code begin
+void delo2d_sprite_batch_draw(unsigned int frame_buffer, SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj);
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
 void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
