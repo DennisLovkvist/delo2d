@@ -88,7 +88,7 @@ void delo2d_render_target_create(RenderTarget *rt,float screen_width,float scree
 	// Create Framebuffer Texture
 	glGenTextures(1, &rt->framebufferTexture);
 	glBindTexture(GL_TEXTURE_2D, rt->framebufferTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width,  screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screen_width,  screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
@@ -107,12 +107,8 @@ void delo2d_render_target_create(RenderTarget *rt,float screen_width,float scree
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
     
 }
-void delo2d_render_target_draw(int frame_buffer, RenderTarget *render_target, unsigned int shader_id)
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
-    glClearColor(0,0,0,1);
-    glClear(GL_COLOR_BUFFER_BIT); 
-
+void delo2d_render_target_draw(RenderTarget *render_target, unsigned int shader_id)
+{   
     glBindVertexArray(render_target->vao); 
     delo2d_bind_texture(render_target->framebufferTexture,0); 
     glUseProgram(shader_id); 
@@ -290,13 +286,13 @@ void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
 
 //region quads end
 //vertex array code begin
-void delo2d_vertex_array_draw(unsigned int frame_buffer, VertexArray *vertex_array,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj)
+void delo2d_vertex_array_draw(VertexArray *vertex_array,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj)
 {
 
     glUseProgram(shader_id); 
     glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
-    int samplers[2] = {0,1};
-    glUniform1iv(glGetUniformLocation(shader_id,"u_textures"),2,samplers);  
+    int samplers[3] = {0,1,2};
+    glUniform1iv(glGetUniformLocation(shader_id,"u_textures"),3,samplers);  
 
     glBindVertexArray(vertex_array->vao);
      
@@ -462,12 +458,10 @@ void delo2d_quad_get_center(Quad *quad,Vector2f *center)
     center->y = (*quad->v0.y + *quad->v1.y + *quad->v2.y + *quad->v3.y)*0.25f;
 }
 
-void delo2d_sprite_batch_draw(unsigned int frame_buffer, SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj)
+void delo2d_sprite_batch_draw(SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj)
 {
-
     delo2d_sprite_batch_to_vertex_array(sprite_batch,&sprite_batch->vertex_array); 
-
-    delo2d_vertex_array_draw(frame_buffer,&sprite_batch->vertex_array,shader_id,textures,texture_count,ortho_proj);
+    delo2d_vertex_array_draw(&sprite_batch->vertex_array,shader_id,textures,texture_count,ortho_proj);
 }
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
 {
@@ -557,7 +551,7 @@ void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *
 
             delo2d_quad_set_position(&quad,sprite_batch->position[i].x,sprite_batch->position[i].y);
             
-
+sprite_batch->updated[i] = 0;
             delo2d_quad_skew_top(&quad,sprite_batch->skew[i].x);
 
 

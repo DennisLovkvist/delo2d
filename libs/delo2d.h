@@ -108,6 +108,7 @@ struct SpriteBatch
     Vector2f *pivot_point;
     Vector2f *position;
     float *orientation;
+    Color clear_color;
 
 };
 typedef struct Sprite Sprite;
@@ -134,7 +135,7 @@ void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int heig
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 int delo2d_render_initialize();
 void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height);
-void delo2d_render_target_draw(int frame_buffer, RenderTarget *render_target, unsigned int shader_id);
+void delo2d_render_target_draw(RenderTarget *render_target, unsigned int shader_id);
 //region rendering end
 
 //region texture begin
@@ -164,7 +165,7 @@ void delo2d_quad_get_center(Quad *quad,Vector2f *center);
 //region vertex array code begin
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,Color color);
 void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot);
-void delo2d_vertex_array_draw(unsigned int frame_buffer, VertexArray *vertex_array,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj);
+void delo2d_vertex_array_draw(VertexArray *vertex_array,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
 void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
@@ -182,7 +183,7 @@ unsigned int delo2d_shader_from_file(char *path_shader);
 //region shader code end
 
 //region sprites code begin
-void delo2d_sprite_batch_draw(unsigned int frame_buffer, SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj);
+void delo2d_sprite_batch_draw(SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj);
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
 void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,int index);
