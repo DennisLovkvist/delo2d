@@ -11,8 +11,8 @@
 #define GLEW_STATIC 1
 #define SHADERS_COUNT 6
 #define TEXTURES_COUNT 3
-#define SPRITES_COUNT 71
-#define SPRITEBATCH_CAPACITY 71
+#define SPRITES_COUNT 73
+#define SPRITEBATCH_CAPACITY 200
 #define WINDOW_TITLE "OpenGl Test"
 #define COUNT_TREES 17
 #define COUNT_SHADOWS 5
@@ -20,47 +20,39 @@
 #define COUNT_TALL_GRASS 18
 #define COUNT_PARTICLES 40
 
-
 typedef struct Graphics Graphics;
 struct Graphics
 {
     GLFWwindow *window;
-    SpriteBatch sb_scene_composition;
+    SpriteBatch sb;
 
-    SpriteBatch sb_above_water;
-    SpriteBatch sb_water_reflection;
-
-    SpriteBatch sb_distortion;
-    SpriteBatch sb_final;
-
-    SpriteBatch sb_fire_distortion;
-    Sprite sprites_fire_distortion[3];
-
-    SpriteBatch sb_particles;
     Sprite sprite_particle;
-
-    SpriteBatch sb_sky;
     Sprite sprite_sky;
+    Sprite sprites_scene_above_water[SPRITES_COUNT];  
 
-    SpriteBatch sprite_batch_water_reflection;
-    Sprite sprites[SPRITES_COUNT];  
-    Sprite sprites_water_reflection[2];
-    Sprite sprites_distortion[1];  
-    Sprite sprites_final[1];  
+    //sprites used to define a distortion map which warps the scene depending on color (black = no distortion, white = full distortion)
+    Sprite sprite_distortion_map_mask_land;//draws a black area on the distortion map, excluding most of the scenery above water from any distortions
+    Sprite sprite_distortion_map_mask_shoreline;//excludes the remaining area above water from the distortion map, by drawing a black silouette of the shoreline on the distortion map
+    Sprite sprite_distortion_map_fire;//draws a blurred version of the fire animation in white on the distortion map   
+    Sprite sprite_distortion_map_water;//Sprite used to generate water like patern with the voronoi shader (same size as screen) 
 
-Sprite sprites_extra_trees[2];  
-SpriteBatch sb_extra_trees;
+    Sprite sprite_rt_scene_above_water;//draws main scenery components
+    Sprite sprite_rt_scene_water_reflection;//draws a flipped version of the drawn scene
+    Sprite sprite_rt_scene_land_and_water;//combines the original scene and the reflection
 
-    Texture textures_sprite_sheets[TEXTURES_COUNT]; 
-    Texture textures_render_targets[4]; 
+    //render targets for different stages of the rendering
+    RenderTarget render_target_scene_above_water;
+    RenderTarget render_target_disortion_map;
+    RenderTarget render_target_scene_with_water_reflection;
+    RenderTarget render_target_scene_with_distortions;
+    
+    Texture render_target_textures[4];//textures holding the texture id of all render targets
+    Texture sprite_sheets[TEXTURES_COUNT];//textures from files
+
     unsigned int shaders[SHADERS_COUNT];
     float ortho_proj[4][4];
-    RenderTarget render_target_main_scene;
-    RenderTarget render_target_water_reflection;
-    RenderTarget render_target_scene_complete;
-    RenderTarget render_target_final;
+    
 };
-
 
 typedef struct Tree Tree;
 struct Tree
@@ -108,7 +100,7 @@ struct Dog
 typedef struct Particle Particle;
 struct Particle
 {
-    float x,y,x_prev,y_prev,vx,vy,lifetime;
+    float x,y,x_prev,y_prev,vx,vy,lifetime,speed;
 };
 
 typedef struct Scene Scene;
@@ -134,10 +126,8 @@ int init(Graphics *graphics)
     delo2d_matrix_orthographic_projection(graphics->ortho_proj,0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);    
     
     glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
-
     
     return 0;
 }
@@ -224,6 +214,7 @@ void setup_particles(Particle *particles)
         particles[i].vx = (float)(((rand() % (8 + 1 - 0)) + 0)-4)/10.0;
         particles[i].vy = -(float)((rand() % (10 + 1 - 0)) + 0)/10.0;
         particles[i].lifetime = (rand() % (1800 + 1 - 0)) + 0;
+        particles[i].speed = 0;
 
     }
 }
@@ -249,6 +240,9 @@ void setup_trees(Tree *trees,Sprite *sprites)
 }
 int game_setup(Graphics *graphics,Scene *scene)
 {
+    srand(time(NULL));
+    delo2d_create_sprite_batch(&graphics->sb,SPRITEBATCH_CAPACITY);
+
     Color palette[9];
     delo2d_color_set_i(&palette[0],49,17,38,255);
     delo2d_color_set_i(&palette[1],70,21,42,255);
@@ -265,314 +259,237 @@ int game_setup(Graphics *graphics,Scene *scene)
     Color color_black;
     delo2d_color_set_f(&color_black,0,0,0,1);
     
-    delo2d_define_sprite(&graphics->sprites[0], 906,138,610,562,2098,910,610,562,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,color_white);
-    delo2d_define_sprite(&graphics->sprites[1], 4,540,3680,918,0,3082,3680,918,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Ground
-    delo2d_define_sprite(&graphics->sprites[2], 470,242,406,86,1624,2130,406,86,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Cloud
-    delo2d_define_sprite(&graphics->sprites[3], 754,212,238,146,1386,2130,238,146,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Cloud
-    delo2d_define_sprite(&graphics->sprites[4], 1012,202,344,164,1042,2130,344,164,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Cloud
-    delo2d_define_sprite(&graphics->sprites[5], 400,200,2092,452,0,1218,2092,452,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Mountain
-    delo2d_define_sprite(&graphics->sprites[6], 602,254,116,338,274,2254,116,338,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Wind turbine
-    delo2d_define_sprite(&graphics->sprites[7], 476,244,116,338,274,2254,116,338,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Wind turbine
-    delo2d_define_sprite(&graphics->sprites[8], 400,300,2092,308,0,910,2092,308,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[5]);//Tree line
-    delo2d_define_sprite(&graphics->sprites[9], 370,340,1750,460,0,1670,1750,460,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[4]);//Tree line
-    delo2d_define_sprite(&graphics->sprites[10], 442,360,262,490,542,2590,262,490,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tree   
-    delo2d_define_sprite(&graphics->sprites[11], 390,360,268,490,274,2590,268,490,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Tree 
-    delo2d_define_sprite(&graphics->sprites[12], 310,260,274,692,0,2390,274,692,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[13], 262,248,274,692,0,2390,274,692,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[14], 942,328,256,490,806,2590,256,490,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tree
-    delo2d_define_sprite(&graphics->sprites[15], 816,340,268,490,1062,2590,268,490,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tree
-    delo2d_define_sprite(&graphics->sprites[16], 1046,224,294,698,1330,2384,294,698,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Tree
-    delo2d_define_sprite(&graphics->sprites[17], 1139,148,406,866,1624,2216,406,866,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Tree
-    delo2d_define_sprite(&graphics->sprites[18], 1188,78,402,1004,2030,2078,402,1004,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[19], 1290,78,438,1004,2432,2078,438,1004,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[20], 1378,78,402,1004,2030,2078,402,1004,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[21], 1476,36,372,1092,2872,1990,372,1092,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[22], 1552,36,438,1092,3244,1990,438,1092,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[23], 128,68,372,1092,2872,1990,372,1092,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[24], 24,70,438,1092,3244,1990,438,1092,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites[25], 292,544,652,134,356,776,652,134,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Grass
-    delo2d_define_sprite(&graphics->sprites[26], 1000,512,1102,134,1008,776,1102,134,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Grass
-    delo2d_define_sprite(&graphics->sprites[27], 886,312,610,604,2098,1472,610,604,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Tree leafless
-    delo2d_define_sprite(&graphics->sprites[28], 480,380,342,460,1750,1670,342,460,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Tree leafless
-    delo2d_define_sprite(&graphics->sprites[29], 512,588,864,204,0,538,864,204,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Ground    
-    delo2d_define_sprite(&graphics->sprites[30], 546,404,864,538,0,0,864,538,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//VAN  
-    delo2d_define_sprite(&graphics->sprites[31], 598,732,118,78,1248,654,118,78,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow
-    delo2d_define_sprite(&graphics->sprites[32], 596,686,118,44,1248,732,118,44,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow
-    delo2d_define_sprite(&graphics->sprites[33], 450,740,160,84,1366,692,160,84,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow
-    delo2d_define_sprite(&graphics->sprites[34], 362,678,160,84,1526,692,160,84,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow 
-    delo2d_define_sprite(&graphics->sprites[35], 1201,638,26,202,390,2130,26,202,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[36], 1206,672,20,132,416,2200,20,132,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[37], 335,586,20,70,436,2262,20,70,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[38], 346,600,18,40,456,2292,18,40 ,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[39], 419,610,26,202,390,2130,26,202,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[40], 429,642,20,132,416,2200,20,132 ,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[41], 627,650,20,70,436,2262,20,70,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[42], 632,591,26,202,390,2130,26,202,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[43], 639,624,20,132,416,2200,20,132,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[44], 953,571,26,202,390,2130,26,202,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[45], 1054,749,20,70,436,2262,20,70,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[46], 1057,683,26,202,390,2130,26,202,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[47], 1062,718,20,132,416,2200,20,132,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[48], 1132,581,20,70,436,2262,20,70,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[49], 1137,595,18,40,456,2292,18,40,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[50], 649,794,20,132,416,2200,20,132,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[51], 1348,578,18,40,456,2292,18,40,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[52], 1165,770,20,70,436,2262,20,70,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
-    delo2d_define_sprite(&graphics->sprites[53], 480,722,116,120,0,742,116,120,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Rock
-    delo2d_define_sprite(&graphics->sprites[54], 616,716,118,102,116,742,118,102,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Rock
-    delo2d_define_sprite(&graphics->sprites[55], 502,626,90,48,0,862,90,48,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[5]);//Rock
-    delo2d_define_sprite(&graphics->sprites[56], 618,672,88,66,116,844,88,66,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[5]);//Rock
-    delo2d_define_sprite(&graphics->sprites[57], 380,688,152,66,204,844,152,66,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[5]);//Rock    
-    delo2d_define_sprite(&graphics->sprites[58], 912,570,320,236,864,418,320,236,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dog
-    delo2d_define_sprite(&graphics->sprites[59], 898,652,386,88,864,654,386,88,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[2]);//Dog grass
-    delo2d_define_sprite(&graphics->sprites[60], 748,542,404,418,866,0,404,418,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[61], 750,486,178,194,1742,0,178,194,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[62], 764,542,470,296,1270,0,470,296,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[63], 826,596,86,68,1270,298,86,68,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[64], 752,606,178,102,1742,194,178,102,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[65], 910,562,76,92,1356,298,76,92,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[7]);//Dave
-    delo2d_define_sprite(&graphics->sprites[66], 738,772,486,128,1434,504,486,128,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[1]);//Bonfire shadow
-    delo2d_define_sprite(&graphics->sprites[67], 792,682,250,236,1182,418,250,236,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Bonfire back
-    delo2d_define_sprite(&graphics->sprites[68], 758,338,400,770,0,0,400,770,0,graphics->textures_sprite_sheets[0].width,graphics->textures_sprite_sheets[0].height,16,56,0.8,palette[7]);//Fire 
-    delo2d_define_sprite(&graphics->sprites[69], 738,726,486,208,1434,298,486,208,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[6]);//Bonfire front 
-    delo2d_define_sprite(&graphics->sprites[70], 754,430,400,770,0,0,400,770,0,graphics->textures_sprite_sheets[0].width,graphics->textures_sprite_sheets[0].height,16,56,0.8,palette[7]);//Fire 
-    
-    graphics->sprites[74].flip_horizontally = 1;
-graphics->sprites[1].scale.x = 1.1f;
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[0], 906,138,610,562,2098,910,610,562,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,color_white);//Sun
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[1], 4,540,3680,918,0,3082,3680,918,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Ground
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[2], 470,242,406,86,1624,2130,406,86,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Cloud
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[3], 754,212,238,146,1386,2130,238,146,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Cloud
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[4], 1012,202,344,164,1042,2130,344,164,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Cloud
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[5], 400,200,2092,452,0,1218,2092,452,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Mountain
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[6], 602,254,116,338,274,2254,116,338,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Wind turbine
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[7], 476,244,116,338,274,2254,116,338,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Wind turbine
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[8], 400,300,2092,308,0,910,2092,308,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[5]);//Tree line
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[9], 370,340,1750,460,0,1670,1750,460,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[4]);//Tree line
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[10], 442,360,262,490,542,2590,262,490,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tree   
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[11], 390,360,268,490,274,2590,268,490,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Tree 
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[12], 310,260,274,692,0,2390,274,692,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[13], 262,248,274,692,0,2390,274,692,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[14], 942,328,256,490,806,2590,256,490,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[15], 816,340,268,490,1062,2590,268,490,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[16], 1046,224,294,698,1330,2384,294,698,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[17], 1139,148,406,866,1624,2216,406,866,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[18], 1188,78,402,1004,2030,2078,402,1004,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[19], 1290,78,438,1004,2432,2078,438,1004,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[20], 1378,78,402,1004,2030,2078,402,1004,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[21], 1476,36,372,1092,2872,1990,372,1092,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[22], 1552,36,438,1092,3244,1990,438,1092,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[23], 128,68,372,1092,2872,1990,372,1092,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[24], 24,68,438,1092,3244,1990,438,1092,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[25], 292,544,652,134,356,776,652,134,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[26], 1000,512,1102,134,1008,776,1102,134,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[27], 886,312,610,604,2098,1472,610,604,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Tree leafless
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[28], 480,380,342,460,1750,1670,342,460,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Tree leafless
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[29], 512,588,864,204,0,538,864,204,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Ground    
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[30], 546,404,864,538,0,0,864,538,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//VAN  
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[31], 598,732,118,78,1248,654,118,78,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[32], 596,686,118,44,1248,732,118,44,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[33], 450,740,160,84,1366,692,160,84,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[34], 362,678,160,84,1526,692,160,84,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Rock shadow 
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[35], 1201,638,26,202,390,2130,26,202,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[36], 1206,672,20,132,416,2200,20,132,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[37], 335,586,20,70,436,2262,20,70,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[38], 346,600,18,40,456,2292,18,40 ,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[39], 419,610,26,202,390,2130,26,202,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[40], 429,642,20,132,416,2200,20,132 ,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[41], 627,650,20,70,436,2262,20,70,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[42], 632,591,26,202,390,2130,26,202,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[3]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[43], 639,624,20,132,416,2200,20,132,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[44], 953,571,26,202,390,2130,26,202,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[45], 1054,749,20,70,436,2262,20,70,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[46], 1057,683,26,202,390,2130,26,202,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[47], 1062,718,20,132,416,2200,20,132,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[48], 1132,581,20,70,436,2262,20,70,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[49], 1137,595,18,40,456,2292,18,40,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[50], 649,794,20,132,416,2200,20,132,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[51], 1348,578,18,40,456,2292,18,40,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[52], 1165,770,20,70,436,2262,20,70,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Tall grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[53], 480,722,116,120,0,742,116,120,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Rock
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[54], 616,716,118,102,116,742,118,102,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Rock
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[55], 502,626,90,48,0,862,90,48,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[5]);//Rock
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[56], 618,672,88,66,116,844,88,66,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[5]);//Rock
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[57], 380,688,152,66,204,844,152,66,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[5]);//Rock    
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[58], 912,570,320,236,864,418,320,236,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dog
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[59], 898,652,386,88,864,654,386,88,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[2]);//Dog grass
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[60], 748,542,404,418,866,0,404,418,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[61], 750,486,178,194,1742,0,178,194,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[62], 764,542,470,296,1270,0,470,296,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[63], 826,596,86,68,1270,298,86,68,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[64], 752,606,178,102,1742,194,178,102,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[65], 910,562,76,92,1356,298,76,92,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[7]);//Dave
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[66], 738,772,486,128,1434,504,486,128,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[1]);//Bonfire shadow
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[67], 792,682,250,236,1182,418,250,236,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Bonfire back
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[68], 758,338,400,770,0,0,400,770,0,graphics->sprite_sheets[0].width,graphics->sprite_sheets[0].height,16,56,0.8,palette[7]);//Fire 
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[69], 738,726,486,208,1434,298,486,208,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[6]);//Bonfire front 
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[70], 754,430,400,770,0,0,400,770,0,graphics->sprite_sheets[0].width,graphics->sprite_sheets[0].height,16,56,0.8,palette[7]);//Fire 
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[71], -240,-469,438,1092,3244,1990,438,1092,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprites_scene_above_water[72], 1610,-500,438,1092,3244,1990,438,1092,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+      
     for (size_t i = 0; i < SPRITES_COUNT; i++)
     {
-        graphics->sprites[i].rect_des.width *= 0.5f;
-        graphics->sprites[i].rect_des.height *= 0.5f;
+        graphics->sprites_scene_above_water[i].rect_des.width *= 0.5f;
+        graphics->sprites_scene_above_water[i].rect_des.height *= 0.5f;
 
-        graphics->sprites[i].position.x = graphics->sprites[i].rect_des.x+graphics->sprites[i].rect_des.width*0.5f;
-        graphics->sprites[i].position.y = graphics->sprites[i].rect_des.y+graphics->sprites[i].rect_des.height*0.5f;
+        graphics->sprites_scene_above_water[i].position.x = graphics->sprites_scene_above_water[i].rect_des.x+graphics->sprites_scene_above_water[i].rect_des.width*0.5f;
+        graphics->sprites_scene_above_water[i].position.y = graphics->sprites_scene_above_water[i].rect_des.y+graphics->sprites_scene_above_water[i].rect_des.height*0.5f;
     }
+
+    graphics->sprites_scene_above_water[1].scale.x = 1.1f;
+    graphics->sprites_scene_above_water[45].flip_horizontally = 1;
+    graphics->sprites_scene_above_water[48].flip_horizontally = 1;
+    graphics->sprites_scene_above_water[41].flip_horizontally = 1;
+    graphics->sprites_scene_above_water[23].flip_horizontally = 1;
+    graphics->sprites_scene_above_water[24].flip_horizontally = 1;
+
+    graphics->sprites_scene_above_water[68].scale.x = 1.25f;
+    graphics->sprites_scene_above_water[68].scale.y = 1.25f;
+    graphics->sprites_scene_above_water[68].color.a = 1.0f;
+
+    graphics->sprites_scene_above_water[70].scale.x = 0.75f;
+    graphics->sprites_scene_above_water[70].scale.y = 0.75f;
+
+    graphics->sprites_scene_above_water[70].time = graphics->sprites_scene_above_water[70].duration/2;
+    graphics->sprites_scene_above_water[70].color.a = 0.3f;
+
+    graphics->sprites_scene_above_water[71].flip_horizontally = 1;    
+    graphics->sprites_scene_above_water[71].rect_des.width *= 2.0f;
+    graphics->sprites_scene_above_water[71].rect_des.height *= 2.0f;
+    graphics->sprites_scene_above_water[71].position.x = graphics->sprites_scene_above_water[71].rect_des.x+graphics->sprites_scene_above_water[71].rect_des.width*0.5f;
+    graphics->sprites_scene_above_water[71].position.y = graphics->sprites_scene_above_water[71].rect_des.y+graphics->sprites_scene_above_water[71].rect_des.height*0.5f;
+
+    graphics->sprites_scene_above_water[72].rect_des.width *= 2.0f;
+    graphics->sprites_scene_above_water[72].rect_des.height *= 2.0f;
+    graphics->sprites_scene_above_water[72].position.x = graphics->sprites_scene_above_water[72].rect_des.x+graphics->sprites_scene_above_water[72].rect_des.width*0.5f;
+    graphics->sprites_scene_above_water[72].position.y = graphics->sprites_scene_above_water[72].rect_des.y+graphics->sprites_scene_above_water[72].rect_des.height*0.5f;
     
-    graphics->sprites[45].flip_horizontally = 1;
-    graphics->sprites[48].flip_horizontally = 1;
-    graphics->sprites[41].flip_horizontally = 1;
-    graphics->sprites[23].flip_horizontally = 1;
-    graphics->sprites[24].flip_horizontally = 1;
-
-    graphics->sprites[68].scale.x = 1.25f;
-    graphics->sprites[68].scale.y = 1.25f;
-    graphics->sprites[68].color.a = 1.0f;
-
-    graphics->sprites[70].scale.x = 0.75f;
-    graphics->sprites[70].scale.y = 0.75f;
-
-    graphics->sprites[70].time = graphics->sprites[70].duration/2;
-    graphics->sprites[70].color.a = 0.3f;
-    srand(time(NULL));
-
-    setup_dog(&scene->dog,&graphics->sprites);
-    setup_tall_grass(&scene->tall_grass,&graphics->sprites);
-    setup_shadows(&scene->shadows,&graphics->sprites);
-    setup_trees(&scene->trees,&graphics->sprites);
+    setup_dog(&scene->dog,&graphics->sprites_scene_above_water);
+    setup_tall_grass(&scene->tall_grass,&graphics->sprites_scene_above_water);
+    setup_shadows(&scene->shadows,&graphics->sprites_scene_above_water);
+    setup_trees(&scene->trees,&graphics->sprites_scene_above_water);
     setup_particles(&scene->particles);
+    setup_clouds(&scene->clouds,&graphics->sprite_rt_scene_above_water);
 
-    Color clear_color;
-    delo2d_color_set_f(&clear_color,0,0,0,0);
-    delo2d_create_sprite_batch(&graphics->sb_scene_composition,SPRITES_COUNT);
+    delo2d_define_sprite(&graphics->sprite_rt_scene_water_reflection, 0,510,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white);
+    delo2d_define_sprite(&graphics->sprite_rt_scene_above_water, 0,-50,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white);
+    graphics->sprite_rt_scene_water_reflection.flip_vertically = 0;
+    graphics->sprite_rt_scene_above_water.flip_vertically = 1;
 
-    for (int i = 0; i < SPRITES_COUNT; i++)
-    {        
-        delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[i],i);
-    }  
+    delo2d_define_sprite(&graphics->sprite_distortion_map_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white); 
+    delo2d_define_sprite(&graphics->sprite_distortion_map_mask_land, 55,455,3680,918,0,3082,3680,918,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,color_black);
+    delo2d_define_sprite(&graphics->sprite_distortion_map_mask_shoreline, 0,0,screen_width,562,1300,3400,10,10,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,color_black);
+    delo2d_define_sprite(&graphics->sprite_distortion_map_fire,750,300,400,770,0,0,400,770,2,graphics->sprite_sheets[0].width,graphics->sprite_sheets[0].height,16,56,0.8,color_white);
 
-
-    delo2d_define_sprite(&graphics->sprites_water_reflection[0], 0,510,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white);
-    delo2d_define_sprite(&graphics->sprites_water_reflection[1], 0,-50,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white);
-    graphics->sprites_water_reflection[0].flip_vertically = 0;
-    //graphics->sprites_water_reflection[0].scale.y = 0.8f;
-    //graphics->sprites_water_reflection[0].scale.x = 1.1f;
-    //graphics->sprites_water_reflection[0].orientation = 0.051f;
-
-    graphics->sprites_water_reflection[1].flip_vertically = 1;
-    //graphics->sprites_water_reflection[0].color.a = 0.5f;
-    //delo2d_define_sprite(&graphics->sprites_water_reflection[0], 0,500,screen_width,screen_height,0,0,screen_width,screen_height,graphics->texture_ids_water_reflection[0],graphics->textures[0].width,graphics->textures[0].height,1,1,0,color_white);//Fire 
-
+    graphics->sprite_distortion_map_mask_land.rect_des.width *= 0.5f;
+    graphics->sprite_distortion_map_mask_land.rect_des.height *= 0.5f;
+    graphics->sprite_distortion_map_mask_land.position.x = graphics->sprite_distortion_map_mask_land.rect_des.x+graphics->sprite_distortion_map_mask_land.rect_des.width*0.5f;
+    graphics->sprite_distortion_map_mask_land.position.y = graphics->sprite_distortion_map_mask_land.rect_des.y+graphics->sprite_distortion_map_mask_land.rect_des.height*0.5f;
+    graphics->sprite_distortion_map_mask_land.scale.x = 1.1f;
     
-    delo2d_create_sprite_batch(&graphics->sb_above_water,1);     
-    delo2d_sprite_batch_add(&graphics->sb_above_water,&graphics->sprites_water_reflection[1],0);
- 
-    delo2d_create_sprite_batch(&graphics->sb_water_reflection,1);     
-    delo2d_sprite_batch_add(&graphics->sb_water_reflection,&graphics->sprites_water_reflection[0],0);
+    graphics->sprite_distortion_map_fire.rect_des.width *= 0.5f;
+    graphics->sprite_distortion_map_fire.rect_des.height *= 0.5f;
+    graphics->sprite_distortion_map_fire.position.x = graphics->sprite_distortion_map_fire.rect_des.x+graphics->sprite_distortion_map_fire.rect_des.width*0.5f;
+    graphics->sprite_distortion_map_fire.position.y = graphics->sprite_distortion_map_fire.rect_des.y+graphics->sprite_distortion_map_fire.rect_des.height*0.5f;
 
+    delo2d_define_sprite(&graphics->sprite_rt_scene_land_and_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white); 
+    graphics->sprite_rt_scene_land_and_water.flip_vertically = 1;
 
-    delo2d_define_sprite(&graphics->sprites_distortion[0], 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white); 
-    delo2d_create_sprite_batch(&graphics->sb_distortion,1);
-    delo2d_sprite_batch_add(&graphics->sb_distortion,&graphics->sprites_distortion[0],0);
-
-
-    delo2d_define_sprite(&graphics->sprites_fire_distortion[0], 55,455,3680,918,0,3082,3680,918,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,color_black);
-    graphics->sprites_fire_distortion[0].rect_des.width *= 0.5f;
-    graphics->sprites_fire_distortion[0].rect_des.height *= 0.5f;
-    graphics->sprites_fire_distortion[0].position.x = graphics->sprites_fire_distortion[0].rect_des.x+graphics->sprites_fire_distortion[0].rect_des.width*0.5f;
-    graphics->sprites_fire_distortion[0].position.y = graphics->sprites_fire_distortion[0].rect_des.y+graphics->sprites_fire_distortion[0].rect_des.height*0.5f;
-    //graphics->sprites_fire_distortion[0].scale.x = 1.01;
-    graphics->sprites_fire_distortion[0].scale.x = 1.1f;
-
-    delo2d_define_sprite(&graphics->sprites_fire_distortion[1], 0,0,screen_width,562,1300,3400,10,10,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,color_black);
-
-    delo2d_define_sprite(&graphics->sprites_fire_distortion[2],750,300,400,770,0,0,400,770,2,graphics->textures_sprite_sheets[0].width,graphics->textures_sprite_sheets[0].height,16,56,0.8,color_white);//Fire 
-    graphics->sprites_fire_distortion[2].rect_des.width *= 0.5f;
-    graphics->sprites_fire_distortion[2].rect_des.height *= 0.5f;
-    graphics->sprites_fire_distortion[2].position.x = graphics->sprites_fire_distortion[2].rect_des.x+graphics->sprites_fire_distortion[2].rect_des.width*0.5f;
-    graphics->sprites_fire_distortion[2].position.y = graphics->sprites_fire_distortion[2].rect_des.y+graphics->sprites_fire_distortion[2].rect_des.height*0.5f;
-
-
-
-    delo2d_create_sprite_batch(&graphics->sb_fire_distortion,3);
-    delo2d_sprite_batch_add(&graphics->sb_fire_distortion,&graphics->sprites_fire_distortion[0],0);
-    delo2d_sprite_batch_add(&graphics->sb_fire_distortion,&graphics->sprites_fire_distortion[1],1);
-    delo2d_sprite_batch_add(&graphics->sb_fire_distortion,&graphics->sprites_fire_distortion[2],2);
-
-
-
-    delo2d_define_sprite(&graphics->sprites_final[0], 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white); 
-    graphics->sprites_final[0].flip_vertically = 1;
-    delo2d_create_sprite_batch(&graphics->sb_final,1);
-    delo2d_sprite_batch_add(&graphics->sb_final,&graphics->sprites_final[0],0);
-
-
-
-    delo2d_create_sprite_batch(&graphics->sb_extra_trees,2);
-    delo2d_define_sprite(&graphics->sprites_extra_trees[0], -200,-545,438,1092,3244,1990,438,1092,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
-    delo2d_define_sprite(&graphics->sprites_extra_trees[1], 1640,-578,438,1092,3244,1990,438,1092,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,palette[0]);//Tree
+    delo2d_define_sprite(&graphics->sprite_particle, 0,0,3,3,1300,3400,5,5,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,color_white);     
+    delo2d_define_sprite(&graphics->sprite_sky, 0,0,screen_width,500,0,0,screen_width,screen_height,1,graphics->sprite_sheets[1].width,graphics->sprite_sheets[1].height,1,1,0,color_white);
     
-
-    graphics->sprites_extra_trees[0].flip_horizontally = 1;
-
-    for (size_t i = 0; i < 0; i++)
-    {
-        graphics->sprites_extra_trees[i].rect_des.width *= 0.75f;
-        graphics->sprites_extra_trees[i].rect_des.height *= 0.75f;
-        graphics->sprites_extra_trees[i].position.x = graphics->sprites_extra_trees[i].rect_des.x+graphics->sprites_extra_trees[i].rect_des.width*0.5f;
-        graphics->sprites_extra_trees[i].position.y = graphics->sprites_extra_trees[i].rect_des.y+graphics->sprites_extra_trees[i].rect_des.height*0.5f;
-    }
-    delo2d_sprite_batch_add(&graphics->sb_extra_trees,&graphics->sprites_extra_trees[0],0);
-    delo2d_sprite_batch_add(&graphics->sb_extra_trees,&graphics->sprites_extra_trees[1],1);
-
-
-
-    delo2d_create_sprite_batch(&graphics->sb_particles,COUNT_PARTICLES*2);    
-    delo2d_define_sprite(&graphics->sprite_particle, 0,0,3,3,1300,3400,5,5,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,color_white);
-    
-    delo2d_create_sprite_batch(&graphics->sb_sky,1);    
-    delo2d_define_sprite(&graphics->sprite_sky, 0,0,screen_width,500,0,0,screen_width,screen_height,1,graphics->textures_sprite_sheets[1].width,graphics->textures_sprite_sheets[1].height,1,1,0,color_white);
-    delo2d_sprite_batch_add(&graphics->sb_sky,&graphics->sprite_sky,0);
-
-
     return 0;
 }
+void game_render(float t,Graphics *graphics,Scene *scene)
+{       
+    Color clear_color;
+    delo2d_color_set_f(&clear_color,0,0,0,0);
+    //draw sky
+    delo2d_render_target_set(graphics->render_target_scene_above_water.fbo,0.94,0.80,0.2,0);
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[5],&graphics->ortho_proj);
+        glUseProgram(graphics->shaders[5]); 
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_sky, &graphics->sprite_sheets[1]);
+    delo2d_sprite_batch_end(&graphics->sb);
 
-    int n = 24;
-void game_render(float t,Graphics *graphics)
-{   
-    /*
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(1,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT); */
+    //draw scene
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[0],&graphics->ortho_proj);
+    for (size_t i = 0; i < SPRITES_COUNT; i++)
+    {
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprites_scene_above_water[i], &graphics->sprite_sheets[graphics->sprites_scene_above_water[i].texture_index]);
+    }
 
-    //delo2d_sprite_batch_draw(&graphics->sb_scene_composition,&graphics->textures_sprite_sheets,2,graphics->shaders[0],&graphics->ortho_proj);
+    for (size_t i = 0; i < COUNT_PARTICLES; i++)
+    {
+        graphics->sprite_particle.position.x = scene->particles[i].x;
+        graphics->sprite_particle.position.y = scene->particles[i].y;
+        graphics->sprite_particle.skew.x = scene->particles[i].speed*2;
+        graphics->sprite_particle.color.r = 1.0;
+        graphics->sprite_particle.color.g = 0.90;
+        graphics->sprite_particle.color.b = 0.3;
+        graphics->sprite_particle.color.a = 1-(scene->particles[i].lifetime / 1800.0);
+        graphics->sprite_particle.scale.x = graphics->sprite_particle.scale.y = 1-(scene->particles[i].lifetime / 1800.0);
 
-    /*
-    //Draw Distortion pattarn
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_distortion.fbo);
-    glClearColor(0,1,0,1);
-    glClear(GL_COLOR_BUFFER_BIT);     
-    glUseProgram(graphics->shaders[3]); 
-    glUniform1f(glGetUniformLocation(graphics->shaders[3],"u_time"),t);
-    delo2d_sprite_batch_draw(&graphics->sb_distortion,&graphics->textures_sprite_sheets,2,graphics->shaders[3],&graphics->ortho_proj);
+        if(graphics->sprite_particle.scale.x < 0)
+        {
+            graphics->sprite_particle.scale.x = graphics->sprite_particle.scale.y = 0;
+        }
+        graphics->sprite_particle.orientation = atan2(scene->particles[i].vy,scene->particles[i].vx);
 
+        graphics->sprite_particle.scale.x = 1;
+        graphics->sprite_particle.scale.y = 1;
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_particle, &graphics->sprite_sheets[1]);
+    }
+    delo2d_sprite_batch_end(&graphics->sb);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_water_reflection.fbo);
-    glClearColor(241.0/255.0,130.0/255.0,51.0/255.0,1);    
-    glClear(GL_COLOR_BUFFER_BIT);
-    delo2d_sprite_batch_draw(&graphics->sb_water_reflection,&graphics->textures_render_targets,4,graphics->shaders[2],&graphics->ortho_proj);
-    delo2d_sprite_batch_draw(&graphics->sb_above_water,&graphics->textures_render_targets,4,graphics->shaders[0],&graphics->ortho_proj);
+    //draw scene water reflection
+    delo2d_render_target_set(graphics->render_target_scene_with_water_reflection.fbo,0.84,0.40,0.1,1);
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[2],&graphics->ortho_proj);
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_rt_scene_water_reflection, &graphics->render_target_textures[0]);
+    delo2d_sprite_batch_end(&graphics->sb);
 
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[0],&graphics->ortho_proj);        
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_rt_scene_above_water, &graphics->render_target_textures[0]);
+    delo2d_sprite_batch_end(&graphics->sb);
 
+    //draw distortion pattern
+    delo2d_render_target_set(graphics->render_target_disortion_map.fbo,0,0,0,1);
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[3],&graphics->ortho_proj);   
+        glUseProgram(graphics->shaders[3]); 
+        glUniform1f(glGetUniformLocation(graphics->shaders[3],"u_time"),t);
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_water,&graphics->sprite_sheets[0]);//generate voronoi pattern
+    delo2d_sprite_batch_end(&graphics->sb);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_final.fbo);
-    glClearColor(0,0,1,1);  
-    glClear(GL_COLOR_BUFFER_BIT);
-    delo2d_sprite_batch_draw(&graphics->sb_final,&graphics->textures_render_targets,4,graphics->shaders[4],&graphics->ortho_proj);
-*/
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[0],&graphics->ortho_proj); 
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_mask_land,&graphics->sprite_sheets[1]);//voronoi mask
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_mask_shoreline,&graphics->sprite_sheets[1]);//voronoi mask
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_fire,&graphics->sprite_sheets[2]);//fire heat distortion
+    delo2d_sprite_batch_end(&graphics->sb);
 
+    //draw scene with distortions
+    delo2d_render_target_set(graphics->render_target_scene_with_distortions.fbo,0,0,1,1);
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[4],&graphics->ortho_proj); 
+        glUseProgram(graphics->shaders[4]);         
+        unsigned int texture_index = -1;
+        delo2d_sprite_batch_add_texture(&graphics->sb,&graphics->render_target_textures[2],&texture_index);
+        printf("tex address %i\n", &texture_index);
+        glUniform1i(glGetUniformLocation(graphics->shaders[4],"u_texture_distortion"),texture_index);//set texture slot
+        delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_rt_scene_land_and_water,&graphics->render_target_textures[1]);
+    delo2d_sprite_batch_end(&graphics->sb);
 
-
-    //delo2d_render_target_draw(graphics->render_target_water_reflection.fbo,&graphics->render_target_main_scene,graphics->shaders[1]);
-
-   // delo2d_render_target_draw(0,&graphics->render_target_main_scene,graphics->shaders[1]);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //delo2d_render_target_draw(0,&graphics->render_target_main_scene,graphics->shaders[1]);
-
-    //glfwSwapBuffers(graphics->window);
-
-
-    //Render Scene Components
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_main_scene.fbo);
-    glClearColor(0.94,0.80,0.2,0);
-    glClear(GL_COLOR_BUFFER_BIT);  
-
-    glUseProgram(graphics->shaders[5]); 
-    delo2d_sprite_batch_draw(&graphics->sb_sky,&graphics->textures_sprite_sheets,3,graphics->shaders[5],&graphics->ortho_proj);
-
-
-    glUseProgram(graphics->shaders[0]); 
-    delo2d_sprite_batch_draw(&graphics->sb_scene_composition,&graphics->textures_sprite_sheets,3,graphics->shaders[0],&graphics->ortho_proj);
-    delo2d_sprite_batch_draw(&graphics->sb_particles,&graphics->textures_sprite_sheets,3,graphics->shaders[0],&graphics->ortho_proj);
-
-
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_scene_complete.fbo);
-    glClearColor(0.84,0.40,0.1,1);    
-    glClear(GL_COLOR_BUFFER_BIT);
-    delo2d_sprite_batch_draw(&graphics->sb_water_reflection,&graphics->textures_render_targets,4,graphics->shaders[2],&graphics->ortho_proj);
-    delo2d_sprite_batch_draw(&graphics->sb_above_water,&graphics->textures_render_targets,4,graphics->shaders[0],&graphics->ortho_proj);
-
-
-
-    //Render Distortion pattarn
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_water_reflection.fbo);
-    glClearColor(0,0,0,1);
-    glClear(GL_COLOR_BUFFER_BIT);     
-    glUseProgram(graphics->shaders[3]); 
-    glUniform1f(glGetUniformLocation(graphics->shaders[3],"u_time"),t);
-    delo2d_sprite_batch_draw(&graphics->sb_distortion,&graphics->textures_sprite_sheets,3,graphics->shaders[3],&graphics->ortho_proj);
-    
-
-
-    glUseProgram(graphics->shaders[0]);
-    delo2d_sprite_batch_draw(&graphics->sb_fire_distortion,&graphics->textures_sprite_sheets,3,graphics->shaders[0],&graphics->ortho_proj);
-
-
-  
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, graphics->render_target_final.fbo);
-    glClearColor(0,0,1,1);  
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(graphics->shaders[4]);     
-    glUniform1i(glGetUniformLocation(graphics->shaders[4],"u_texture_distortion"),2);
-
-    delo2d_sprite_batch_draw(&graphics->sb_final,&graphics->textures_render_targets,4,graphics->shaders[4],&graphics->ortho_proj);
-    
-
-   
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.94,0.80,0.2,1);
-    glClear(GL_COLOR_BUFFER_BIT);  
-    delo2d_render_target_draw(&graphics->render_target_final,graphics->shaders[1]);
-
-
-    delo2d_sprite_batch_draw(&graphics->sb_extra_trees,&graphics->textures_sprite_sheets,4,graphics->shaders[0],&graphics->ortho_proj);
-    
+    //draw foreground elements
+    delo2d_render_target_set(0,0.94,0.80,0.2,1);
+    delo2d_render_target_draw(&graphics->render_target_scene_with_distortions,graphics->shaders[1]);
 
 
     glfwSwapBuffers(graphics->window);
 }
-void update_dog(Dog *dog,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_dog(Dog *dog,Sprite *sprites)
 {
     dog->scale_y += (dog->flag_y) ? 0.0002f:-0.0005f;
     if(dog->scale_y < dog->min_scale_y)
@@ -588,9 +505,8 @@ void update_dog(Dog *dog,SpriteBatch *sprite_batch,Sprite *sprites)
 
     int index = dog->sprite_index;
     sprites[index].scale.y = dog->scale_y;
-    delo2d_sprite_batch_add(sprite_batch,&sprites[index],index);
 }
-void update_tall_grass(TallGrass *tall_grass,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_tall_grass(TallGrass *tall_grass,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_TALL_GRASS; i++)  
     {          
@@ -610,11 +526,9 @@ void update_tall_grass(TallGrass *tall_grass,SpriteBatch *sprite_batch,Sprite *s
 
         sprites[index].pivot_point.y = sprites[index].rect_des.height/2;
         sprites[index].orientation = tall_grass[i].sway*tall_grass[i].speed;
-
-        delo2d_sprite_batch_add(sprite_batch,&sprites[index],index);
     }
 }
-void update_clouds(Cloud *clouds,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_clouds(Cloud *clouds,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_CLOUDS; i++)
     {          
@@ -652,12 +566,9 @@ void update_clouds(Cloud *clouds,SpriteBatch *sprite_batch,Sprite *sprites)
         sprites[index].scale.y = clouds[i].scale_y*clouds[i].speed;
 
         sprites[index].position.x += 0.05f;
-
-        delo2d_sprite_batch_add(sprite_batch,&sprites[index],index);
-
     } 
 }
-void update_shadows(Shadow *shadows,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_shadows(Shadow *shadows,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_SHADOWS; i++)
     {          
@@ -691,15 +602,13 @@ void update_shadows(Shadow *shadows,SpriteBatch *sprite_batch,Sprite *sprites)
 
         sprites[shadows[i].sprite_index].scale.x = shadows[i].scale_x*shadows[i].speed;
         sprites[shadows[i].sprite_index].scale.y = shadows[i].scale_y*shadows[i].speed;
-        delo2d_sprite_batch_add(sprite_batch,&sprites[shadows[i].sprite_index],shadows[i].sprite_index);
 
     }
 }
-void update_particles(float t,float dt, Particle *particles,SpriteBatch *sprite_batch,Sprite *sprite)
+void update_particles(float t,float dt, Particle *particles,Sprite *sprite)
 {
     for (size_t i = 0; i < COUNT_PARTICLES; i++)
-    {
-        
+    {        
         particles[i].lifetime += dt;
         if(particles[i].lifetime > 1800)
         {
@@ -717,58 +626,19 @@ void update_particles(float t,float dt, Particle *particles,SpriteBatch *sprite_
             particles[i].vy-=((float)((rand() % (10 + 1 - 0)) + 0)-4.5)/50.0;
 
             particles[i].x += particles[i].vx;
-            particles[i].y += particles[i].vy;
-
-            sprite->position.x = particles[i].x;
-            sprite->position.y = particles[i].y;
+            particles[i].y += particles[i].vy;           
         }        
 
         float dx = particles[i].x_prev - particles[i].x;
         float dy = particles[i].y_prev - particles[i].y;
-        float speed = sqrt(dx*dx + dy*dy);
-
-
-        if(i == 0)
-        {
-            printf("%f\n", speed);
-        }
+        particles[i].speed = sqrt(dx*dx + dy*dy);
 
         particles[i].x_prev = particles[i].x;
         particles[i].y_prev = particles[i].y;
-
-        sprite->skew.x = speed*2;
-
-        sprite->color.r = 1.0;
-        sprite->color.g = 0.90;
-        sprite->color.b = 0.3;
-
-        sprite->color.a = 1-(particles[i].lifetime / 1800.0);
-
-        sprite->scale.x = sprite->scale.y = 1-(particles[i].lifetime / 1800.0);
-
-        if(sprite->scale.x < 0)
-        {
-            sprite->scale.x = sprite->scale.y = 0;
-        }
-        sprite->orientation = atan2(particles[i].vy,particles[i].vx);
-
-        sprite->scale.x = 1;
-        sprite->scale.y = 1;
-
-
-        delo2d_sprite_batch_add(sprite_batch,sprite,i);
-
-        sprite->scale.x *= 0.5;
-        sprite->scale.y *= 0.5;
-        sprite->color.r = 1;
-        sprite->color.g = 1;
-        sprite->color.b = 1;
-        sprite->color.a = 1-(particles[i].lifetime / 1800.0);
-        delo2d_sprite_batch_add(sprite_batch,sprite,COUNT_PARTICLES+i);  
     }
     
 }
-void update_trees(Tree *trees,SpriteBatch *sprite_batch,Sprite *sprites)
+void update_trees(Tree *trees,Sprite *sprites)
 {
     for (int i = 0; i < COUNT_TREES; i++)
     {          
@@ -784,25 +654,22 @@ void update_trees(Tree *trees,SpriteBatch *sprite_batch,Sprite *sprites)
             trees[i].sway = trees[i].max_sway;
             trees[i].flag = 0;
         }
-
-
         sprites[trees[i].sprite_index].skew.x = trees[i].sway*trees[i].speed;
-        delo2d_sprite_batch_add(sprite_batch,&sprites[trees[i].sprite_index],trees[i].sprite_index);
-
     }
 }
 void game_update_logic(float t,float dt,Scene *scene,Graphics *graphics)
 {
-    update_dog(&scene->dog,&graphics->sb_scene_composition,&graphics->sprites);
-    update_tall_grass(&scene->tall_grass,&graphics->sb_scene_composition,&graphics->sprites);
-    update_shadows(&scene->shadows,&graphics->sb_scene_composition,&graphics->sprites);
-    update_trees(&scene->trees,&graphics->sb_scene_composition,&graphics->sprites);
-    update_particles(t,dt,&scene->particles,&graphics->sb_particles,&graphics->sprite_particle);     
+    update_dog(&scene->dog,&graphics->sprites_scene_above_water);
+    update_tall_grass(&scene->tall_grass,&graphics->sprites_scene_above_water);
+    update_shadows(&scene->shadows,&graphics->sprites_scene_above_water);
+    update_trees(&scene->trees,&graphics->sprites_scene_above_water);
+    update_particles(t,dt,&scene->particles,&graphics->sprite_particle);     
+    update_clouds(&scene->clouds,&graphics->sprites_scene_above_water);
 
-    delo2d_sprite_animate(&graphics->sprites[68],dt,&graphics->sb_scene_composition.vertex_array);
-    delo2d_sprite_animate(&graphics->sprites[70],dt,&graphics->sb_scene_composition.vertex_array);
 
-    delo2d_sprite_animate(&graphics->sprites_fire_distortion[2],dt,&graphics->sb_fire_distortion.vertex_array);
+    delo2d_sprite_animate(&graphics->sprites_scene_above_water[68],dt);
+    delo2d_sprite_animate(&graphics->sprites_scene_above_water[70],dt);
+    delo2d_sprite_animate(&graphics->sprite_distortion_map_fire,dt);
     
 }
 void unload(Texture *textures,unsigned int *shaders)
@@ -818,63 +685,24 @@ void unload(Texture *textures,unsigned int *shaders)
     }        
     glfwTerminate();
 }
-void game_update_render_state(Graphics *graphics)
-{
-    
-    for (int i = 0; i < SPRITES_COUNT; i++)
-    {
-        if(graphics->sprites[i].updated_tex_coords)
-        {
-            delo2d_sprite_batch_update_tex_coords(&graphics->sb_scene_composition.vertex_array,&graphics->sb_scene_composition,&graphics->sprites[i],i);
-            graphics->sprites[i].updated_tex_coords = 0;
-        }
-    }
-
-    if(graphics->sprites_fire_distortion[2].updated_tex_coords)
-    {
-        delo2d_sprite_batch_update_tex_coords(&graphics->sb_fire_distortion.vertex_array,&graphics->sb_fire_distortion,&graphics->sprites_fire_distortion[2],2);
-        graphics->sprites_fire_distortion[2].updated_tex_coords = 0;
-    }
-
-    graphics->sprites[2].position.x += 0.02;
-    graphics->sprites[3].position.x += 0.02;
-    graphics->sprites[4].position.x += 0.02;
-
-    delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[2],2);
-    delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[3],3);
-    delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[4],4);
-
-}
 void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *ortho_proj,Graphics *graphics)
 {
     if (ki->move_up == GLFW_PRESS)
     {
         //delo2d_camera_move(ortho_proj,0,-1.0f,screen_width,screen_height);
-        graphics->sprites[n].position.y -=2;
-        delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[n],n);
     }
     if (ki->move_dn == GLFW_PRESS)
     {
         //delo2d_camera_move(ortho_proj,0,1.0f,screen_width,screen_height);
-        graphics->sprites[n].position.y +=2;
-        delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[n],n);
     }
     if (ki->move_l == GLFW_PRESS)
     {
         //delo2d_camera_move(ortho_proj,-1,0,screen_width,screen_height);
-        graphics->sprites[n].position.x -=2;
-        delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[n],n);
     }
     if (ki->move_r == GLFW_PRESS)
     {
-        graphics->sprites[n].position.x +=2;        
-        delo2d_sprite_batch_add(&graphics->sb_scene_composition,&graphics->sprites[n],n);
+
     }
-    Quad quad;
-    delo2d_get_quad(&quad,&graphics->sb_scene_composition.vertex_array,n);
-    Vector2f c;
-    delo2d_quad_get_center(&quad,&c);
-    //printf("%.0f,%.0f\n",*quad.v0.x,*quad.v0.y);
 } 
 
 int main(void)
@@ -893,7 +721,7 @@ int main(void)
     //init input
     delo2d_input_init(&ki,&ki_prev);
     //load game resources
-    load(&graphics.textures_sprite_sheets,&graphics.shaders);
+    load(&graphics.sprite_sheets,&graphics.shaders);
     //setup game
     game_setup(&graphics,&scene);
 
@@ -903,23 +731,23 @@ int main(void)
 
     glViewport(0, 0, screen_width,screen_height);
 
-    delo2d_render_target_create(&graphics.render_target_main_scene, screen_width,screen_height);
-    delo2d_render_target_create(&graphics.render_target_water_reflection, screen_width,screen_height);
-    delo2d_render_target_create(&graphics.render_target_scene_complete, screen_width,screen_height);
-    delo2d_render_target_create(&graphics.render_target_final, screen_width,screen_height);
+    delo2d_render_target_create(&graphics.render_target_scene_above_water, screen_width,screen_height);
+    delo2d_render_target_create(&graphics.render_target_disortion_map, screen_width,screen_height);
+    delo2d_render_target_create(&graphics.render_target_scene_with_water_reflection, screen_width,screen_height);
+    delo2d_render_target_create(&graphics.render_target_scene_with_distortions, screen_width,screen_height);
 
 
     for (size_t i = 0; i < 4; i++)
     {
-        graphics.textures_render_targets[i].width =  screen_width;
-        graphics.textures_render_targets[i].height =  screen_height;
-        graphics.textures_render_targets[i].bytes_per_pixel = 0;
+        graphics.render_target_textures[i].width =  screen_width;
+        graphics.render_target_textures[i].height =  screen_height;
+        graphics.render_target_textures[i].bytes_per_pixel = 0;
     }  
 
-    graphics.textures_render_targets[0].renderer_id = graphics.render_target_main_scene.framebufferTexture;
-    graphics.textures_render_targets[1].renderer_id = graphics.render_target_scene_complete.framebufferTexture;
-    graphics.textures_render_targets[2].renderer_id = graphics.render_target_water_reflection.framebufferTexture;
-    graphics.textures_render_targets[3].renderer_id = graphics.render_target_final.framebufferTexture;
+    graphics.render_target_textures[0].renderer_id = graphics.render_target_scene_above_water.framebufferTexture;
+    graphics.render_target_textures[1].renderer_id = graphics.render_target_scene_with_water_reflection.framebufferTexture;
+    graphics.render_target_textures[2].renderer_id = graphics.render_target_disortion_map.framebufferTexture;
+    graphics.render_target_textures[3].renderer_id = graphics.render_target_scene_with_distortions.framebufferTexture;
 
 
     while (!glfwWindowShouldClose(graphics.window))
@@ -931,9 +759,7 @@ int main(void)
 
         game_update_logic(t,dt,&scene,&graphics);
 
-        game_update_render_state(&graphics);
-
-        game_render(t,&graphics);
+        game_render(t,&graphics,&scene);
 
         dt = (float)clock()/CLOCKS_PER_SEC - t;
 
@@ -943,7 +769,7 @@ int main(void)
     }
 
     //unload and exit
-    unload(&graphics.textures_sprite_sheets,&graphics.shaders);
+    unload(&graphics.sprite_sheets,&graphics.shaders);
 
     return 0;
 }
