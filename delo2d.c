@@ -509,7 +509,14 @@ void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity)
     }
     
 }
-void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color)
+void delo2d_sprite_scale_dest_rect(Sprite *sprite, float scale_x, float scale_y)
+{
+    sprite->rect_des.width *= scale_x;
+    sprite->rect_des.height *= scale_y;
+    sprite->position.x = sprite->rect_des.x+sprite->rect_des.width*scale_x;
+    sprite->position.y = sprite->rect_des.y+sprite->rect_des.height*scale_y;
+} 
+void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color,float scale_x,float scale_y,float skew_x,float skew_y,unsigned int flip_horizontally,unsigned int flip_vertically)
 {
     sprite->frame = 0;
     sprite->time = 0;
@@ -538,11 +545,14 @@ void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,
     sprite->color.g = color.g;
     sprite->color.b = color.b;
     sprite->color.a = color.a;
-    sprite->flip_horizontally = sprite->flip_vertically = 0;
+    sprite->flip_horizontally = flip_horizontally;
+    sprite->flip_vertically = flip_vertically;
     sprite->updated_tex_coords = 0;
     sprite->orientation = 0;
-    sprite->scale.x = sprite->scale.y = 1;
-    sprite->skew.x = sprite->skew.y = 0;
+    sprite->scale.x = scale_x;
+    sprite->scale.y = scale_y;
+    sprite->skew.x = skew_x;
+    sprite->skew.y = skew_y;
     sprite->pivot_point.x = sprite->pivot_point.y = 0;
 }
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *vertex_array)
