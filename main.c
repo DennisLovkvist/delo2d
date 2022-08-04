@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define GLEW_STATIC 1
-#define SHADERS_COUNT 6
+#define SHADERS_COUNT 7
 #define TEXTURES_COUNT 3
 #define SPRITES_COUNT 73
 #define SPRITEBATCH_CAPACITY 200
@@ -138,7 +138,8 @@ int load(Texture *textures,unsigned int *shaders)
     shaders[2] = delo2d_shader_from_file("shader_warp.glsl"); 
     shaders[3] = delo2d_shader_from_file("voronoi.glsl"); 
     shaders[4] = delo2d_shader_from_file("distortion.glsl");  
-    shaders[5] = delo2d_shader_from_file("shader_sky.glsl");    
+    shaders[5] = delo2d_shader_from_file("shader_sky.glsl");      
+    shaders[6] = delo2d_shader_from_file("shader_silhouette.glsl");    
     delo2d_load_texture(&textures[0],"textures/sprite_sheet_fire.png");  
     delo2d_load_texture(&textures[1],"textures/sprite_sheet_scene.png"); 
     delo2d_load_texture(&textures[2],"textures/sprite_sheet_fire_distortion.png"); 
@@ -262,7 +263,7 @@ int game_setup(Graphics *graphics,Scene *scene)
     int ss_width = graphics->sprite_sheets[1].width;
     int ss_height = graphics->sprite_sheets[1].height;
     float default_scale_x = 1,default_scale_y = 1;
-    float default_skew_x = 1,default_skew_y = 1;
+    float default_skew_x = 0,default_skew_y = 0;
     
     delo2d_define_sprite(&graphics->sprites_scene_above_water[0], 906,138,610,562,2098,910,610,562,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Sun
     delo2d_define_sprite(&graphics->sprites_scene_above_water[1], 0,540,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);//Ground
@@ -339,12 +340,12 @@ int game_setup(Graphics *graphics,Scene *scene)
     delo2d_define_sprite(&graphics->sprites_scene_above_water[72], 1610,-500,438,1092,3244,1990,438,1092,1,ss_width,ss_height,1,1,0,palette[0],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Tree
    
     delo2d_define_sprite(&graphics->sprite_rt_scene_water_reflection, 0,510,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_define_sprite(&graphics->sprite_rt_scene_above_water, -5,-50,screen_width+10,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);
+    delo2d_define_sprite(&graphics->sprite_rt_scene_above_water, 0,-50,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);
     delo2d_define_sprite(&graphics->sprite_distortion_map_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0); 
-    delo2d_define_sprite(&graphics->sprite_distortion_map_mask_shoreline, 50,455,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,color_black,1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_define_sprite(&graphics->sprite_distortion_map_mask_land, 0,0,screen_width,562,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_define_sprite(&graphics->sprite_distortion_map_mask_shoreline, 100,425,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_define_sprite(&graphics->sprite_distortion_map_mask_land, 0,0,screen_width,530,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_define_sprite(&graphics->sprite_distortion_map_fire,750,300,400,770,0,0,400,770,2,graphics->sprite_sheets[0].width,graphics->sprite_sheets[0].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_define_sprite(&graphics->sprite_rt_scene_land_and_water, -1,0,screen_width+2,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1.1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);    
+    delo2d_define_sprite(&graphics->sprite_rt_scene_land_and_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1.1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);    
     delo2d_define_sprite(&graphics->sprite_particle, 0,0,3,3,1300,3400,5,5,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);     
     delo2d_define_sprite(&graphics->sprite_sky, 0,0,screen_width*2,500,0,0,screen_width,screen_height,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     
@@ -358,6 +359,11 @@ int game_setup(Graphics *graphics,Scene *scene)
 
     graphics->sprites_scene_above_water[70].time = graphics->sprites_scene_above_water[70].duration/2;
     graphics->sprites_scene_above_water[70].color.a = 0.3f;
+
+
+    delo2d_color_set_f(&graphics->sprite_distortion_map_mask_shoreline.color,0.5f,0.5f,0.5f,1.0f);
+    delo2d_color_set_f(&graphics->sprite_distortion_map_mask_land.color,0.5f,0.5f,0.5f,1.0f);
+
 
     setup_dog(&scene->dog,&graphics->sprites_scene_above_water);
     setup_tall_grass(&scene->tall_grass,&graphics->sprites_scene_above_water);
@@ -420,14 +426,14 @@ void game_render(float t,Graphics *graphics,Scene *scene)
     delo2d_sprite_batch_end(&graphics->sb);
 
     //draw distortion pattern
-    delo2d_render_target_set(graphics->render_target_disortion_map.fbo,0,0,0,1);
+    delo2d_render_target_set(graphics->render_target_disortion_map.fbo,0.5,0.5,0.5,1);
     delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[3],&graphics->ortho_proj);   
         glUseProgram(graphics->shaders[3]); 
         glUniform1f(glGetUniformLocation(graphics->shaders[3],"u_time"),t);
         delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_water,&graphics->sprite_sheets[0]);//generate voronoi pattern
     delo2d_sprite_batch_end(&graphics->sb);
 
-    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[0],&graphics->ortho_proj); 
+    delo2d_sprite_batch_begin(&graphics->sb,graphics->shaders[6],&graphics->ortho_proj); 
         delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_mask_shoreline,&graphics->sprite_sheets[1]);//voronoi mask
         delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_mask_land,&graphics->sprite_sheets[1]);//voronoi mask
         delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_distortion_map_fire,&graphics->sprite_sheets[2]);//fire heat distortion
@@ -651,18 +657,21 @@ void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *ortho
     if (ki->move_up == GLFW_PRESS)
     {
         //delo2d_camera_move(ortho_proj,0,-1.0f,screen_width,screen_height);
+        graphics->sprite_distortion_map_mask_shoreline.position.y--;
     }
     if (ki->move_dn == GLFW_PRESS)
     {
         //delo2d_camera_move(ortho_proj,0,1.0f,screen_width,screen_height);
+        graphics->sprite_distortion_map_mask_shoreline.position.y++;
     }
     if (ki->move_l == GLFW_PRESS)
     {
         //delo2d_camera_move(ortho_proj,-1,0,screen_width,screen_height);
+        graphics->sprite_distortion_map_mask_shoreline.position.x--;
     }
     if (ki->move_r == GLFW_PRESS)
     {
-
+        graphics->sprite_distortion_map_mask_shoreline.position.x++;
     }
 } 
 
