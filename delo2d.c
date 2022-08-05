@@ -1,3 +1,8 @@
+/**
+ * Author:    Dennis Lövkvist
+ * Created:   2022-08-05
+ * Version: 1.0
+ **/
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>

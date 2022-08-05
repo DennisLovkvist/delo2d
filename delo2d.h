@@ -1,3 +1,8 @@
+/**
+ * Author:    Dennis Lövkvist
+ * Created:   2022-08-05
+ * Version: 1.0
+ **/
 #pragma once
 #include <GL/glew.h>
 #include <stdio.h>

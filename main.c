@@ -1,10 +1,13 @@
-//glfw crosd-platform windows
-//glew fetches function pointers from graphics card
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+/**
+ * Author:    Dennis Lövkvist
+ * Created:   2022-08-05
+ * Version: 1.0
+ **/
+
+#include <GL/glew.h>//glew fetches function pointers from graphics card
+#include <GLFW/glfw3.h>//glfw crosd-platform windows
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "delo2d.h"
 #include <time.h>
 #include "game.h"
