@@ -13,7 +13,7 @@
 #define TEXTURES_COUNT 3
 #define SPRITES_COUNT 73
 #define SPRITEBATCH_CAPACITY 200
-#define WINDOW_TITLE "OpenGl Test"
+#define WINDOW_TITLE "delo2d example project"
 #define COUNT_TREES 17
 #define COUNT_SHADOWS 5
 #define COUNT_CLOUDS 3
@@ -133,13 +133,13 @@ int init(Graphics *graphics)
 }
 int load(Texture *textures,unsigned int *shaders)
 {
-    shaders[0] = delo2d_shader_from_file("shaders/default_shader.glsl");  
-    shaders[1] = delo2d_shader_from_file("shaders/shader_render_target.glsl");    
-    shaders[2] = delo2d_shader_from_file("shaders/shader_warp.glsl"); 
+    shaders[0] = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");  
+    shaders[1] = delo2d_shader_from_file("shaders/delo2d_render_target_default.glsl");    
+    shaders[2] = delo2d_shader_from_file("shaders/warp.glsl"); 
     shaders[3] = delo2d_shader_from_file("shaders/voronoi.glsl"); 
     shaders[4] = delo2d_shader_from_file("shaders/distortion.glsl");  
-    shaders[5] = delo2d_shader_from_file("shaders/shader_sky.glsl");      
-    shaders[6] = delo2d_shader_from_file("shaders/shader_silhouette.glsl");      
+    shaders[5] = delo2d_shader_from_file("shaders/sky.glsl");      
+    shaders[6] = delo2d_shader_from_file("shaders/silhouette.glsl");      
     delo2d_load_texture(&textures[0],"textures/sprite_sheet_fire.png");  
     delo2d_load_texture(&textures[1],"textures/sprite_sheet_scene.png"); 
     delo2d_load_texture(&textures[2],"textures/sprite_sheet_fire_distortion.png"); 

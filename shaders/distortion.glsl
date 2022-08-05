@@ -48,7 +48,6 @@ void main()
     tex_color_distortion.g *= 0.8;
     tex_color_distortion.b *= 0.5;
 
-
     color = tex_color + tex_color_distortion/6;
     
     
