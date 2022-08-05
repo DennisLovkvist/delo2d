@@ -1,3 +1,4 @@
+mkdir -p bin/release/
 cp -u shaders bin/release/ -d -r
 cp -u textures bin/release/ -d -r
 gcc -o bin/release/delo2d_example *.c -Ilibs -lglfw -lGLEW -lGL -msse2 -lm -ldl -w -O3
