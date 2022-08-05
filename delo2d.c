@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libs/delo2d.h"
+#include "delo2d.h"
 #include "stb_image.h"
 #include <math.h>
 
