@@ -44,9 +44,9 @@ int load(Texture *textures,unsigned int *shaders)
     shaders[4] = delo2d_shader_from_file("shaders/distortion.glsl");  
     shaders[5] = delo2d_shader_from_file("shaders/sky.glsl");      
     shaders[6] = delo2d_shader_from_file("shaders/silhouette.glsl");      
-    delo2d_load_texture(&textures[0],"textures/sprite_sheet_fire.png");  
-    delo2d_load_texture(&textures[1],"textures/sprite_sheet_scene.png"); 
-    delo2d_load_texture(&textures[2],"textures/sprite_sheet_fire_distortion.png"); 
+    delo2d_texture_load(&textures[0],"textures/sprite_sheet_fire.png");  
+    delo2d_texture_load(&textures[1],"textures/sprite_sheet_scene.png"); 
+    delo2d_texture_load(&textures[2],"textures/sprite_sheet_fire_distortion.png"); 
     return 0;
 }
 void unload(Texture *textures,unsigned int *shaders)
