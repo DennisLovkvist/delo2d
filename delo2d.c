@@ -286,11 +286,11 @@ void delo2d_get_quad(Quad *quad, VertexArray *vertex_array, int element_index)
 
 //region quads end
 //vertex array code begin
-void delo2d_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj)
+void delo2d_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,float *projection)
 {
    
     glUseProgram(shader_id); 
-    glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,&ortho_proj[0]);
+    glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,&projection[0]);
     int samplers[3] = {0,1,2};
     glUniform1iv(glGetUniformLocation(shader_id,"u_textures"),3,samplers);  
 
@@ -600,12 +600,12 @@ void delo2d_projection_matrix_set(float *projection_src,float *projection_des)
     }
     
 }
-void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, float *ortho_proj)
+void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, float *projection)
 {
     if(sprite_batch->called_end == 0)return;
 
     sprite_batch->shader_id = shader;
-    delo2d_projection_matrix_set(ortho_proj,&sprite_batch->projection);
+    delo2d_projection_matrix_set(projection,&sprite_batch->projection);
 
     sprite_batch->called_begin = 1;
 }
@@ -878,20 +878,20 @@ void delo2d_sprite_animate(Sprite *sprite,float dt)
 
     sprite->updated_tex_coords = 1;      
 }
-void delo2d_camera_move(float *ortho_proj, float tx, float ty, float screen_width, float screen_height)
+void delo2d_camera_move(float *projection, float tx, float ty, float screen_width, float screen_height)
 {
-    ortho_proj[3] += tx/screen_width;
-    ortho_proj[7] -= ty/screen_height;
+    projection[3] += tx/screen_width;
+    projection[7] -= ty/screen_height;
 }
-void delo2d_camera_set_position(float *ortho_proj, float x, float y, float screen_width, float screen_height)
+void delo2d_camera_set_position(float *projection, float x, float y, float screen_width, float screen_height)
 {
-    ortho_proj[3] = x/screen_width;
-    ortho_proj[7] = y/screen_height;
+    projection[3] = x/screen_width;
+    projection[7] = y/screen_height;
 }
-void delo2d_camera_set_zoom(float *ortho_proj, float z, float screen_width, float screen_height)
+void delo2d_camera_set_zoom(float *projection, float z, float screen_width, float screen_height)
 {    
-    ortho_proj[0] = z/screen_width;
-    ortho_proj[5] = z/(-screen_height);   
+    projection[0] = z/screen_width;
+    projection[5] = z/(-screen_height);   
 }
 void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev)
 {

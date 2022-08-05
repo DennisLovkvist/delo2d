@@ -8,6 +8,7 @@
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
+
 typedef struct KeyboardInput KeyboardInput;
 struct KeyboardInput
 {
@@ -170,7 +171,7 @@ void delo2d_quad_get_center(Quad *quad,Vector2f *center);
 //region vertex array code begin
 void delo2d_vertex_set_element(VertexArray *vertex_array, int position,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,Color color);
 void delo2d_vertex_set_tex_data(VertexArray *vertex_array, int position,float tex_x,float tex_y,unsigned int texture_slot);
-void delo2d_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,float *ortho_proj);
+void delo2d_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,float *projection);
 void delo2d_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
 void delo2d_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
@@ -188,7 +189,7 @@ unsigned int delo2d_shader_from_file(char *path_shader);
 //region shader code end
 
 //region sprites code begin
-void delo2d_sprite_batch_draw(SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *ortho_proj);
+void delo2d_sprite_batch_draw(SpriteBatch *sprite_batch,Texture *textures,unsigned int texture_count,unsigned int shader_id,float *projection);
 void delo2d_create_sprite_batch(SpriteBatch *sprite_batch,int capacity);
 void delo2d_sprite_scale_dest_rect(Sprite *sprite, float scale_x, float scale_y);
 void delo2d_define_sprite(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color,float scale_x,float scale_y,float skew_x,float skew_y,unsigned int flip_horizontally,unsigned int flip_vertically);
@@ -202,14 +203,14 @@ void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray 
 void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array);
 void delo2d_sprite_animate(Sprite *sprite,float dt);
 void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index);
-void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, float *ortho_proj);
+void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, float *projection);
 void delo2d_sprite_batch_end(SpriteBatch *sprite_batch);
 //region sprites code end
 
 //region camera code begin
-void delo2d_camera_move(float *ortho_proj, float tx, float ty, float screen_width, float screen_height);
-void delo2d_camera_set_position(float *ortho_proj, float x, float y, float screen_width, float screen_height);
-void delo2d_camera_set_zoom(float *ortho_proj, float z, float screen_width, float screen_height);
+void delo2d_camera_move(float *projection, float tx, float ty, float screen_width, float screen_height);
+void delo2d_camera_set_position(float *projection, float x, float y, float screen_width, float screen_height);
+void delo2d_camera_set_zoom(float *projection, float z, float screen_width, float screen_height);
 //region camera code end
 
 //region input code begin
