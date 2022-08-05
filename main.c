@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libs/delo2d.h"
+#include "delo2d.h"
 #include <time.h>
 
 #define GLEW_STATIC 1
@@ -133,13 +133,13 @@ int init(Graphics *graphics)
 }
 int load(Texture *textures,unsigned int *shaders)
 {
-    shaders[0] = delo2d_shader_from_file("default_shader.glsl");  
-    shaders[1] = delo2d_shader_from_file("shader_render_target.glsl");    
-    shaders[2] = delo2d_shader_from_file("shader_warp.glsl"); 
-    shaders[3] = delo2d_shader_from_file("voronoi.glsl"); 
-    shaders[4] = delo2d_shader_from_file("distortion.glsl");  
-    shaders[5] = delo2d_shader_from_file("shader_sky.glsl");      
-    shaders[6] = delo2d_shader_from_file("shader_silhouette.glsl");    
+    shaders[0] = delo2d_shader_from_file("shaders/default_shader.glsl");  
+    shaders[1] = delo2d_shader_from_file("shaders/shader_render_target.glsl");    
+    shaders[2] = delo2d_shader_from_file("shaders/shader_warp.glsl"); 
+    shaders[3] = delo2d_shader_from_file("shaders/voronoi.glsl"); 
+    shaders[4] = delo2d_shader_from_file("shaders/distortion.glsl");  
+    shaders[5] = delo2d_shader_from_file("shaders/shader_sky.glsl");      
+    shaders[6] = delo2d_shader_from_file("shaders/shader_silhouette.glsl");      
     delo2d_load_texture(&textures[0],"textures/sprite_sheet_fire.png");  
     delo2d_load_texture(&textures[1],"textures/sprite_sheet_scene.png"); 
     delo2d_load_texture(&textures[2],"textures/sprite_sheet_fire_distortion.png"); 
@@ -344,7 +344,7 @@ int game_setup(Graphics *graphics,Scene *scene)
     delo2d_define_sprite(&graphics->sprite_distortion_map_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0); 
     delo2d_define_sprite(&graphics->sprite_distortion_map_mask_shoreline, 100,425,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_define_sprite(&graphics->sprite_distortion_map_mask_land, 0,0,screen_width,530,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_define_sprite(&graphics->sprite_distortion_map_fire,750,300,400,770,0,0,400,770,2,graphics->sprite_sheets[0].width,graphics->sprite_sheets[0].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_define_sprite(&graphics->sprite_distortion_map_fire,820,270,400,770,0,0,400,770,2,graphics->sprite_sheets[0].width,graphics->sprite_sheets[0].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_define_sprite(&graphics->sprite_rt_scene_land_and_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1.1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);    
     delo2d_define_sprite(&graphics->sprite_particle, 0,0,3,3,1300,3400,5,5,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);     
     delo2d_define_sprite(&graphics->sprite_sky, 0,0,screen_width*2,500,0,0,screen_width,screen_height,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
@@ -445,13 +445,13 @@ void game_render(float t,Graphics *graphics,Scene *scene)
         glUseProgram(graphics->shaders[4]);         
         unsigned int texture_index = -1;
         delo2d_sprite_batch_add_texture(&graphics->sb,&graphics->render_target_textures[2],&texture_index);
-        printf("tex address %i\n", &texture_index);
         glUniform1i(glGetUniformLocation(graphics->shaders[4],"u_texture_distortion"),texture_index);//set texture slot
         delo2d_sprite_batch_add(&graphics->sb,&graphics->sprite_rt_scene_land_and_water,&graphics->render_target_textures[1]);
     delo2d_sprite_batch_end(&graphics->sb);
 
     //draw foreground elements
     delo2d_render_target_set(0,0.94,0.80,0.2,1);
+        glUseProgram(graphics->shaders[1]); 
     delo2d_render_target_draw(&graphics->render_target_scene_with_distortions,graphics->shaders[1]);
 
 
