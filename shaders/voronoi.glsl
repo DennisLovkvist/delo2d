@@ -40,7 +40,7 @@ vec2 random2( vec2 p )
 
 void main()
 {     
-    vec2 st = v_tex_coord;
+    vec2 st = v_tex_coord/u_resolution;
     st.y *=5;
     st.x *= u_resolution.x/u_resolution.y;
 
