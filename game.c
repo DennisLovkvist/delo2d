@@ -245,10 +245,10 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     delo2d_sprite_define(&sprites_scene_above_water[72], 1610,-500,438,1092,3244,1990,438,1092,1,ss_width,ss_height,1,1,0,palette[0],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Tree
    
     delo2d_sprite_define(&sprite_rt_scene_water_reflection, 0,510,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_sprite_define(&sprite_rt_scene_above_water, 0,-50,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);
+    delo2d_sprite_define(&sprite_rt_scene_above_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);
     delo2d_sprite_define(&sprite_distortion_map_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0); 
-    delo2d_sprite_define(&sprite_distortion_map_mask_shoreline, 100,425,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_sprite_define(&sprite_distortion_map_mask_land, 0,0,screen_width,530,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_sprite_define(&sprite_distortion_map_mask_shoreline, 100,475,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_sprite_define(&sprite_distortion_map_mask_land, 0,0,screen_width,580,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_distortion_map_fire,820,270,400,770,0,0,400,770,2,sprite_sheets[0].width,sprite_sheets[0].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_rt_scene_land_and_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1.1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);    
     delo2d_sprite_define(&sprite_particle, 0,0,3,3,1300,3400,5,5,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);     
@@ -526,7 +526,13 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
 
     //draw scene water reflection
     delo2d_render_target_set(render_target_scene_with_water_reflection.fbo,0.84,0.40,0.1,1);
+
     delo2d_sprite_batch_begin(&sb,shaders[2],projection);
+        glUseProgram(shaders[2]);          {
+            int width[1] = {render_target_textures[0].width};
+            int height[1] = {render_target_textures[0].height};
+            glUniform1iv(glGetUniformLocation(shaders[2],"u_textures_width"),1,width); 
+            glUniform1iv(glGetUniformLocation(shaders[2],"u_textures_height"),1,height);        }
         delo2d_sprite_batch_add(&sb,&sprite_rt_scene_water_reflection, &render_target_textures[0]);
     delo2d_sprite_batch_end(&sb);
 
@@ -551,10 +557,18 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
     //draw scene with distortions
     delo2d_render_target_set(render_target_scene_with_distortions.fbo,1,0,0,1);
     delo2d_sprite_batch_begin(&sb,shaders[4],projection); 
+
         glUseProgram(shaders[4]);         
         unsigned int texture_index = -1;
         delo2d_sprite_batch_add_texture(&sb,&render_target_textures[2],&texture_index);
         glUniform1i(glGetUniformLocation(shaders[4],"u_texture_distortion"),texture_index);//set texture slot
+        {
+            int width[2] = {render_target_textures[2].width,render_target_textures[1].width};
+            int height[2] = {render_target_textures[2].height,render_target_textures[1].height};
+
+            glUniform1iv(glGetUniformLocation(shaders[4],"u_textures_width"),2,width); 
+            glUniform1iv(glGetUniformLocation(shaders[4],"u_textures_height"),2,height); 
+        }
         delo2d_sprite_batch_add(&sb,&sprite_rt_scene_land_and_water,&render_target_textures[1]);
     delo2d_sprite_batch_end(&sb);
 
