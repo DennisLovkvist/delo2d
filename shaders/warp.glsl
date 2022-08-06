@@ -25,6 +25,8 @@ void main()
 #version 330 core
 
 uniform sampler2D u_textures[2];
+uniform int u_textures_width[2];
+uniform int u_textures_height[2];
 
 layout(location = 0) out vec4 color;
 in vec2 v_tex_coord;
@@ -34,7 +36,7 @@ in vec4 v_color;
 void main()
 { 
     int index = int(v_tex_index);
-    vec2 coord = v_tex_coord;
+    vec2 coord = v_tex_coord / vec2(u_textures_width[0],u_textures_height[0]);
 
     coord.x -= sin(coord.x-0.455)*0.2;
     coord.y += pow(abs(coord.x-0.455),2.5)*8;
