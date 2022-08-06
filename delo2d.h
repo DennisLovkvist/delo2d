@@ -127,8 +127,8 @@ struct Sprite
 {
     unsigned int batch_index,frame,frames,stride,texture_index,texture_width,texture_height,quad_index,flip_horizontally,flip_vertically;
     float orientation,time,duration;
-    Rectangle_f rect_src;
-    Rectangle_f rect_des;
+    Rectangle rect_src;
+    Rectangle rect_des;
     unsigned int updated_tex_coords;
     Color color;
     Vector2f position;
@@ -203,7 +203,7 @@ unsigned int delo2d_shader_from_file(char *path_shader);
 void delo2d_sprite_batch_create(SpriteBatch *sprite_batch,int capacity);
 void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, float *projection);
 void delo2d_sprite_batch_end(SpriteBatch *sprite_batch);
-void delo2d_sprite_define(Sprite *sprite, float dx, float dy,float dw, float dh,float sx, float sy,float sw, float sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color,float scale_x,float scale_y,float skew_x,float skew_y,unsigned int flip_horizontally,unsigned int flip_vertically);
+void delo2d_sprite_define(Sprite *sprite, int dx, int dy,int dw, int dh,int sx, int sy,int sw, int sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color,float scale_x,float scale_y,float skew_x,float skew_y,unsigned int flip_horizontally,unsigned int flip_vertically);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,Texture *texture);
 void delo2d_sprite_batch_add_texture(SpriteBatch *sprite_batch,Texture *texture, unsigned int *texture_index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
