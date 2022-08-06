@@ -34,7 +34,8 @@ in vec4 v_color;
 void main()
 { 
     int index = int(v_tex_index);
-    vec4 tex_color = texture(u_textures[index],v_tex_coord);
+    
+    vec4 tex_color = texelFetch(u_textures[index], ivec2(v_tex_coord), 0);
     
     color = vec4(v_color.r,v_color.g,v_color.b,tex_color.a);
 }

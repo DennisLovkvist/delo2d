@@ -25,6 +25,8 @@ void main()
 #version 330 core
 
 uniform sampler2D u_textures[2];
+uniform int u_textures_width[2];
+uniform int u_textures_height[2];
 uniform sampler2D u_texture_distortion;
 
 layout(location = 0) out vec4 color;
@@ -33,10 +35,10 @@ in float v_tex_index;
 in vec4 v_color;
 
 void main()
-{ 
+{
     int index = int(v_tex_index);
 
-    vec2 coord = v_tex_coord;
+    vec2 coord = v_tex_coord / vec2(u_textures_width[0],u_textures_height[0]);
 
     vec4 tex_color_distortion = texture(u_texture_distortion,coord);
 
@@ -49,8 +51,6 @@ void main()
     tex_color_distortion.b *= 0.5;
 
     color = tex_color + tex_color_distortion/6;
-    
-    
     
 }
 #FRAG_END

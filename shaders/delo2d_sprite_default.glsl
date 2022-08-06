@@ -25,7 +25,6 @@ void main()
 #version 330 core
 
 uniform sampler2D u_textures[3];
-
 layout(location = 0) out vec4 color;
 in vec2 v_tex_coord;
 in float v_tex_index;
@@ -34,8 +33,12 @@ in vec4 v_color;
 void main()
 { 
     int index = int(v_tex_index);
-    vec4 tex_color = texture(u_textures[index],v_tex_coord);
+    //vec4 tex_color = texture2D(u_textures[index],v_tex_coord); 
+    vec4 tex_color = texelFetch(u_textures[index], ivec2(v_tex_coord), 0);
+
     
+
+
     color = tex_color*v_color;
 }
 #FRAG_END
