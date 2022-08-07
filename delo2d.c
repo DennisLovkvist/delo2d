@@ -34,6 +34,8 @@ void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int heig
 }
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title)
 {
+    if (!glfwInit()){return -1;} 
+    
     *window = glfwCreateWindow(width, height, title, NULL, NULL);
 
     if (!*window)
@@ -42,10 +44,7 @@ int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int he
         return -1;
     }
     glfwMakeContextCurrent(*window);
-    return 0;
-}
-int delo2d_render_initialize()
-{
+    
     if(glewInit() != GLEW_OK)
     {
         return -1;

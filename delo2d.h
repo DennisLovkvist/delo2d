@@ -144,7 +144,6 @@ void GLCheckError();
 
 void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
-int delo2d_render_initialize();
 
 //region render target begin
 void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height);
