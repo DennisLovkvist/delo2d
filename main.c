@@ -22,10 +22,8 @@ const unsigned int screen_width = 1920;
 const unsigned int screen_height = 1080;
 
 int init(GLFWwindow **window,float *projection)
-{    
-    if (!glfwInit()){return -1;}    
-    delo2d_render_setup(window, screen_width, screen_height,WINDOW_TITLE);  
-    if(delo2d_render_initialize() == -1){return -1;} 
+{         
+    if(delo2d_render_setup(window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;} 
     
     delo2d_matrix_orthographic_projection(projection,0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);    
     
