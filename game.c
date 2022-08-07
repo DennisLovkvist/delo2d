@@ -483,15 +483,19 @@ void game_update_logic(float t,float dt,Scene *scene)
     delo2d_sprite_animate(&sprites_scene_above_water[70],dt); 
     delo2d_sprite_animate(&sprite_distortion_map_fire,dt);
 }
-void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,float *projection)
+void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,float *projection,int screen_width,unsigned int screen_height)
 {       
     Color clear_color;
     delo2d_color_set_f(&clear_color,0,0,0,0);
     //draw sky
     delo2d_render_target_set(render_target_scene_above_water.fbo,0.94,0.80,0.2,0);
     delo2d_sprite_batch_begin(&sb,shaders[5],projection);
+    {
         glUseProgram(shaders[5]); 
+        float resolution[2] = {screen_width,screen_height};
+        glUniform2fv(glGetUniformLocation(shaders[5],"u_resolution"),1,resolution); 
         delo2d_sprite_batch_add(&sb,&sprite_sky, &sprite_sheets[1]);
+    }
     delo2d_sprite_batch_end(&sb);
 
     //draw scene
@@ -528,11 +532,13 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
     delo2d_render_target_set(render_target_scene_with_water_reflection.fbo,0.84,0.40,0.1,1);
 
     delo2d_sprite_batch_begin(&sb,shaders[2],projection);
-        glUseProgram(shaders[2]);          {
+        glUseProgram(shaders[2]);          
+        {
             int width[1] = {render_target_textures[0].width};
             int height[1] = {render_target_textures[0].height};
             glUniform1iv(glGetUniformLocation(shaders[2],"u_textures_width"),1,width); 
-            glUniform1iv(glGetUniformLocation(shaders[2],"u_textures_height"),1,height);        }
+            glUniform1iv(glGetUniformLocation(shaders[2],"u_textures_height"),1,height);        
+        }
         delo2d_sprite_batch_add(&sb,&sprite_rt_scene_water_reflection, &render_target_textures[0]);
     delo2d_sprite_batch_end(&sb);
 
@@ -543,9 +549,13 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
     //draw distortion pattern
     delo2d_render_target_set(render_target_disortion_map.fbo,0.5,0.5,0.5,1);
     delo2d_sprite_batch_begin(&sb,shaders[3],projection);   
+    {
         glUseProgram(shaders[3]); 
         glUniform1f(glGetUniformLocation(shaders[3],"u_time"),t);
+        float resolution[2] = {screen_width,screen_height};
+        glUniform2fv(glGetUniformLocation(shaders[3],"u_resolution"),1,resolution); 
         delo2d_sprite_batch_add(&sb,&sprite_distortion_map_water,&sprite_sheets[0]);//generate voronoi pattern
+    }
     delo2d_sprite_batch_end(&sb);
 
     delo2d_sprite_batch_begin(&sb,shaders[6],projection); 
