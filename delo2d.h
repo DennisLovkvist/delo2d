@@ -135,6 +135,7 @@ struct Sprite
     Vector2f scale;
     Vector2f skew;
     Vector2f pivot_point;
+    unsigned int loop;
 };
 
 

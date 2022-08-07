@@ -701,6 +701,7 @@ void delo2d_sprite_define(Sprite *sprite, int dx, int dy,int dw, int dh,int sx, 
     sprite->skew.x = skew_x;
     sprite->skew.y = skew_y;
     sprite->pivot_point.x = sprite->pivot_point.y = 0;
+    sprite->loop = 1;
 }
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,Texture *texture)
 {
@@ -835,7 +836,14 @@ void delo2d_sprite_animate(Sprite *sprite,float dt)
 
     if(sprite->time > sprite->duration)
     {
-        sprite->time = 0;
+        if(sprite->loop == 1)
+        {
+            sprite->time = 0;
+        }
+        else
+        {
+            return;
+        }
     }
 
     sprite->frame = (sprite->time / sprite->duration)*(float)sprite->frames;
