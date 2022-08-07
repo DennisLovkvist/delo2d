@@ -16,8 +16,8 @@
 #define COUNT_TEXTURES 3
 #define WINDOW_TITLE "delo2d boilerplate"
 
-const unsigned int screen_width = 1920;
-const unsigned int screen_height = 1080;
+const unsigned int screen_width = 800;
+const unsigned int screen_height = 600;
 
 int main(void)
 { 
@@ -52,12 +52,12 @@ int main(void)
 
     Color color_white;
     delo2d_color_set_f(&color_white,1,1,1,1);
-    delo2d_sprite_define(&sprite, 10,10,256,256,0,0,256,256,0,texture.width,texture.height,16,103,0.4,color_white,1,1,0,0,0,0);
-    float t = 0;
-    
+    int x = screen_width*0.5 - 256/2;
+    int y = screen_height*0.5 - 256/2;
+    delo2d_sprite_define(&sprite, x,y,256,256,0,0,256,256,0,texture.width,texture.height,16,103,0.4,color_white,1,1,0,0,0,0);
+    sprite.loop = 0;
     while (!glfwWindowShouldClose(window))
     { 
-        t += 0.0016f;
          delo2d_sprite_animate(&sprite,0.0016);
 
         delo2d_render_target_set(0,0,0,0,1);
