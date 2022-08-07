@@ -28,7 +28,7 @@ int main(void)
     SpriteBatch sprite_batch;
     Sprite sprite;
 
-    if(delo2d_render_setup(window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
+    if(delo2d_render_setup(&window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
     
     delo2d_matrix_orthographic_projection(projection,0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);//creates an orthographic_projection to be used as our camera
     
@@ -41,14 +41,13 @@ int main(void)
 
     delo2d_sprite_batch_create(&sprite_batch,1);//creates a spritebatch with capacity for 1 sprite
 
-    //defines the sprites properties
+    //defines the sprites
     Color color_white;
     delo2d_color_set_f(&color_white,1,1,1,1);
     int x = screen_width*0.5 - 256/2;
     int y = screen_height*0.5 - 256/2;
     delo2d_sprite_define(&sprite, x,y,256,256,0,0,256,256,0,texture.width,texture.height,16,103,0.4,color_white,1,1,0,0,0,0);
     sprite.loop = 0;
-
     while (!glfwWindowShouldClose(window))
     { 
          delo2d_sprite_animate(&sprite,0.0016);
