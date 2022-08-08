@@ -25,7 +25,7 @@ void main()
 #version 330 core
 
 uniform sampler2D u_textures[2];
-uniform vec2 u_resolution = vec2(1920,1080);
+uniform vec2 u_resolution = vec2(1920,1080);//default value
 uniform float u_time;
 
 layout(location = 0) out vec4 color;

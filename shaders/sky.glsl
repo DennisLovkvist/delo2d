@@ -25,7 +25,7 @@ void main()
 #version 330 core
 
 uniform sampler2D u_textures[2];
-uniform vec2 u_resolution = vec2(1920,1080);
+uniform vec2 u_resolution = vec2(1920,1080);//default value
 uniform float u_time;
 
 layout(location = 0) out vec4 color;
@@ -41,18 +41,16 @@ vec2 random2( vec2 p )
 void main()
 {     
     vec2 st = v_tex_coord/u_resolution;
+   
     st.y *=5;
-    st.x *= u_resolution.x/u_resolution.y;
-
-
     st.y += u_time;
+
+    st.x *= u_resolution.x/u_resolution.y;    
 
     vec3 c = vec3(0.0);
 
-    // Scale
     st *= 2.0;
 
-    // Tile the space
     vec2 i_st = floor(st);
     vec2 f_st = fract(st);
 
@@ -72,8 +70,7 @@ void main()
     }
 
     c += m_dist;
-
-
+    
     color.r = 0.8+c.r*0.5;
     color.g = 0.6+c.g*0.4;
     color.b = 0.2+c.b*0.3;
