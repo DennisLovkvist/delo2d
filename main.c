@@ -96,7 +96,7 @@ int main(void)
 
         game_update_logic(t,dt,&scene);
 
-        game_render(t,&scene,&shaders,&textures,&projection);
+        game_render(t,&scene,&shaders,&textures,&projection,screen_width,screen_height);
 
         glfwSwapBuffers(window);
 
