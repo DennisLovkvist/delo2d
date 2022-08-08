@@ -10,10 +10,10 @@ Still very much in development
 * Loading .png files (Textures) [Done]
 * Manipulate how the image data should be drawn (Sprites) [Done]
 * Draw several sprites in one draw call (SpriteBatch) [Done]
+* Draw basic lines and triangles  (PrimitiveBatch) [Done]
 * Build an exampel project [Done]
 
 ## TODO
-* PrimitiveBatch
 * Skew sprites
 * Documentation
 
