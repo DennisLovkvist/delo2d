@@ -112,16 +112,16 @@ void setup_trees(Tree *trees)
         trees[i].sprite_index = 8+i;
         trees[i].min_sway = -0.5f;
         trees[i].max_sway = 0.5f;
-        trees[i].speed = 5;
+        trees[i].speed = 0.02;
         trees[i].sway = sin(rand());
         trees[i].flag = 0;
     }
 
-    trees[0].speed = 3;
+    trees[0].speed = 0.01;
     trees[0].min_sway = -0.5f;
     trees[0].max_sway = 0.5f;
 
-    trees[1].speed = 4;
+    trees[1].speed = 0.01;
     trees[1].min_sway = -0.5f;
     trees[1].max_sway = 0.5f;
 }
@@ -461,6 +461,9 @@ void update_trees(Tree *trees,Sprite *sprites)
             trees[i].flag = 0;
         }
         sprites[trees[i].sprite_index].skew.x = trees[i].sway*trees[i].speed;
+
+
+        sprites[trees[i].sprite_index].pivot_point.y = sprites[trees[i].sprite_index].rect_des.height/2;
     }
 }
 void game_update_logic(float t,float dt,Scene *scene)

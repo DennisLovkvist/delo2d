@@ -117,7 +117,7 @@ struct SpriteBatch
     unsigned int capacity;
     unsigned int count;
     Rectangle_f *rect_des;
-    Rectangle_f *rect_src_normalized;
+    Rectangle_f *rect_src;
     unsigned int *texture_index;
     unsigned int *quad_index;
     Color *color;
@@ -195,7 +195,7 @@ void delo2d_quad_get_center(Quad *quad,Vector2f *center);
 void delo2d_quad_rotate(Quad *quad, float theta);
 void delo2d_quad_rotate_around_point(Quad *quad, float theta,float point_x, float point_y);
 void delo2d_quad_scale(Quad *quad,float scale_x,float scale_y);
-void delo2d_quad_skew_top(Quad *quad,float skew);
+void delo2d_quad_skew(Quad *quad,float skew_x,float skew_y,float pivot_point_x,float pivot_point_y);
 //region quads end
 
 //region vertex array code begin
