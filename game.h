@@ -80,7 +80,7 @@ void update_particles(float t,float dt, Particle *particles,Sprite *sprite);
 void update_trees(Tree *trees,Sprite *sprites);
 
 int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,unsigned int screen_height);
-void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *projection);
+void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, Projection projection);
 void game_update_logic(float t,float dt,Scene *scene);
-void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,float *projection,int screen_width,unsigned int screen_height);
+void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,Projection projection,int screen_width,unsigned int screen_height);
 

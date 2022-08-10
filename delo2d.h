@@ -14,6 +14,11 @@
 #define DELO_QUAD_LIST 4
 
 
+typedef struct Projection Projection;
+struct Projection
+{
+    float matrix[4][4];
+};
 typedef struct KeyboardInput KeyboardInput;
 struct KeyboardInput
 {
@@ -46,13 +51,12 @@ struct Quad
 typedef struct VertexArray VertexArray;
 struct VertexArray
 {
+    unsigned int initialized;
     unsigned int ibo;
     unsigned int vao;
     unsigned int vbo;
-
     unsigned int id;
     unsigned int type;
-
     unsigned int count_elements;
     unsigned int indices_per_element;
     unsigned int count_index;
@@ -65,20 +69,20 @@ struct VertexArray
 typedef struct VertexArrayPrimitives VertexArrayPrimitives;
 struct VertexArrayPrimitives
 {
+    unsigned int initialized;
     unsigned int vao;
     unsigned int vbo;
-
     unsigned int type;
     unsigned int capacity;
     unsigned int count;
     unsigned int layout_float_count;
-
     float *buffer_position;
 };
 
 typedef struct Texture Texture;
 struct Texture
 {
+    unsigned int initialized;
     unsigned int renderer_id;
     unsigned char* local_buffer;
     int width,height,bytes_per_pixel;
@@ -87,7 +91,8 @@ struct Texture
 typedef struct RenderTarget RenderTarget;
 struct RenderTarget
 {
-    unsigned int vao,vbo,fbo,framebufferTexture,rbo;
+    unsigned int initialized;
+    unsigned int vao,vbo,fbo,fbt,rbo;
     GLenum status;
     float vertices[24];
 };
@@ -109,9 +114,10 @@ struct Color
 typedef struct SpriteBatch SpriteBatch;
 struct SpriteBatch
 {
+    unsigned int initialized;
     unsigned int called_begin;
     unsigned int called_end;
-    float projection[4][4];
+    Projection projection;
     unsigned int shader_id;
     VertexArray vertex_array;
     unsigned int capacity;
@@ -152,9 +158,10 @@ struct Sprite
 typedef struct PrimitiveBatch PrimitiveBatch;
 struct PrimitiveBatch
 {
+    unsigned int initialized;
     unsigned int called_begin;
     unsigned int called_end;
-    float projection[4][4];
+    Projection projection;
     unsigned int shader_id;
     VertexArrayPrimitives vertex_array;
 };
@@ -167,6 +174,7 @@ int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int he
 
 //region render target begin
 void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height);
+void delo2d_render_target_delete(RenderTarget *rt);
 void delo2d_render_target_draw(RenderTarget *render_target, unsigned int shader_id);
 void delo2d_render_target_set(unsigned int frame_buffer,float r, float g, float b, float a);
 //region rendering end
@@ -182,8 +190,8 @@ void delo2d_texture_copy(Texture *texture_src,Texture *texture_des);
 //region matrices begin
 void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3]);
 void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty);
-void delo2d_matrix_orthographic_projection(float (*matrix)[4][4], float l,float r,float t,float b,float f,float n);
-void delo2d_projection_matrix_set(float *projection_src,float *projection_des);
+void delo2d_matrix_orthographic_projection(Projection *projection, float l,float r,float t,float b,float f,float n);
+void delo2d_projection_matrix_set(Projection *projection_src,Projection *projection_des);
 //region matrices end
 
 //region quads begin
@@ -199,11 +207,11 @@ void delo2d_quad_skew(Quad *quad,float skew_x,float skew_y,float pivot_point_x,f
 //region quads end
 
 //region vertex array code begin
-
 void delo2d_sprite_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
+void delo2d_sprite_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_sprite_vertex_set_element_sprite(VertexArray *vertex_array, int element,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,Color color);
 void delo2d_sprite_vertex_set_tex_data(VertexArray *vertex_array, int element,float tex_x,float tex_y,unsigned int texture_slot);
-void delo2d_sprite_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,float *projection);
+void delo2d_sprite_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,Projection projection);
 void delo2d_sprite_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
 void delo2d_sprite_vertex_array_bind(VertexArray *vertex_array);
 void delo2d_sprite_vertex_array_unbind();
@@ -211,21 +219,17 @@ void delo2d_sprite_vertex_array_delete(VertexArray *vertex_array);
 //region vertex array code end
 
 //region shader code begin
-static unsigned int delo2d_shader_compile(unsigned int type,char *shader_source_code);
-static int delo2d_shader_create(char *vertex_shader_source_code, char *fragment_shader_source_code);
-static char* delo2d_shader_load(char *path);
-static int delo2d_find_keyword(char *string, char *sub_string,int tag);
-static char* delo2d_shader_parse(char *source_full,char *keyword_begin,char *keyword_end);
 unsigned int delo2d_shader_from_file(char *path_shader);
 //region shader code end
 
 //region sprites code begin
 void delo2d_sprite_batch_create(SpriteBatch *sprite_batch,int capacity);
-void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, float *projection);
+void delo2d_sprite_batch_delete(SpriteBatch *sprite_batch);
+void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, Projection projection);
 void delo2d_sprite_batch_end(SpriteBatch *sprite_batch);
 void delo2d_sprite_define(Sprite *sprite, int dx, int dy,int dw, int dh,int sx, int sy,int sw, int sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color,float scale_x,float scale_y,float skew_x,float skew_y,unsigned int flip_horizontally,unsigned int flip_vertically);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,Texture *texture);
-void delo2d_sprite_batch_add_texture(SpriteBatch *sprite_batch,Texture *texture, unsigned int *texture_index);
+void delo2d_sprite_batch_add_texture(SpriteBatch *sprite_batch,Texture *texture, int *texture_index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
 void delo2d_sprite_scale_dest_rect(Sprite *sprite, float scale_x, float scale_y);
 void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_array);
@@ -235,13 +239,12 @@ void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray 
 void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *vertex_array);
 void delo2d_sprite_animate(Sprite *sprite,float dt);
 void delo2d_sprite_batch_update_tex_coords(VertexArray *vertex_array,SpriteBatch *sprite_batch, Sprite *sprite,int index);
-
 //region sprites code end
 
 //region camera code begin
-void delo2d_camera_move(float *projection, float tx, float ty, float screen_width, float screen_height);
-void delo2d_camera_set_position(float *projection, float x, float y, float screen_width, float screen_height);
-void delo2d_camera_set_zoom(float *projection, float z, float screen_width, float screen_height);
+void delo2d_camera_move(Projection *projection, float tx, float ty, float screen_width, float screen_height);
+void delo2d_camera_set_position(Projection *projection, float x, float y, float screen_width, float screen_height);
+void delo2d_camera_set_zoom(Projection *projection, float z, float screen_width, float screen_height);
 //region camera code end
 
 //region input code begin
@@ -257,16 +260,18 @@ void delo2d_color_lerp(Color *result, Color *color_a,Color *color_b, float facor
 
 //vertex array primitives code begin
 void delo2d_primitive_vertex_array_create(VertexArrayPrimitives *vertex_array,unsigned int vertex_capacity,unsigned int shader);
+void delo2d_primitive_vertex_array_delete(VertexArrayPrimitives *vertex_array);
 void delo2d_primitive_vertex_set_element(VertexArrayPrimitives *vertex_array, int element,float x, float y,float r,float g, float b, float a);
-void delo2d_primitive_vertex_array_draw(VertexArrayPrimitives *vertex_array,unsigned int shader_id,float *projection);
+void delo2d_primitive_vertex_array_draw(VertexArrayPrimitives *vertex_array,unsigned int shader_id,Projection projection);
 void delo2d_primitive_vertex_array_to_graphics_device(VertexArrayPrimitives *vertex_array, GLintptr offset);
 void delo2d_primitive_vertex_array_bind(VertexArrayPrimitives *vertex_array);
 void delo2d_primitive_vertex_array_unbind();
-void delo2d_primitive_vertex_array_delete(VertexArrayPrimitives *vertex_array);
 //vertex array primitives code end
 
 //primitive batch code begin
 void delo2d_primitive_batch_create(PrimitiveBatch *primitive_batch,int capacity);
-void delo2d_primitive_batch_begin(PrimitiveBatch *primitive_batch,unsigned int shader,float *projection,unsigned int primitive_type);
+void delo2d_primitive_batch_delete(PrimitiveBatch *primitive_batch);
+void delo2d_primitive_batch_begin(PrimitiveBatch *primitive_batch,unsigned int shader,Projection projection,unsigned int primitive_type);
 void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,int r,int g, int b, int a);
 void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch);
+//primitive batch code end

@@ -66,7 +66,7 @@ int main(void)
     GLFWwindow *window;
     Texture textures[COUNT_TEXTURES];//textures from files
     unsigned int shaders[COUNT_SHADERS];//shader ids from files
-    float projection[4][4];//projection matrix
+    Projection projection;//projection matrix
 
     KeyboardInput ki;
     KeyboardInput ki_prev;
@@ -92,11 +92,11 @@ int main(void)
 
         delo2d_input_update(window,&ki,&ki_prev);
 
-        game_update_controls(&ki,&ki_prev,&projection);   
+        game_update_controls(&ki,&ki_prev,projection);   
 
         game_update_logic(t,dt,&scene);
 
-        game_render(t,&scene,&shaders,&textures,&projection,screen_width,screen_height);
+        game_render(t,&scene,&shaders,&textures,projection,screen_width,screen_height);
 
         glfwSwapBuffers(window);
 

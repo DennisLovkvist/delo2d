@@ -143,10 +143,10 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
         render_target_textures[i].bytes_per_pixel = 0;
     }  
 
-    render_target_textures[0].renderer_id = render_target_scene_above_water.framebufferTexture;
-    render_target_textures[1].renderer_id = render_target_scene_with_water_reflection.framebufferTexture;
-    render_target_textures[2].renderer_id = render_target_disortion_map.framebufferTexture;
-    render_target_textures[3].renderer_id = render_target_scene_with_distortions.framebufferTexture;
+    render_target_textures[0].renderer_id = render_target_scene_above_water.fbt;
+    render_target_textures[1].renderer_id = render_target_scene_with_water_reflection.fbt;
+    render_target_textures[2].renderer_id = render_target_disortion_map.fbt;
+    render_target_textures[3].renderer_id = render_target_scene_with_distortions.fbt;
 
 
     Color palette[9];
@@ -277,7 +277,7 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     
     return 0;
 }
-void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, float *projection)
+void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, Projection projection)
 {
     if (ki->move_up == GLFW_PRESS)
     {
@@ -480,7 +480,7 @@ void game_update_logic(float t,float dt,Scene *scene)
     delo2d_sprite_animate(&sprites_scene_above_water[70],dt); 
     delo2d_sprite_animate(&sprite_distortion_map_fire,dt);
 }
-void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,float *projection,int screen_width,unsigned int screen_height)
+void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,Projection projection,int screen_width,unsigned int screen_height)
 {       
     Color clear_color;
     delo2d_color_set_f(&clear_color,0,0,0,0);
