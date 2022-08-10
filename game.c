@@ -170,7 +170,7 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     float default_scale_x = 1,default_scale_y = 1;
     float default_skew_x = 0,default_skew_y = 0;
     
-    delo2d_sprite_define(&sprites_scene_above_water[0], 906,138,610,562,2098,910,610,562,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Sun
+    delo2d_sprite_define(&sprites_scene_above_water[0], 1000,250,256,256,2110,776,256,256,1,ss_width,ss_height,4,8,0.2,color_white,2,2,default_skew_x,default_skew_y,0,0);//Sun
     delo2d_sprite_define(&sprites_scene_above_water[1], 0,540,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);//Ground
     delo2d_sprite_define(&sprites_scene_above_water[2], 470,242,406,86,1624,2130,406,86,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
     delo2d_sprite_define(&sprites_scene_above_water[3], 754,212,238,146,1386,2130,238,146,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
@@ -247,8 +247,8 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     delo2d_sprite_define(&sprite_rt_scene_water_reflection, 0,510,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_rt_scene_above_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);
     delo2d_sprite_define(&sprite_distortion_map_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0); 
-    delo2d_sprite_define(&sprite_distortion_map_mask_shoreline, 100,530,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_sprite_define(&sprite_distortion_map_mask_land, 0,0,screen_width,580,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_sprite_define(&sprite_distortion_map_mask_shoreline, 80,530,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_sprite_define(&sprite_distortion_map_mask_land, 0,0,screen_width,590,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_distortion_map_fire,820,270,400,770,0,0,400,770,2,sprite_sheets[0].width,sprite_sheets[0].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_rt_scene_land_and_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1.1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);    
     delo2d_sprite_define(&sprite_particle, 0,0,3,3,1300,3400,5,5,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);     
@@ -267,6 +267,9 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
 
     delo2d_color_set_f(&sprite_distortion_map_mask_shoreline.color,0.5f,0.5f,0.5f,1.0f);
     delo2d_color_set_f(&sprite_distortion_map_mask_land.color,0.5f,0.5f,0.5f,1.0f);
+
+    sprites_scene_above_water[0].offset.x = 2110;
+    sprites_scene_above_water[0].offset.y = 776;
 
     setup_dog(&scene->dog);
     setup_tall_grass(&scene->tall_grass);
@@ -475,7 +478,7 @@ void game_update_logic(float t,float dt,Scene *scene)
     update_particles(t,dt,&scene->particles,&sprite_particle);     
     update_clouds(&scene->clouds,sprites_scene_above_water);
 
-
+    delo2d_sprite_animate(&sprites_scene_above_water[0],dt);
     delo2d_sprite_animate(&sprites_scene_above_water[68],dt);
     delo2d_sprite_animate(&sprites_scene_above_water[70],dt); 
     delo2d_sprite_animate(&sprite_distortion_map_fire,dt);
@@ -485,7 +488,7 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
     Color clear_color;
     delo2d_color_set_f(&clear_color,0,0,0,0);
     //draw sky
-    delo2d_render_target_set(render_target_scene_above_water.fbo,0.94,0.80,0.2,0);
+    delo2d_render_target_set(render_target_scene_above_water.fbo,0,0,0,0);
     delo2d_sprite_batch_begin(&sb,shaders[5],projection);
     {
         glUseProgram(shaders[5]); 
@@ -563,8 +566,8 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
 
     //draw scene with distortions
     delo2d_render_target_set(render_target_scene_with_distortions.fbo,1,0,0,1);
+    
     delo2d_sprite_batch_begin(&sb,shaders[4],projection); 
-
         glUseProgram(shaders[4]);         
         unsigned int texture_index = -1;
         delo2d_sprite_batch_add_texture(&sb,&render_target_textures[2],&texture_index);
