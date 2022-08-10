@@ -14,7 +14,6 @@ Still very much in development
 * Build an exampel project [Done]
 
 ## TODO
-* Skew sprites
 * Documentation
 
 Language: c & glsl
