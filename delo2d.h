@@ -153,6 +153,7 @@ struct Sprite
     Vector2f scale;
     Vector2f skew;
     Vector2f pivot_point;
+    Vector2f offset;
     unsigned int loop;
 };
 typedef struct PrimitiveBatch PrimitiveBatch;
