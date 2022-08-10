@@ -49,7 +49,7 @@ void main()
 
     vec3 c = vec3(0.0);
 
-    st *= 2.0;
+    st *= 1.0;
 
     vec2 i_st = floor(st);
     vec2 f_st = fract(st);
