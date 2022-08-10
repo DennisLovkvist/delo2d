@@ -33,6 +33,7 @@ in vec2 v_tex_coord;
 in float v_tex_index;
 in vec4 v_color;
 
+uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 void main()
 { 
     int index = int(v_tex_index);
@@ -46,5 +47,19 @@ void main()
     
     color = tex_color*v_color;
     color.a -= abs(coord.x-0.455)*3.0;
+
+
+    vec2 tex_offset = 1.0 / textureSize(u_textures[index], 0); // gets size of single texel
+        vec3 result = texture(u_textures[index], coord).rgb * weight[0]; // current fragment's contribution
+    
+         for(int i = 1; i < 5; ++i)
+        {
+            result += texture(u_textures[index], coord + vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
+            result += texture(u_textures[index], coord - vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
+        }
+
+        color = vec4(result, 1.0);
+
+
 }
 #FRAG_END
