@@ -761,6 +761,8 @@ void delo2d_sprite_define(Sprite *sprite, int dx, int dy,int dw, int dh,int sx, 
     sprite->scale.y = scale_y;
     sprite->skew.x = skew_x;
     sprite->skew.y = skew_y;
+    sprite->offset.x = 0;
+    sprite->offset.y = 0;
     sprite->pivot_point.x = sprite->pivot_point.y = 0;
     sprite->loop = 1;
 }
@@ -910,9 +912,9 @@ void delo2d_sprite_animate(Sprite *sprite,float dt)
 
     sprite->frame = (sprite->time / sprite->duration)*(float)sprite->frames;
 
-    sprite->rect_src.x = (sprite->frame % sprite->stride) * sprite->rect_src.width;
+    sprite->rect_src.x = sprite->offset.x + (sprite->frame % sprite->stride) * sprite->rect_src.width;
     
-    sprite->rect_src.y = (sprite->frame/sprite->stride) * sprite->rect_src.height;
+    sprite->rect_src.y = sprite->offset.y + (sprite->frame/sprite->stride) * sprite->rect_src.height;
 
     sprite->updated_tex_coords = 1;      
 }
