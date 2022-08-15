@@ -45,12 +45,9 @@ void main()
     float x = tex_color_distortion.r-0.5;
 
     vec4 tex_color = texture(u_textures[index],coord - vec2((cos(x)/20),0));
-    
-    tex_color_distortion.r *= 1.0;
-    tex_color_distortion.g *= 0.8;
-    tex_color_distortion.b *= 0.5;
 
-    color = tex_color + tex_color_distortion/6;
-    
+    color = tex_color;
+
+
 }
 #FRAG_END
