@@ -28,8 +28,8 @@ $ ./build_boilerplate.sh
 
 ## Build example project
 ```
-$ git clone https://github.com/DennisLovkvist/delo2d.git
-$ cd delo2d
+$ git clone https://github.com/DennisLovkvist/guardian_of_light_tour_loop.git
+$ cd guardian_of_light_tour_loop
 $ ./build.sh
 ```
 ![Alt text](screenshot_project_example.png?raw=true "screenshot_project_example")
