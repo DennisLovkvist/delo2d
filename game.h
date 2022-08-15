@@ -49,6 +49,19 @@ struct Dog
     unsigned int flag_y;
 };
 
+typedef struct Fish Fish;
+struct Fish
+{
+    unsigned int sprite_index, active;
+    float x, y, spawn_delay;
+};
+typedef struct Raven Raven;
+struct Raven
+{
+    unsigned int sprite_index, active;
+    float x, y, spawn_delay,speed_x,speed_y;
+};
+
 typedef struct Particle Particle;
 struct Particle
 {
@@ -64,6 +77,8 @@ struct Scene
     Cloud clouds[COUNT_CLOUDS];
     TallGrass tall_grass[COUNT_TALL_GRASS];
     Dog dog;
+    Fish fish;
+    Raven raven;
 };
 
 void setup_dog(Dog *dog);

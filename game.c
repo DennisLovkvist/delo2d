@@ -4,7 +4,7 @@
 #include "game.h"
 
 
-#define SPRITES_COUNT 73
+#define SPRITES_COUNT 76
 #define SPRITEBATCH_CAPACITY 200
 
 SpriteBatch sb;
@@ -172,9 +172,9 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     
     delo2d_sprite_define(&sprites_scene_above_water[0], 1000,250,256,256,2110,776,256,256,1,ss_width,ss_height,4,8,0.2,color_white,2,2,default_skew_x,default_skew_y,0,0);//Sun
     delo2d_sprite_define(&sprites_scene_above_water[1], 0,540,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1f,default_scale_y,default_skew_x,default_skew_y,0,0);//Ground
-    delo2d_sprite_define(&sprites_scene_above_water[2], 470,242,406,86,1624,2130,406,86,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
-    delo2d_sprite_define(&sprites_scene_above_water[3], 754,212,238,146,1386,2130,238,146,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
-    delo2d_sprite_define(&sprites_scene_above_water[4], 1012,202,344,164,1042,2130,344,164,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
+    delo2d_sprite_define(&sprites_scene_above_water[2], 0,242,406,86,1624,2130,406,86,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
+    delo2d_sprite_define(&sprites_scene_above_water[3], 600,212,238,146,1386,2130,238,146,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
+    delo2d_sprite_define(&sprites_scene_above_water[4], 1412,202,344,164,1042,2130,344,164,1,ss_width,ss_height,1,1,0,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Cloud
     delo2d_sprite_define(&sprites_scene_above_water[5], 400,200,2092,452,0,1218,2092,452,1,ss_width,ss_height,1,1,0,palette[6],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Mountain
     delo2d_sprite_define(&sprites_scene_above_water[6], 602,254,116,338,274,2254,116,338,1,ss_width,ss_height,1,1,0,palette[6],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Wind turbine
     delo2d_sprite_define(&sprites_scene_above_water[7], 476,244,116,338,274,2254,116,338,1,ss_width,ss_height,1,1,0,palette[6],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Wind turbine
@@ -241,15 +241,18 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     delo2d_sprite_define(&sprites_scene_above_water[68], 758,338,400,770,0,0,400,770,0,sprite_sheets[0].width,sprite_sheets[0].height,16,56,0.8,palette[7],1.25f,1.25f,default_skew_x,default_skew_y,0,0);//Fire 
     delo2d_sprite_define(&sprites_scene_above_water[69], 738,726,486,208,1434,298,486,208,1,ss_width,ss_height,1,1,0,palette[6],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Bonfire front 
     delo2d_sprite_define(&sprites_scene_above_water[70], 754,430,400,770,0,0,400,770,0,sprite_sheets[0].width,sprite_sheets[0].height,16,56,0.8,palette[7],0.75f,0.75f,default_skew_x,default_skew_y,0,0);//Fire 
-    delo2d_sprite_define(&sprites_scene_above_water[71], -240,-469,438,1092,3244,1990,438,1092,1,ss_width,ss_height,1,1,0,palette[0],default_scale_x,default_scale_y,default_skew_x,default_skew_y,1,0);//Tree
-    delo2d_sprite_define(&sprites_scene_above_water[72], 1610,-500,438,1092,3244,1990,438,1092,1,ss_width,ss_height,1,1,0,palette[0],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Tree
+    delo2d_sprite_define(&sprites_scene_above_water[71], 660,900,944,212,0,4000,944,212,1,ss_width,ss_height,7,28,0.3,palette[6],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Fish
+    delo2d_sprite_define(&sprites_scene_above_water[72], 660,900,944,212,0,4848,944,212,1,ss_width,ss_height,7,28,0.3,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Fish distortion
+    delo2d_sprite_define(&sprites_scene_above_water[73], 660,660,166,172,1917,0,166,172,1,ss_width,ss_height,10,23,0.07,palette[7],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Raven
+    delo2d_sprite_define(&sprites_scene_above_water[74], -240,-469,438,1092,3244,1990,438,1092,1,ss_width,ss_height,1,1,0,palette[0],default_scale_x,default_scale_y,default_skew_x,default_skew_y,1,0);//Tree
+    delo2d_sprite_define(&sprites_scene_above_water[75], 1610,-500,438,1092,3244,1990,438,1092,1,ss_width,ss_height,1,1,0,palette[0],default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);//Tree
    
     delo2d_sprite_define(&sprite_rt_scene_water_reflection, 0,510,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_rt_scene_above_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,0,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);
     delo2d_sprite_define(&sprite_distortion_map_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0); 
     delo2d_sprite_define(&sprite_distortion_map_mask_shoreline, 80,530,3680,918,0,3082,3680,918,1,ss_width,ss_height,1,1,0,palette[2],1.1,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_distortion_map_mask_land, 0,0,screen_width,590,1300,3400,10,10,1,ss_width,ss_height,1,1,0,color_black,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
-    delo2d_sprite_define(&sprite_distortion_map_fire,820,270,400,770,0,0,400,770,2,sprite_sheets[0].width,sprite_sheets[0].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
+    delo2d_sprite_define(&sprite_distortion_map_fire,820,270,400,770,0,0,400,770,2,sprite_sheets[2].width,sprite_sheets[2].height,16,56,0.8,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
     delo2d_sprite_define(&sprite_rt_scene_land_and_water, 0,0,screen_width,screen_height,0,0,screen_width,screen_height,1,screen_width,screen_height,1.1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,1);    
     delo2d_sprite_define(&sprite_particle, 0,0,3,3,1300,3400,5,5,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);     
     delo2d_sprite_define(&sprite_sky, 0,0,screen_width*2,500,0,0,screen_width,screen_height,1,ss_width,ss_height,1,1,0,color_white,default_scale_x,default_scale_y,default_skew_x,default_skew_y,0,0);
@@ -271,13 +274,41 @@ int game_setup(Scene *scene,Texture *sprite_sheets,unsigned int screen_width,uns
     sprites_scene_above_water[0].offset.x = 2110;
     sprites_scene_above_water[0].offset.y = 776;
 
+    delo2d_color_set_f(&sprite_rt_scene_water_reflection.color,0.6,0.5,0.3,1);
+
+
     setup_dog(&scene->dog);
     setup_tall_grass(&scene->tall_grass);
     setup_shadows(&scene->shadows);
     setup_trees(&scene->trees);
     setup_particles(&scene->particles);
     setup_clouds(&scene->clouds);
+
+    scene->fish.active = 0;
+    scene->fish.spawn_delay = 2;
+    scene->fish.sprite_index = 71;
     
+    scene->raven.active = 0;
+    scene->raven.spawn_delay = 4;
+    scene->raven.sprite_index = 73;
+    scene->raven.speed_x = 0;
+
+
+    sprites_scene_above_water[scene->fish.sprite_index].loop = 0;
+    sprites_scene_above_water[scene->fish.sprite_index].offset.x = 0;
+    sprites_scene_above_water[scene->fish.sprite_index].offset.y = 4000;
+
+    sprites_scene_above_water[scene->fish.sprite_index+1].loop = 0;
+    sprites_scene_above_water[scene->fish.sprite_index+1].offset.x = 0;
+    sprites_scene_above_water[scene->fish.sprite_index+1].offset.y = 4848;
+
+
+    sprites_scene_above_water[scene->raven.sprite_index].loop = 1;
+    sprites_scene_above_water[scene->raven.sprite_index].offset.x = 1917;
+    sprites_scene_above_water[scene->raven.sprite_index].offset.y = 0;
+    sprites_scene_above_water[scene->raven.sprite_index].scale.x = 0.5;
+    sprites_scene_above_water[scene->raven.sprite_index].scale.y = 0.5;
+
     return 0;
 }
 void game_update_controls(KeyboardInput *ki,KeyboardInput *ki_prev, Projection projection)
@@ -377,7 +408,12 @@ void update_clouds(Cloud *clouds,Sprite *sprites)
         sprites[index].scale.x = clouds[i].scale_x*clouds[i].speed;
         sprites[index].scale.y = clouds[i].scale_y*clouds[i].speed;
 
-        sprites[index].position.x += 0.05f;
+        sprites[index].position.x += 0.1f;
+
+        if(sprites[index].position.x > 2000)
+        {
+            sprites[index].position.x = -100;
+        }
     } 
 }
 void update_shadows(Shadow *shadows,Sprite *sprites)
@@ -481,6 +517,104 @@ void game_update_logic(float t,float dt,Scene *scene)
     delo2d_sprite_animate(&sprites_scene_above_water[0],dt);
     delo2d_sprite_animate(&sprites_scene_above_water[68],dt);
     delo2d_sprite_animate(&sprites_scene_above_water[70],dt); 
+
+    delo2d_sprite_animate(&sprites_scene_above_water[scene->fish.sprite_index],dt);
+    delo2d_sprite_animate(&sprites_scene_above_water[scene->fish.sprite_index+1],dt);
+    delo2d_sprite_animate(&sprites_scene_above_water[scene->raven.sprite_index],dt); 
+
+
+    if(sprites_scene_above_water[scene->fish.sprite_index].time >= sprites_scene_above_water[scene->fish.sprite_index].duration && scene->fish.active == 1)
+    {
+        scene->fish.active = 0;        
+    }
+    if(scene->fish.active == 0)
+    {
+        scene->fish.spawn_delay -= 0.016f;
+
+        if(scene->fish.spawn_delay <= 0)
+        {
+            scene->fish.active = 1; 
+            sprites_scene_above_water[scene->fish.sprite_index].position.x = sprites_scene_above_water[scene->fish.sprite_index+1].position.x = (rand() % (1920 + 1 - 0)) + 0;
+            scene->fish.spawn_delay = (rand() % (38 + 1 - 18)) + 18;
+            sprites_scene_above_water[scene->fish.sprite_index].time = sprites_scene_above_water[scene->fish.sprite_index+1].time = 0;
+
+            int n = ((rand() % (10 + 1 - 0)) + 0);
+            if(n > 5)
+            {
+                sprites_scene_above_water[scene->fish.sprite_index].flip_horizontally = 0;
+                sprites_scene_above_water[scene->fish.sprite_index+1].flip_horizontally = 0;
+            }
+            else
+            {
+                sprites_scene_above_water[scene->fish.sprite_index].flip_horizontally = 1;
+                sprites_scene_above_water[scene->fish.sprite_index+1].flip_horizontally = 1;
+            }
+
+
+        }
+    }
+
+    
+    if(scene->raven.active == 1)
+    {
+        int reset = 0;
+
+        if(scene->raven.speed_x > 0)
+        {
+            reset = (sprites_scene_above_water[scene->raven.sprite_index].position.x >= 1960);
+        } 
+        else if(scene->raven.speed_x < 0)
+        {
+            reset = (sprites_scene_above_water[scene->raven.sprite_index].position.x <= -40);        
+        }
+
+        if(reset)
+        {
+            scene->raven.spawn_delay = (rand() % (38 + 1 - 18)) + 18;
+            scene->raven.active = 0;
+        }
+        sprites_scene_above_water[scene->raven.sprite_index].position.x += scene->raven.speed_x;
+        sprites_scene_above_water[scene->raven.sprite_index].position.y += scene->raven.speed_y;
+    }
+    else
+    {
+        scene->raven.spawn_delay -= 0.016f;
+
+        if(scene->raven.spawn_delay <= 0)
+        {
+            scene->raven.active = 1; 
+            int n = ((rand() % (10 + 1 - 0)) + 0);
+            if(n > 5)
+            {
+                sprites_scene_above_water[scene->raven.sprite_index].position.x = 1960;
+                sprites_scene_above_water[scene->raven.sprite_index].flip_horizontally = 0;
+                scene->raven.speed_x = -3;
+            }
+            else
+            {
+                sprites_scene_above_water[scene->raven.sprite_index].position.x = -40;
+                sprites_scene_above_water[scene->raven.sprite_index].flip_horizontally = 1;
+                scene->raven.speed_x = 3;
+            }
+            scene->raven.speed_y = 0;
+
+            sprites_scene_above_water[scene->raven.sprite_index].position.y = (rand() % (500 + 1 - 50)) + 50;
+
+
+            sprites_scene_above_water[scene->raven.sprite_index].time = 0;
+        }
+
+    }
+
+
+    
+        
+    
+
+
+
+
+
     delo2d_sprite_animate(&sprite_distortion_map_fire,dt);
 }
 void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_sheets,Projection projection,int screen_width,unsigned int screen_height)
@@ -500,10 +634,28 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
 
     //draw scene
     delo2d_sprite_batch_begin(&sb,shaders[0],projection);
-    for (size_t i = 0; i < SPRITES_COUNT; i++)
+
+
+    for (size_t i = 0; i < 20; i++)
     {
         delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[i], &sprite_sheets[sprites_scene_above_water[i].texture_index]);
     }
+    if(scene->raven.active)
+    {
+        delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[scene->raven.sprite_index], &sprite_sheets[sprites_scene_above_water[scene->raven.sprite_index].texture_index]);
+    }
+    for (size_t i = 20; i < SPRITES_COUNT-5; i++)
+    {
+        delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[i], &sprite_sheets[sprites_scene_above_water[i].texture_index]);
+    }
+
+    
+    
+
+    delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[74], &sprite_sheets[sprites_scene_above_water[74].texture_index]);
+    delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[75], &sprite_sheets[sprites_scene_above_water[75].texture_index]);
+
+  
 
     for (size_t i = 0; i < COUNT_PARTICLES; i++)
     {
@@ -548,6 +700,7 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
 
     //draw distortion pattern
     delo2d_render_target_set(render_target_disortion_map.fbo,0.5,0.5,0.5,1);
+    
     delo2d_sprite_batch_begin(&sb,shaders[3],projection);   
     {
         glUseProgram(shaders[3]); 
@@ -563,7 +716,13 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
         delo2d_sprite_batch_add(&sb,&sprite_distortion_map_mask_land,&sprite_sheets[1]);//voronoi mask
         delo2d_sprite_batch_add(&sb,&sprite_distortion_map_fire,&sprite_sheets[2]);//fire heat distortion
     delo2d_sprite_batch_end(&sb);
-
+    
+    delo2d_sprite_batch_begin(&sb,shaders[0],projection); 
+    if(scene->fish.active)
+    {
+        delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[scene->fish.sprite_index+1], &sprite_sheets[sprites_scene_above_water[scene->fish.sprite_index+1].texture_index]);
+    }
+    delo2d_sprite_batch_end(&sb);
     //draw scene with distortions
     delo2d_render_target_set(render_target_scene_with_distortions.fbo,1,0,0,1);
     
@@ -586,4 +745,12 @@ void game_render(float t,Scene *scene, unsigned int *shaders,Texture *sprite_she
     delo2d_render_target_set(0,0.94,0.80,0.2,1);
         glUseProgram(shaders[1]); 
     delo2d_render_target_draw(&render_target_scene_with_distortions,shaders[1]);
+
+    delo2d_sprite_batch_begin(&sb,shaders[0],projection); 
+    if(scene->fish.active)
+    {
+        delo2d_sprite_batch_add(&sb,&sprites_scene_above_water[scene->fish.sprite_index], &sprite_sheets[sprites_scene_above_water[scene->fish.sprite_index].texture_index]);
+    }
+    delo2d_sprite_batch_end(&sb);
+
 }
