@@ -88,7 +88,7 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {        
         //t = (float)clock()/CLOCKS_PER_SEC;
-        t+= 0.00026f;
+        t+= 0.016f;
 
         delo2d_input_update(window,&ki,&ki_prev);
 
@@ -100,7 +100,8 @@ int main(void)
 
         glfwSwapBuffers(window);
 
-        dt = (float)clock()/CLOCKS_PER_SEC - t;     
+        //dt = (float)clock()/CLOCKS_PER_SEC - t;   
+        dt = 0.016; 
 
         glfwPollEvents();
     }
