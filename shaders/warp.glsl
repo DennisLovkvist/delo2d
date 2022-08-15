@@ -39,8 +39,8 @@ void main()
     int index = int(v_tex_index);
     vec2 coord = v_tex_coord / vec2(u_textures_width[0],u_textures_height[0]);
 
-    coord.x -= sin(coord.x-0.455)*0.2;
-    coord.y += pow(abs(coord.x-0.455),2.5)*8;
+    //coord.x -= sin(coord.x-0.455)*0.2;
+    coord.y += pow(abs(coord.x-0.455),2.5)*4;
 
 
     vec4 tex_color = texture(u_textures[index],coord);
@@ -58,7 +58,7 @@ void main()
             result += texture(u_textures[index], coord - vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
         }
 
-        color = vec4(result, 1.0);
+        color = vec4(result, 1.0)*v_color;
 
 
 }
