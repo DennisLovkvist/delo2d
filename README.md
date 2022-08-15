@@ -26,10 +26,7 @@ $ ./build_boilerplate.sh
 ```
 ![Alt text](screenshot_project_boilerplate.png?raw=true "screenshot_project_boilerplate")
 
-## Build example project
+## Example project
 ```
-$ git clone https://github.com/DennisLovkvist/guardian_of_light_tour_loop.git
-$ cd guardian_of_light_tour_loop
-$ ./build.sh
+https://github.com/DennisLovkvist/guardian_of_light_tour_loop.git
 ```
-![Alt text](screenshot_project_example.png?raw=true "screenshot_project_example")
