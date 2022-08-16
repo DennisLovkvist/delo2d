@@ -896,7 +896,7 @@ void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *verte
 }
 void delo2d_sprite_animate(Sprite *sprite,float dt)
 {
-    sprite->time +=0.0016f;
+    sprite->time +=dt;
 
     if(sprite->time > sprite->duration)
     {

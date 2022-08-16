@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "delo2d.h"
-#include <time.h>
+#include <sys/time.h>
 
 #define GLEW_STATIC 1
 #define COUNT_SHADERS 7
@@ -39,6 +39,8 @@ int main(void)
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     glBlendEquation(GL_FUNC_ADD);
 
+    glfwSwapInterval(0);
+
     shader_primitive = delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl");
     shader = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");//loads and parses the default sprite shader
     delo2d_texture_load(&texture,"textures/logo_animation.png");//loads texture (only tested .png files)
@@ -51,11 +53,19 @@ int main(void)
     delo2d_color_set_f(&color_white,1,1,1,1);
     int x = screen_width*0.5 - 256/2;
     int y = screen_height*0.5 - 256/2;
-    delo2d_sprite_define(&sprite, x,y,256,256,0,0,256,256,0,texture.width,texture.height,16,103,0.4,color_white,1,1,0,0,0,0);
+    delo2d_sprite_define(&sprite, x,y,256,256,0,0,256,256,0,texture.width,texture.height,16,103,2,color_white,1,1,0,0,0,0);
     sprite.loop = 0;
+
+
+    float dt = 0;
+    struct timeval t1, t2;
+    double elapsedTime;
+
     while (!glfwWindowShouldClose(window))
-    {        
-        delo2d_sprite_animate(&sprite,0.0016);
+    { 
+        gettimeofday(&t1, NULL);
+
+        delo2d_sprite_animate(&sprite,dt);
 
         delo2d_render_target_set(0,0,0,0,1);//sets framebuffer to 0 (the screen) and clear the buffer with r=0,g=0,b=0,a=1
         delo2d_sprite_batch_begin(&sprite_batch,shader,projection);//sets up the spritebatch for drawing with a shader and projection
@@ -94,6 +104,13 @@ int main(void)
         delo2d_primitive_batch_end(&primitive_batch);
 
         glfwSwapBuffers(window);
+
+        gettimeofday(&t2, NULL);
+        
+        elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;// sec to ms
+        elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;// us to ms        
+
+        dt =  elapsedTime *= 0.001; 
 
         glfwPollEvents();
     }
