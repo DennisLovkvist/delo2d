@@ -155,7 +155,7 @@ void delo2d_texture_load(Texture *texture, char file_path[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,texture->width,texture->height,1,GL_RGBA,GL_UNSIGNED_BYTE,texture->local_buffer);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,texture->width,texture->height,0,GL_RGBA,GL_UNSIGNED_BYTE,texture->local_buffer);
 
     glBindTexture(GL_TEXTURE_2D,0);
     if(texture->local_buffer)
@@ -191,61 +191,6 @@ void delo2d_texture_copy(Texture *texture_src,Texture *texture_des)
 }
 //texture code end
 
-//region matrices begin
-void delo2d_matrix_mul_vector2fp_matrix33(Vector2fp *vector,float (*R)[3][3])
-{
-    float x =  ((*vector->x) * (*R)[0][0]) + ((*vector->y) * (*R)[0][1]) + (1 * (*R)[0][2]);
-    float y = ((*vector->x) * (*R)[1][0]) + ((*vector->y) * (*R)[1][1]) + (1 * (*R)[1][2]);
-    (*vector->x) = x;
-    (*vector->y) = y;
-}
-void delo2d_matrix_orthographic_projection(Projection *projection, float l,float r,float t,float b,float f,float n)
-{
-    projection->matrix[0][0] = 2.0f/(r-l);  //Scale?  
-    projection->matrix[0][1] = 0;              
-    projection->matrix[0][2] = 0;                    
-    projection->matrix[0][3] = -((r+l)/(r-l));
-
-    projection->matrix[1][0] = 0; 
-    projection->matrix[1][1] = 2.0/(t-b); //Scale?             
-    projection->matrix[1][2] = 0;                    
-    projection->matrix[1][3] = -((t+b)/(t-b));
-
-    projection->matrix[2][0] = 0; 
-    projection->matrix[2][1] = 0;              
-    projection->matrix[2][2] = 2 / (f-n);                    
-    projection->matrix[2][3] = -((f+n)/(f-n));
-
-    projection->matrix[3][0] = 0; 
-    projection->matrix[3][1] = 0;              
-    projection->matrix[3][2] = 0;                    
-    projection->matrix[3][3] = 1;
-}
-void delo2d_rotation_matrix(float (*R)[3][3],float theta, float tx, float ty)
-{
-    (*R)[0][0] = cos(theta);
-    (*R)[0][1] = sin(theta);
-    (*R)[0][2] = tx;
-
-    (*R)[1][0] = -sin(theta);
-    (*R)[1][1] = cos(theta);
-    (*R)[1][2] = ty;
-
-    (*R)[2][0] = 0;
-    (*R)[2][1] = 0;
-    (*R)[2][2] = 1;
-}
-void delo2d_projection_matrix_set(Projection *projection_src,Projection *projection_des)
-{
-    float *m0 = projection_des->matrix[0];
-    float *m1 = projection_src->matrix[0];
-
-    for (size_t i = 0; i < 16; i++)
-    {
-        m0[i] = m1[i];
-    }    
-}
-//region matrices end
 
 //region quads begin
 void delo2d_quad_get(Quad *quad, VertexArray *vertex_array, int element_index)
@@ -308,52 +253,27 @@ void delo2d_quad_rotate(Quad *quad, float theta)
     center.x = (*(quad->v0.x) + *(quad->v1.x) + *(quad->v2.x) + *(quad->v3.x))/4;
     center.y = (*(quad->v0.y) + *(quad->v1.y) + *(quad->v2.y) + *(quad->v3.y))/4;
 
+    Matrix44 transform = matrix44_identity();
+    transform = matrix44_multiply(transform,matrix44_translation(-center.x,-center.y,0));
+    transform = matrix44_multiply(transform,matrix44_rotation_z(theta));
+    transform = matrix44_multiply(transform,matrix44_translation(center.x,center.y,0));
 
-    float R[3][3];
-    delo2d_rotation_matrix(&R, 0,-center.x,-center.y);
-
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
-
-    delo2d_rotation_matrix(&R, theta,0,0);
-
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
-
-    delo2d_rotation_matrix(&R, 0,center.x,center.y);
-
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+    matrix_multilpy_vector(&quad->v0, transform);
+    matrix_multilpy_vector(&quad->v1, transform);
+    matrix_multilpy_vector(&quad->v2, transform);
+    matrix_multilpy_vector(&quad->v3, transform);
 }
 void delo2d_quad_rotate_around_point(Quad *quad, float theta,float point_x, float point_y)
 {
-    float R[3][3];
-    delo2d_rotation_matrix(&R, 0,-(point_x),-(point_y));
+    Matrix44 transform = matrix44_identity();
+    transform = matrix44_multiply(transform,matrix44_translation(-point_x,-point_y,0));
+    transform = matrix44_multiply(transform,matrix44_rotation_z(theta));
+    transform = matrix44_multiply(transform,matrix44_translation(point_x,point_y,0));
 
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
-
-    delo2d_rotation_matrix(&R, theta,0,0);
-
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
-
-    delo2d_rotation_matrix(&R, 0,(point_x),(point_y));
-
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v0, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v1, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v2, &R);
-    delo2d_matrix_mul_vector2fp_matrix33(&quad->v3, &R);
+    matrix_multilpy_vector(&quad->v0, transform);
+    matrix_multilpy_vector(&quad->v1, transform);
+    matrix_multilpy_vector(&quad->v2, transform);
+    matrix_multilpy_vector(&quad->v3, transform);
 }
 void delo2d_quad_scale(Quad *quad,float scale_x,float scale_y)
 {
@@ -481,11 +401,11 @@ void delo2d_sprite_vertex_set_tex_data(VertexArray *vertex_array, int element,fl
     vertex_array->buffer_position[index + 3] = tex_y;
     vertex_array->buffer_position[index + 4] = texture_slot;
 }
-void delo2d_sprite_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,Projection projection)
+void delo2d_sprite_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,Matrix44 projection)
 {
    
     glUseProgram(shader_id); 
-    glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,projection.matrix[0]);
+    glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,&projection.x11);
     
     int samplers[3] = {0,1,2};
     glUniform1iv(glGetUniformLocation(shader_id,"u_textures"),3,samplers);  
@@ -614,6 +534,10 @@ static char* delo2d_shader_parse(char *source_full,char *keyword_begin,char *key
 unsigned int delo2d_shader_from_file(char *path_shader)
 {
     char *src = delo2d_shader_load(path_shader); 
+
+
+
+
     char *src_vert = delo2d_shader_parse(src,"#VERT_BEGIN","#VERT_END");
     char *src_frag = delo2d_shader_parse(src,"#FRAG_BEGIN","#FRAG_END");    
 
@@ -658,7 +582,7 @@ void delo2d_sprite_batch_create(SpriteBatch *sprite_batch,int capacity)
     sprite_batch->texture_count = 0;
     sprite_batch->called_begin = 0;
     sprite_batch->called_end = 1;
-    delo2d_matrix_orthographic_projection(&sprite_batch->projection,0.0f,1920,0.0f,1080,1,-1); 
+    sprite_batch->projection = matrix_orthographic_projection(0.0f,1920,0.0f,1080,1,-1); 
 
     for (size_t i = 0; i < capacity; i++)
     {
@@ -702,12 +626,12 @@ void delo2d_sprite_batch_delete(SpriteBatch *sprite_batch)
 
     sprite_batch->initialized = 0;
 }
-void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, Projection projection)
+void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, Matrix44 projection)
 {
     if(sprite_batch->called_end == 0)return;
 
     sprite_batch->shader_id = shader;
-    delo2d_projection_matrix_set(&projection,&sprite_batch->projection);
+    sprite_batch->projection = projection;
 
     sprite_batch->called_begin = 1;
 }
@@ -894,19 +818,55 @@ void delo2d_sprite_translate(Sprite *sprite,float tx,float ty,VertexArray *verte
 
     //delo2d_quad_get_center(&quad,&sprite->position);    
 }
-void delo2d_sprite_animate(Sprite *sprite,float dt)
+void delo2d_sprite_animate_frame(Sprite *sprite,int frame)
 {
-    sprite->time +=dt;
-
-    if(sprite->time > sprite->duration)
+    if(frame >= (int)sprite->frames)
     {
-        if(sprite->loop == 1)
+        frame = 0;
+    }
+    else if(frame < 0)
+    {
+        frame = sprite->frames-1;
+    }
+    sprite->frame = frame;
+    sprite->time = (float)sprite->frame / sprite->duration;
+    sprite->rect_src.x = sprite->offset.x + (sprite->frame % sprite->stride) * sprite->rect_src.width;
+    
+    sprite->rect_src.y = sprite->offset.y + (sprite->frame/sprite->stride) * sprite->rect_src.height;
+
+    sprite->updated_tex_coords = 1;      
+}
+void delo2d_sprite_animate(Sprite *sprite,float dt, unsigned int reverse)
+{
+    if(!reverse)
+    {
+        sprite->time += dt;
+
+        if(sprite->time > sprite->duration)
         {
-            sprite->time = 0;
+            if(sprite->loop == 1)
+            {
+                sprite->time = 0;
+            }
+            else
+            {
+                return;
+            }
         }
-        else
+    }
+    else
+    {        
+        sprite->time -= dt;
+        if(sprite->time < 0)
         {
-            return;
+            if(sprite->loop == 1)
+            {
+                sprite->time = sprite->duration;
+            }
+            else
+            {
+                return;
+            }
         }
     }
 
@@ -920,24 +880,6 @@ void delo2d_sprite_animate(Sprite *sprite,float dt)
 }
 //spritebatch code end
 
-//camera code begin
-void delo2d_camera_move(Projection *projection, float tx, float ty, float screen_width, float screen_height)
-{
-    *projection->matrix[3] += tx/screen_width;
-    *projection->matrix[7] -= ty/screen_height;
-}
-void delo2d_camera_set_position(Projection *projection, float x, float y, float screen_width, float screen_height)
-{
-    *projection->matrix[3] = x/screen_width;
-    *projection->matrix[7] = y/screen_height;
-}
-void delo2d_camera_set_zoom(Projection *projection, float z, float screen_width, float screen_height)
-{    
-    *projection->matrix[0] = z/screen_width;
-    *projection->matrix[5] = z/(-screen_height);   
-}
-//camera code end
- 
 //color code begin
 void delo2d_color_set_f(Color *color,float r, float g, float b, float a)
 {
@@ -952,6 +894,13 @@ void delo2d_color_set_i(Color *color,int r, int g, int b, int a)
     color->g = (float)g/255.0f;
     color->b = (float)b/255.0f;
     color->a = (float)a/255.0f;
+}
+void delo2d_color_set(Color *color1,Color *color2)
+{
+    color1->r = color2->r;
+    color1->g = color2->g;
+    color1->b = color2->b;
+    color1->a = color2->a;
 }
 void delo2d_color_lerp(Color *result, Color *color_a,Color *color_b, float facor)
 {
@@ -994,10 +943,10 @@ void delo2d_primitive_vertex_set_element(VertexArrayPrimitives *vertex_array, in
     vertex_array->buffer_position[index + 5] = a;
 
 }
-void delo2d_primitive_vertex_array_draw(VertexArrayPrimitives *vertex_array,unsigned int shader_id,Projection projection)
+void delo2d_primitive_vertex_array_draw(VertexArrayPrimitives *vertex_array,unsigned int shader_id,Matrix44 projection)
 {   
     glUseProgram(shader_id); 
-    glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,projection.matrix[0]);
+    glUniformMatrix4fv(glGetUniformLocation(shader_id,"u_mvp"),1,GL_FALSE,&projection.x11);
 
     glBindVertexArray(vertex_array->vao);
      
@@ -1011,6 +960,10 @@ void delo2d_primitive_vertex_array_draw(VertexArrayPrimitives *vertex_array,unsi
     else if (vertex_array->type == DELO_LINE_LIST)
     {
         glDrawArrays(GL_LINES,0,vertex_array->count);
+    }  
+    else if (vertex_array->type == DELO_QUAD_LIST)
+    {
+        glDrawArrays(GL_QUADS,0,vertex_array->count);
     }  
 }
 void delo2d_primitive_vertex_array_to_graphics_device(VertexArrayPrimitives *vertex_array, GLintptr offset)
@@ -1078,6 +1031,8 @@ void delo2d_primitive_batch_create(PrimitiveBatch *primitive_batch,int capacity)
     primitive_batch->vertex_array.count = 0;
     delo2d_primitive_vertex_array_create(&primitive_batch->vertex_array,capacity,primitive_batch->shader_id);
     primitive_batch->initialized = 1;
+    primitive_batch->called_end = 1;
+    primitive_batch->called_begin = 0;
 }
 void delo2d_primitive_batch_delete(PrimitiveBatch *primitive_batch)
 {
@@ -1087,16 +1042,17 @@ void delo2d_primitive_batch_delete(PrimitiveBatch *primitive_batch)
     delo2d_primitive_vertex_array_delete(&primitive_batch->vertex_array);
     primitive_batch->initialized = 0;    
 }
-void delo2d_primitive_batch_begin(PrimitiveBatch *primitive_batch,unsigned int shader,Projection projection,unsigned int primitive_type)
+void delo2d_primitive_batch_begin(PrimitiveBatch *primitive_batch,unsigned int shader,Matrix44 projection,unsigned int primitive_type)
 {
     if(primitive_batch->called_end == 0)return;
     primitive_batch->vertex_array.type = primitive_type;
     primitive_batch->shader_id = shader;
-    delo2d_projection_matrix_set(&projection,&primitive_batch->projection);
+    primitive_batch->projection = projection;
 
     primitive_batch->called_begin = 1;
+    primitive_batch->called_end = 0;
 }
-void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,int r,int g, int b, int a)
+void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,float r,float g, float b, float a)
 {
     int index = primitive_batch->vertex_array.count;
     primitive_batch->vertex_array.count ++;
@@ -1105,11 +1061,151 @@ void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,int
 void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch)
 {
     if(primitive_batch->called_begin == 0)return;  
-
     delo2d_primitive_vertex_array_to_graphics_device(&primitive_batch->vertex_array,0);
     delo2d_primitive_vertex_array_draw(&primitive_batch->vertex_array,primitive_batch->shader_id,primitive_batch->projection);
 
     primitive_batch->called_end = 1;
+    primitive_batch->called_begin = 0;
     primitive_batch->vertex_array.count = 0;
 }
 //primitive batch code end
+//matrix code begin
+Matrix44 matrix44_identity()
+{
+    struct Matrix44 matrix = 
+    {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
+    return matrix;
+}
+
+Matrix44 matrix44_scale(float x, float y, float z) 
+{
+    struct Matrix44 matrix = 
+    {
+		x, 0, 0, 0,
+		0, y, 0, 0,
+		0, 0, z, 0,
+		0, 0, 0, 1,
+	};
+    return matrix;
+}
+float* matrix44_to_gl_matrix(Matrix44 *matrix) 
+{
+	return &matrix->x11;
+}
+Matrix44 matrix44_translation(float x, float y, float z) 
+{
+	struct Matrix44 matrix = 
+    {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		x, y, z, 1
+	};
+    return matrix;
+}
+
+Matrix44 matrix44_rotation_z(float theta) 
+{
+	struct Matrix44 matrix = 
+    {
+		 cos(theta), sin(theta), 0, 0,
+		-sin(theta), cos(theta), 0, 0,
+		 0,          0,          1, 0,
+		 0,          0,          0, 1
+	};
+    return matrix;
+}
+
+Matrix44 matrix44_rotation_y(float theta) 
+{
+	struct Matrix44 matrix = 
+    {
+		cos(theta), 0, -sin(theta), 0,
+		0,          1,  0,          0,
+		sin(theta), 0,  cos(theta), 0,
+		0,          0,  0,          1
+	};
+    return matrix;
+}
+
+Matrix44 matrix44_rotation_x(float theta) 
+{
+	struct Matrix44 matrix = 
+    {
+		1,  0,           0,          0,
+		0,  cos(theta),  sin(theta), 0,
+		0, -sin(theta),  cos(theta), 0,
+		0,  0,           0,          1
+	};
+    return matrix;
+}
+Matrix44 matrix44_multiply(Matrix44 a, Matrix44 b) 
+{
+	struct Matrix44 matrix = 
+    {
+        a.x11 * b.x11 + a.x12 * b.x21 + a.x13 * b.x31 + a.x14 * b.x41,
+		a.x21 * b.x11 + a.x22 * b.x21 + a.x23 * b.x31 + a.x24 * b.x41,
+		a.x31 * b.x11 + a.x32 * b.x21 + a.x33 * b.x31 + a.x34 * b.x41,
+		a.x41 * b.x11 + a.x42 * b.x21 + a.x43 * b.x31 + a.x44 * b.x41,
+
+		a.x11 * b.x12 + a.x12 * b.x22 + a.x13 * b.x32 + a.x14 * b.x42,
+		a.x21 * b.x12 + a.x22 * b.x22 + a.x23 * b.x32 + a.x24 * b.x42,
+		a.x31 * b.x12 + a.x32 * b.x22 + a.x33 * b.x32 + a.x34 * b.x42,
+		a.x41 * b.x12 + a.x42 * b.x22 + a.x43 * b.x32 + a.x44 * b.x42,
+  
+		a.x11 * b.x13 + a.x12 * b.x23 + a.x13 * b.x33 + a.x14 * b.x43,
+		a.x21 * b.x13 + a.x22 * b.x23 + a.x23 * b.x33 + a.x24 * b.x43,
+		a.x31 * b.x13 + a.x32 * b.x23 + a.x33 * b.x33 + a.x34 * b.x43,
+		a.x41 * b.x13 + a.x42 * b.x23 + a.x43 * b.x33 + a.x44 * b.x43,
+
+		a.x11 * b.x14 + a.x12 * b.x24 + a.x13 * b.x34 + a.x14 * b.x44,
+		a.x21 * b.x14 + a.x22 * b.x24 + a.x23 * b.x34 + a.x24 * b.x44,
+		a.x31 * b.x14 + a.x32 * b.x24 + a.x33 * b.x34 + a.x34 * b.x44,
+		a.x41 * b.x14 + a.x42 * b.x24 + a.x43 * b.x34 + a.x44 * b.x44,
+	};
+    return matrix;
+}
+Matrix44 matrix44_perspective() 
+{
+    //Shit copied from the internet
+	float r = 0.56; 
+	float t = 0.33;
+	float n = 1; 
+	float f = 60;
+
+	struct Matrix44 matrix = 
+    {
+		n / r, 0, 	  0, 					  0,
+		0, 	   n / t, 0, 					  0,
+		0, 	   0, 	  (-f - n) / (f - n)   , -1,
+		0, 	   0, 	  (2 * f * n) / (n - f),  0
+	};
+    return matrix;
+}
+Matrix44 matrix_orthographic_projection(float l,float r,float t,float b,float f,float n)
+{
+    struct Matrix44 matrix = 
+    {
+        2.0f/(r-l),0,0,-((r+l)/(r-l)),
+
+        0,2.0/(t-b),0,-((t+b)/(t-b)),
+
+        0,0,2 / (f-n),-((f+n)/(f-n)),
+        0,0,0,1
+    };
+    return matrix;
+}
+
+void matrix_multilpy_vector(Vector2fp *vector, Matrix44 transform)
+{
+    float x = ((*vector->x) * transform.x11) + ((*vector->y) * transform.x21) + (1 * transform.x31);
+    float y = ((*vector->x) * transform.x12) + ((*vector->y) * transform.x22) + (1 * transform.x32);
+    (*vector->x) = x;
+    (*vector->y) = y;
+}
+//matrix code end

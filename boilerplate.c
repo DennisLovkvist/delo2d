@@ -25,14 +25,14 @@ int main(void)
     Texture texture;
     unsigned int shader;
     unsigned int shader_primitive;
-    Projection projection;
+    Matrix44 projection;
     SpriteBatch sprite_batch;
     PrimitiveBatch primitive_batch;
     Sprite sprite;
 
     if(delo2d_render_setup(&window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
     
-    delo2d_matrix_orthographic_projection(&projection,0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);//creates an orthographic_projection to be used as our camera
+    projection = matrix_orthographic_projection(0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);//creates an orthographic_projection to be used as our camera
 
     
     glEnable(GL_BLEND);
@@ -65,7 +65,7 @@ int main(void)
     { 
         gettimeofday(&t1, NULL);
 
-        delo2d_sprite_animate(&sprite,dt);
+        delo2d_sprite_animate(&sprite,dt,0);
 
         delo2d_render_target_set(0,0,0,0,1);//sets framebuffer to 0 (the screen) and clear the buffer with r=0,g=0,b=0,a=1
         delo2d_sprite_batch_begin(&sprite_batch,shader,projection);//sets up the spritebatch for drawing with a shader and projection
