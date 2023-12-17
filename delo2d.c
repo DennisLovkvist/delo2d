@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/delo2d.h"
-#include "../include/stb_image.h"
+#include "delo2d.h"
+#include "stb_image.h"
 #include <math.h>
 
 void GLClearError()
@@ -1373,8 +1373,7 @@ Matrix44 matrix44_invert(Matrix44 input)
 }
 //matrix code end
 
-#define NUM_CHARACTERS 128
-void font_load(Texture *texture, char *path)
+void delo2d_font_load(Texture *texture, Glyph *glyphs, int number_of_characters, char *path)
 {
     FT_Library ft;
     FT_Face face;
@@ -1409,7 +1408,7 @@ void font_load(Texture *texture, char *path)
     texture->width  = 0;
     texture->height = 0;
 
-    for (unsigned char c = 0; c < NUM_CHARACTERS; c++) 
+    for (unsigned char c = 0; c < number_of_characters; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
@@ -1425,14 +1424,16 @@ void font_load(Texture *texture, char *path)
 
     int xOffset = 0;
 
-    for (unsigned char c = 0; c < NUM_CHARACTERS; c++) 
+    for (unsigned char c = 0; c < number_of_characters; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
             fprintf(stderr, "Failed to load glyph\n");
             continue;
         }
-
+        glyphs[c].x = xOffset;
+        glyphs[c].w = face->glyph->bitmap.width;
+        glyphs[c].h = 64;
         // Use GL_RGBA for both internal format and format
         glTexSubImage2D(GL_TEXTURE_2D, 0, xOffset, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 

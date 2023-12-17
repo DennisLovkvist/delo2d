@@ -173,6 +173,12 @@ struct PrimitiveBatch
     VertexArrayPrimitives vertex_array;
 };
 
+typedef struct Glyph Glyph;
+struct Glyph
+{
+    int x,w,h;
+};
+
 void GLClearError();
 void GLCheckError();
 
@@ -296,4 +302,4 @@ void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,flo
 void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch);
 //primitive batch code end
 
-void font_load(Texture *texture, char *path);
+void delo2d_font_load(Texture *texture, Glyph *glyphs, int number_of_characters, char *path);
