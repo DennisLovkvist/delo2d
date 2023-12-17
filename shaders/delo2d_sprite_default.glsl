@@ -13,7 +13,7 @@ out vec4 v_color;
 uniform mat4 u_mvp;
 
 void main()
-{     
+{      
     gl_Position = position * u_mvp;
     v_tex_coord = tex_coord;
     v_tex_index = tex_index;
@@ -32,9 +32,9 @@ in vec4 v_color;
 
 void main()
 { 
-    int index = int(v_tex_index);
-    //vec4 tex_color = texture2D(u_textures[index],v_tex_coord); 
-    vec4 tex_color = texelFetch(u_textures[index], ivec2(v_tex_coord), 0);
+    //int index = int(v_tex_index);
+    vec4 tex_color = texture2D(u_textures[0],v_tex_coord); 
+    //vec4 tex_color = texelFetch(u_textures[index], ivec2(v_tex_coord), 0);
 
     
 

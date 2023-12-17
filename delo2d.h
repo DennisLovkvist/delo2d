@@ -208,7 +208,7 @@ void matrix_multilpy_vector(Vector2fp *vector, Matrix44 transform);
 
 //region quads begin
 void delo2d_quad_get(Quad *quad, VertexArray *vertex_array, int element_index);
-void delo2d_quad_define(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,Color color,int flip_horizontally,int flip_vertically);
+void delo2d_quad_define(VertexArray *vertex_array, int quad_index, Rectangle_f *rect_des,Rectangle_f *rect_src, int texture_index,int texture_width, int texture_height,Color color,int flip_horizontally,int flip_vertically);
 void delo2d_quad_translate(Quad *quad, float delta_x, float delta_y);
 void delo2d_quad_set_position(Quad *quad,int x,int y);
 void delo2d_quad_get_center(Quad *quad,Vector2f *center);
@@ -221,7 +221,7 @@ void delo2d_quad_skew(Quad *quad,float skew_x,float skew_y,float pivot_point_x,f
 //region vertex array code begin
 void delo2d_sprite_vertex_array_create(VertexArray *vertex_array,unsigned int type, unsigned int element_count);
 void delo2d_sprite_vertex_array_delete(VertexArray *vertex_array);
-void delo2d_sprite_vertex_set_element_sprite(VertexArray *vertex_array, int element,float x, float y, float tex_x,float tex_y,unsigned int texture_slot,Color color);
+void delo2d_sprite_vertex_set_element_sprite(VertexArray *vertex_array, int element,float x, float y, float tex_x,float tex_y,float tex_w,float tex_h,unsigned int texture_slot,Color color);
 void delo2d_sprite_vertex_set_tex_data(VertexArray *vertex_array, int element,float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_sprite_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,Matrix44 projection);
 void delo2d_sprite_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
