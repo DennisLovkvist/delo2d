@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "delo2d.h"
-#include "stb_image.h"
+#include "../include/delo2d.h"
+#include "../include/stb_image.h"
 #include <math.h>
 
 void GLClearError()
@@ -258,22 +258,26 @@ void delo2d_quad_rotate(Quad *quad, float theta)
     transform = matrix44_multiply(transform,matrix44_rotation_z(theta));
     transform = matrix44_multiply(transform,matrix44_translation(center.x,center.y,0));
 
-    matrix_multilpy_vector(&quad->v0, transform);
-    matrix_multilpy_vector(&quad->v1, transform);
-    matrix_multilpy_vector(&quad->v2, transform);
-    matrix_multilpy_vector(&quad->v3, transform);
+    matrix_multilpy_vector2fp(&quad->v0, transform);
+    matrix_multilpy_vector2fp(&quad->v1, transform);
+    matrix_multilpy_vector2fp(&quad->v2, transform);
+    matrix_multilpy_vector2fp(&quad->v3, transform);
 }
 void delo2d_quad_rotate_around_point(Quad *quad, float theta,float point_x, float point_y)
 {
-    Matrix44 transform = matrix44_identity();
-    transform = matrix44_multiply(transform,matrix44_translation(-point_x,-point_y,0));
-    transform = matrix44_multiply(transform,matrix44_rotation_z(theta));
-    transform = matrix44_multiply(transform,matrix44_translation(point_x,point_y,0));
+    
+    
+    delo2d_quad_translate(quad,-point_x,-point_y);
 
-    matrix_multilpy_vector(&quad->v0, transform);
-    matrix_multilpy_vector(&quad->v1, transform);
-    matrix_multilpy_vector(&quad->v2, transform);
-    matrix_multilpy_vector(&quad->v3, transform);
+    Matrix44 transform = matrix44_rotation_z(theta);
+
+    matrix_multilpy_vector2fp(&quad->v0, transform);
+    matrix_multilpy_vector2fp(&quad->v1, transform);
+    matrix_multilpy_vector2fp(&quad->v2, transform);
+    matrix_multilpy_vector2fp(&quad->v3, transform);
+
+    delo2d_quad_translate(quad,point_x,point_y);
+
 }
 void delo2d_quad_scale(Quad *quad,float scale_x,float scale_y)
 {
@@ -605,6 +609,49 @@ void delo2d_sprite_batch_create(SpriteBatch *sprite_batch,int capacity)
     }    
     sprite_batch->initialized = 1;
 }
+void delo2d_sprite_batch_add_no_texture(SpriteBatch *sprite_batch, Sprite *sprite)
+{
+    int texture_index = -1;
+
+    int index = sprite_batch->count;
+    sprite_batch->count ++;
+    
+    sprite_batch->rect_src[index].x = ((float)sprite->rect_src.x);
+    sprite_batch->rect_src[index].y = ((float)sprite->rect_src.y);
+    sprite_batch->rect_src[index].width = ((float)sprite->rect_src.width);
+    sprite_batch->rect_src[index].height = ((float)sprite->rect_src.height);
+   
+
+    sprite_batch->rect_des[index].x = sprite->rect_des.x;
+    sprite_batch->rect_des[index].y = sprite->rect_des.y;
+    sprite_batch->rect_des[index].width = sprite->rect_des.width;
+    sprite_batch->rect_des[index].height = sprite->rect_des.height;
+
+    sprite->batch_index = index;
+    sprite->quad_index = index;
+    sprite_batch->texture_index[index] = texture_index; 
+    sprite_batch->color[index].r = sprite->color.r;
+    sprite_batch->color[index].g = sprite->color.g;
+    sprite_batch->color[index].b = sprite->color.b;
+    sprite_batch->color[index].a = sprite->color.a;
+    sprite_batch->flip_horizontally[index] = sprite->flip_horizontally;
+    sprite_batch->flip_vertically[index] = sprite->flip_vertically;
+
+    sprite_batch->scale[index].x = sprite->scale.x;
+    sprite_batch->scale[index].y = sprite->scale.y;
+
+    sprite_batch->skew[index].x = sprite->skew.x;
+    sprite_batch->skew[index].y = sprite->skew.y;
+
+    sprite_batch->pivot_point[index].x = sprite->pivot_point.x;
+    sprite_batch->pivot_point[index].y = sprite->pivot_point.y;
+
+    sprite_batch->position[index].x = sprite->position.x;
+    sprite_batch->position[index].y = sprite->position.y;
+
+    sprite_batch->orientation[index] = sprite->orientation;
+    sprite_batch->updated[index] = 1;
+}
 void delo2d_sprite_batch_delete(SpriteBatch *sprite_batch)
 {
     if(sprite_batch->initialized == 0)return;
@@ -758,10 +805,17 @@ void delo2d_sprite_batch_add_texture(SpriteBatch *sprite_batch,Texture *texture,
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *vertex_array)
 {    
     int length = sprite_batch->count;
+
     for(int i = 0; i < length; i++)
     {
-        Texture texture = sprite_batch->textures[sprite_batch->texture_index[i]];
-        delo2d_quad_define(vertex_array,i,&(sprite_batch->rect_des)[i],&(sprite_batch->rect_src)[i],sprite_batch->texture_index[i],texture.width,texture.height,sprite_batch->color[i],sprite_batch->flip_horizontally[i],sprite_batch->flip_vertically[i]);
+        int texture_index = sprite_batch->texture_index[i];
+
+        Rectangle_f rect_src = sprite_batch->rect_src[i];
+
+        int texture_width = (texture_index != -1) ? sprite_batch->textures[texture_index].width : (int)(rect_src.width);
+        int texture_height = (texture_index != -1) ? sprite_batch->textures[texture_index].height : (int)(rect_src.height);
+
+        delo2d_quad_define(vertex_array,i,&(sprite_batch->rect_des)[i],&(sprite_batch->rect_src)[i],sprite_batch->texture_index[i],texture_width,texture_height,sprite_batch->color[i],sprite_batch->flip_horizontally[i],sprite_batch->flip_vertically[i]);
         Quad quad;
         delo2d_quad_get(&quad,vertex_array,i);
 
@@ -770,13 +824,13 @@ void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch,VertexArray *
         sprite_batch->updated[i] = 0;
         //delo2d_quad_skew_top(&quad,sprite_batch->skew[i].x);
         
-        delo2d_quad_skew(&quad,sprite_batch->skew[i].x,sprite_batch->skew[i].y,sprite_batch->pivot_point[i].x,sprite_batch->pivot_point[i].y);
+        //delo2d_quad_skew(&quad,sprite_batch->skew[i].x,sprite_batch->skew[i].y,sprite_batch->pivot_point[i].x,sprite_batch->pivot_point[i].y);
 
-        delo2d_quad_scale(&quad,sprite_batch->scale[i].x,sprite_batch->scale[i].y);
+        //delo2d_quad_scale(&quad,sprite_batch->scale[i].x,sprite_batch->scale[i].y);
 
         Vector2f center;
         delo2d_quad_get_center(&quad,&center);
-        delo2d_quad_rotate_around_point(&quad,sprite_batch->orientation[i], center.x + sprite_batch->pivot_point[i].x, center.y + sprite_batch->pivot_point[i].y);          
+        delo2d_quad_rotate_around_point(&quad,sprite_batch->orientation[i], center.x + sprite_batch->pivot_point[i].x,center.y + sprite_batch->pivot_point[i].y);       
     }    
 }
 void delo2d_sprite_scale_dest_rect(Sprite *sprite, float scale_x, float scale_y)
@@ -792,18 +846,6 @@ void delo2d_sprite_rotate(Sprite *sprite,float rotation,VertexArray *vertex_arra
     delo2d_quad_get(&quad,vertex_array,sprite->quad_index);
     delo2d_quad_rotate(&quad,rotation);
     sprite->orientation += rotation;
-}
-void delo2d_sprite_rotate_around_point(Sprite *sprite,float rotation,float point_x, float point_y,VertexArray *vertex_array)
-{
-    Quad quad;
-    delo2d_quad_get(&quad,vertex_array,sprite->quad_index);
-    delo2d_quad_rotate_around_point(&quad,rotation, point_x, point_y);
-    sprite->orientation += rotation;
-}
-void delo2d_sprite_set_orientation_around_point(Sprite *sprite,float orientation,float point_x, float point_y,VertexArray *vertex_array)
-{
-     float delta = orientation - sprite->orientation;
-    delo2d_sprite_rotate_around_point(sprite,delta,point_x,point_y,vertex_array);
 }
 void delo2d_sprite_set_orientation(Sprite *sprite,float orientation,VertexArray *vertex_array)
 {
@@ -874,6 +916,8 @@ void delo2d_sprite_animate(Sprite *sprite,float dt, unsigned int reverse)
     }
 
     sprite->frame = (sprite->time / sprite->duration)*(float)sprite->frames;
+
+    sprite->frame = (sprite->frame == sprite->frames) ? sprite->frames - 1:sprite->frame;
 
     sprite->rect_src.x = sprite->offset.x + (sprite->frame % sprite->stride) * sprite->rect_src.width;
     
@@ -1104,10 +1148,10 @@ Matrix44 matrix44_translation(float x, float y, float z)
 {
 	struct Matrix44 matrix = 
     {
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		x, y, z, 1
+		1, 0, 0, x,
+		0, 1, 0, y,
+		0, 0, 1, z,
+		0, 0, 0, 1
 	};
     return matrix;
 }
@@ -1173,6 +1217,29 @@ Matrix44 matrix44_multiply(Matrix44 a, Matrix44 b)
 	};
     return matrix;
 }
+Matrix44 matrix44_add(Matrix44 a, Matrix44 b)
+{
+    struct Matrix44 matrix = 
+    {
+        a.x11 + b.x11,
+        a.x12 + b.x12,
+        a.x13 + b.x13,
+        a.x14 + b.x14,
+        a.x21 + b.x21,
+        a.x22 + b.x22,
+        a.x23 + b.x23,
+        a.x24 + b.x24,
+        a.x31 + b.x31,
+        a.x32 + b.x32,
+        a.x33 + b.x33,
+        a.x34 + b.x34,
+        a.x41 + b.x41,
+        a.x42 + b.x42,
+        a.x43 + b.x43,
+        a.x44 + b.x44
+    };
+    return matrix;
+}
 Matrix44 matrix44_perspective() 
 {
     //Shit copied from the internet
@@ -1204,11 +1271,173 @@ Matrix44 matrix_orthographic_projection(float l,float r,float t,float b,float f,
     return matrix;
 }
 
-void matrix_multilpy_vector(Vector2fp *vector, Matrix44 transform)
+void matrix_multilpy_vector2fp(Vector2fp *vector, Matrix44 transform)
 {
     float x = ((*vector->x) * transform.x11) + ((*vector->y) * transform.x21) + (1 * transform.x31);
     float y = ((*vector->x) * transform.x12) + ((*vector->y) * transform.x22) + (1 * transform.x32);
     (*vector->x) = x;
     (*vector->y) = y;
 }
+Vector2f matrix_multilpy_vector2f(Vector2f vector, Matrix44 transform)
+{
+    Vector2f result = 
+    {
+        (vector.x * transform.x11) + (vector.y * transform.x21) + (1 * transform.x31),
+        (vector.x * transform.x12) + (vector.y * transform.x22) + (1 * transform.x32)
+    };
+    return result;
+}
+float calculate_sub_matrix_determinant(Matrix44 m, int a, int b, int c, int d) 
+{
+    float a11 = m.x11;
+    float a12 = m.x12;
+    float a13 = m.x13;
+
+    float a21 = m.x21;
+    float a22 = m.x22;
+    float a23 = m.x23;
+
+    float a31 = m.x31;
+    float a32 = m.x32;
+    float a33 = m.x33;
+
+    float det = a11 * (a22 * a33 - a23 * a32) -
+                a12 * (a21 * a33 - a23 * a31) +
+                a13 * (a21 * a32 - a22 * a31);
+
+    return det;
+}
+float calculate_determinant(const Matrix44* m) 
+{
+    float a11 = m->x11;
+    float a12 = m->x12;
+    float a13 = m->x13;
+    float a14 = m->x14;
+
+    float a21 = m->x21;
+    float a22 = m->x22;
+    float a23 = m->x23;
+    float a24 = m->x24;
+
+    float a31 = m->x31;
+    float a32 = m->x32;
+    float a33 = m->x33;
+    float a34 = m->x34;
+
+    float a41 = m->x41;
+    float a42 = m->x42;
+    float a43 = m->x43;
+    float a44 = m->x44;
+
+    float det = a11 * (a22 * (a33 * a44 - a34 * a43) - a23 * (a32 * a44 - a34 * a42) + a24 * (a32 * a43 - a33 * a42)) -
+                a12 * (a21 * (a33 * a44 - a34 * a43) - a23 * (a31 * a44 - a34 * a41) + a24 * (a31 * a43 - a33 * a41)) +
+                a13 * (a21 * (a32 * a44 - a34 * a42) - a22 * (a31 * a44 - a34 * a41) + a24 * (a31 * a42 - a32 * a41)) -
+                a14 * (a21 * (a32 * a43 - a33 * a42) - a22 * (a31 * a43 - a33 * a41) + a23 * (a31 * a42 - a32 * a41));
+
+    return det;
+}
+
+Matrix44 matrix44_invert(Matrix44 input) 
+{
+    float det = calculate_determinant(&input);
+
+    if (det == 0.0f) 
+    {
+        printf("Matrix is not invertible (determinant is zero).\n");
+        return input;
+    }
+
+    Matrix44 result = {0};
+
+    result.x11 =  calculate_sub_matrix_determinant(input, 1, 2, 3, 1) / det;
+    result.x21 = -calculate_sub_matrix_determinant(input, 0, 2, 3, 1) / det;
+    result.x31 =  calculate_sub_matrix_determinant(input, 0, 1, 3, 1) / det;
+    result.x41 = -calculate_sub_matrix_determinant(input, 0, 1, 2, 1) / det;
+
+    result.x12 = -calculate_sub_matrix_determinant(input, 1, 2, 3, 0) / det;
+    result.x22 =  calculate_sub_matrix_determinant(input, 0, 2, 3, 0) / det;
+    result.x32 = -calculate_sub_matrix_determinant(input, 0, 1, 3, 0) / det;
+    result.x42 =  calculate_sub_matrix_determinant(input, 0, 1, 2, 0) / det;
+
+    result.x13 =  calculate_sub_matrix_determinant(input, 1, 2, 3, 3) / det;
+    result.x23 = -calculate_sub_matrix_determinant(input, 0, 2, 3, 3) / det;
+    result.x33 =  calculate_sub_matrix_determinant(input, 0, 1, 3, 3) / det;
+    result.x43 = -calculate_sub_matrix_determinant(input, 0, 1, 2, 3) / det;
+
+    result.x14 = -calculate_sub_matrix_determinant(input, 1, 2, 3, 2) / det;
+    result.x24 =  calculate_sub_matrix_determinant(input, 0, 2, 3, 2) / det;
+    result.x34 = -calculate_sub_matrix_determinant(input, 0, 1, 3, 2) / det;
+    result.x44 =  calculate_sub_matrix_determinant(input, 0, 1, 2, 2) / det;
+
+    return result;
+}
 //matrix code end
+
+#define NUM_CHARACTERS 128
+void font_load(Texture *texture, char *path)
+{
+    FT_Library ft;
+    FT_Face face;
+
+    if (FT_Init_FreeType(&ft)) 
+    {
+        fprintf(stderr, "Error: Could not initialize FreeType library\n");
+        return;
+    }
+
+    if (FT_New_Face(ft, path, 0, &face)) 
+    {
+        fprintf(stderr, "Error: Could not open font file\n");
+        FT_Done_FreeType(ft);
+        return;
+    }
+    FT_Set_Pixel_Sizes(face, 0, 64); // Set font size
+
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    glGenTextures(1, &texture->renderer_id);
+    glBindTexture(GL_TEXTURE_2D, texture->renderer_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // Calculate texture size based on the number of characters
+    
+    texture->width  = 0;
+    texture->height = 0;
+
+    for (unsigned char c = 0; c < NUM_CHARACTERS; c++) 
+    {
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
+        {
+            fprintf(stderr, "Failed to load glyph\n");
+            continue;
+        }
+
+        texture->width += face->glyph->bitmap.width;
+        texture->height = fmax(texture->height, face->glyph->bitmap.rows);
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    int xOffset = 0;
+
+    for (unsigned char c = 0; c < NUM_CHARACTERS; c++) 
+    {
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
+        {
+            fprintf(stderr, "Failed to load glyph\n");
+            continue;
+        }
+
+        // Use GL_RGBA for both internal format and format
+        glTexSubImage2D(GL_TEXTURE_2D, 0, xOffset, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+
+        xOffset += face->glyph->bitmap.width;
+    }
+    texture->bytes_per_pixel = 4;
+    texture->initialized = 1;
+}
