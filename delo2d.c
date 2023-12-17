@@ -1373,7 +1373,7 @@ Matrix44 matrix44_invert(Matrix44 input)
 }
 //matrix code end
 
-void delo2d_font_load(Texture *texture, Glyph *glyphs, int number_of_characters, char *path)
+void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int font_size)
 {
     FT_Library ft;
     FT_Face face;
@@ -1390,13 +1390,13 @@ void delo2d_font_load(Texture *texture, Glyph *glyphs, int number_of_characters,
         FT_Done_FreeType(ft);
         return;
     }
-    FT_Set_Pixel_Sizes(face, 0, 64); // Set font size
+    FT_Set_Pixel_Sizes(face, 0, font_size); // Set font size
 
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    glGenTextures(1, &texture->renderer_id);
-    glBindTexture(GL_TEXTURE_2D, texture->renderer_id);
+    glGenTextures(1, &sprite_font->texture.renderer_id);
+    glBindTexture(GL_TEXTURE_2D, sprite_font->texture.renderer_id);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1405,10 +1405,10 @@ void delo2d_font_load(Texture *texture, Glyph *glyphs, int number_of_characters,
 
     // Calculate texture size based on the number of characters
     
-    texture->width  = 0;
-    texture->height = 0;
+    sprite_font->texture.width  = 0;
+    sprite_font->texture.height = 0;
 
-    for (unsigned char c = 0; c < number_of_characters; c++) 
+    for (unsigned char c = 0; c < 128; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
@@ -1416,29 +1416,108 @@ void delo2d_font_load(Texture *texture, Glyph *glyphs, int number_of_characters,
             continue;
         }
 
-        texture->width += face->glyph->bitmap.width;
-        texture->height = fmax(texture->height, face->glyph->bitmap.rows);
+        sprite_font->texture.width += face->glyph->bitmap.width;
+        sprite_font->texture.height = font_size;
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sprite_font->texture.width, sprite_font->texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    int xOffset = 0;
+    int xOffset = 0;int maxBearingY = 0;
 
-    for (unsigned char c = 0; c < number_of_characters; c++) 
+    for (unsigned char c = 0; c < 128; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
             fprintf(stderr, "Failed to load glyph\n");
             continue;
         }
-        glyphs[c].x = xOffset;
-        glyphs[c].w = face->glyph->bitmap.width;
-        glyphs[c].h = 64;
+        int yOffset = maxBearingY - face->glyph->bitmap_top;
+
+        sprite_font->glyphs[c].x = xOffset;
+        sprite_font->glyphs[c].y = yOffset;
+        sprite_font->glyphs[c].w = face->glyph->bitmap.width;
+        sprite_font->glyphs[c].h = font_size;
         // Use GL_RGBA for both internal format and format
         glTexSubImage2D(GL_TEXTURE_2D, 0, xOffset, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 
         xOffset += face->glyph->bitmap.width;
+        maxBearingY = fmax(maxBearingY, face->glyph->bitmap_top);
     }
-    texture->bytes_per_pixel = 4;
-    texture->initialized = 1;
+
+    int pung = 0;
+    for (int i = 0; i < 128; i++)
+    {
+        int x = sprite_font->glyphs[i].x;
+        int y = sprite_font->glyphs[i].y;
+        int w = sprite_font->glyphs[i].w;
+        int h = sprite_font->glyphs[i].h;
+        delo2d_sprite_define(&sprite_font->sprites[i], 0,0,w,h,x,0,w,h,0,sprite_font->texture.width,sprite_font->texture.height,1,1,1,(Color){1,1,1,1},1,1,0,0,0,0);
+        pung += w;
+    }
+    sprite_font->size = font_size;
+    sprite_font->texture.bytes_per_pixel = 4;
+    sprite_font->texture.initialized = 1;
+}
+void delo2d_draw_text(char *text,Vector2f position,SpriteFont128 *sprite_font, SpriteBatch *sprite_batch)
+{
+    int texture_index = -1;
+    delo2d_sprite_batch_add_texture(sprite_batch,&sprite_font->texture, &texture_index);
+
+    int length = strlen(text);
+
+    sprite_batch->count = 0;
+    for (int i = 0; i < length; i++)
+    {
+        int g = (int)text[i];
+        if(g == 32)
+        {
+            position.x += sprite_font->size/2;
+        }
+        else
+        {
+            int index = sprite_batch->count;
+            Sprite *sprite = &sprite_font->sprites[g];
+            sprite_batch->rect_src[index].x      = sprite->rect_src.x;
+            sprite_batch->rect_src[index].y      = sprite->rect_src.y;
+            sprite_batch->rect_src[index].width  = sprite->rect_src.width;
+            sprite_batch->rect_src[index].height = sprite->rect_src.height;
+
+            sprite_batch->rect_des[index].x      = position.x;
+            sprite_batch->rect_des[index].y      = position.y + sprite_font->glyphs[g].y;
+            sprite_batch->rect_des[index].width  = sprite->rect_src.width;
+            sprite_batch->rect_des[index].height = sprite->rect_src.height;
+
+            sprite->batch_index = i;
+            sprite->quad_index = i;
+
+            sprite_batch->texture_index[i]     = texture_index; 
+            sprite_batch->color[index].r           = 1;
+            sprite_batch->color[index].g           = 1;
+            sprite_batch->color[index].b           = 1;
+            sprite_batch->color[index].a           = 1;
+            sprite_batch->flip_horizontally[index] = 0;
+            sprite_batch->flip_vertically[index]   = 0;
+
+            sprite_batch->scale[index].x = 1;
+            sprite_batch->scale[index].y = 1;
+
+            sprite_batch->skew[index].x = 0;
+            sprite_batch->skew[index].y = 0;
+
+            sprite_batch->pivot_point[index].x = 0;
+            sprite_batch->pivot_point[index].y = 0;
+
+            sprite_batch->position[index].x = position.x;
+            sprite_batch->position[index].y = position.y + sprite_font->glyphs[g].y;
+
+            sprite_batch->orientation[index] = 0;
+            sprite_batch->updated[index] = 1;
+
+            position.x += sprite->rect_src.width;
+
+            sprite_batch->count ++;
+        }
+        
+    }
+    
 }

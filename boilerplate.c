@@ -44,18 +44,20 @@ int main(void)
     shader_primitive = delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl");
     shader = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");//loads and parses the default sprite shader
     //delo2d_texture_load(&texture,"textures/logo_animation.png");//loads texture (only tested .png files)
-    Glyph glyphs[128];
-    delo2d_font_load(&texture,&glyphs[0],128,"fonts/white-rabbit.regular.ttf");
 
-    delo2d_sprite_batch_create(&sprite_batch,1);//creates a spritebatch with capacity for 1 sprite    
+    SpriteFont128 sprite_font;
+    delo2d_sprite_font_128_load(&sprite_font,"fonts/white-rabbit.regular.ttf",24);
+
+    delo2d_sprite_batch_create(&sprite_batch,128);//creates a spritebatch with capacity for 1 sprite    
     delo2d_primitive_batch_create(&primitive_batch,1000);//creates a spritebatch with capacity for 1 sprite
     //defines the sprites
     Color color_white;
     delo2d_color_set_f(&color_white,1,1,1,1);
-    int x = 0;
-    int y = 0;
-    delo2d_sprite_define(&sprite, x,y,texture.width,texture.height,0,0,texture.width,texture.height,0,texture.width,texture.height,1,1,1,color_white,1,1,0,0,0,0);
-  
+
+
+   
+    
+
 
     while (!glfwWindowShouldClose(window))
     { 
@@ -63,8 +65,10 @@ int main(void)
         delo2d_render_target_set(0,0,0,0,1);//sets framebuffer to 0 (the screen) and clear the buffer with r=0,g=0,b=0,a=1
         
         delo2d_sprite_batch_begin(&sprite_batch,shader,projection);
-            delo2d_sprite_batch_add(&sprite_batch,&sprite, &texture);
+        delo2d_draw_text("Ey you fucking bitch",(Vector2f){50,50},&sprite_font, &sprite_batch);
         delo2d_sprite_batch_end(&sprite_batch);
+
+        
 
 
 
