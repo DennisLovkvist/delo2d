@@ -181,6 +181,7 @@ typedef struct SpriteFont128 SpriteFont128;
 struct SpriteFont128
 {
     int size;
+    int space_width;
     Texture texture;
     Glyph glyphs[128];
     Sprite sprites[128];
