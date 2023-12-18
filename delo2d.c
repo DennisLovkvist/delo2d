@@ -1419,6 +1419,7 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
         sprite_font->texture.height = font_size;
 
         sprite_font->space_width = face->glyph->advance.x >> 6;
+        sprite_font->new_line = face->size->metrics.height >> 6;
     }
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, sprite_font->texture.width, sprite_font->texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -1437,6 +1438,7 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
         sprite_font->glyphs[c].y = offset_y;
         sprite_font->glyphs[c].w = face->glyph->bitmap.width;
         sprite_font->glyphs[c].h = font_size;
+        sprite_font->glyphs[c].advance = (float)(face->glyph->linearHoriAdvance >> 16);
 
         int length = face->glyph->bitmap.rows * face->glyph->bitmap.pitch;
         unsigned int *buffer = alloca(sizeof(unsigned int)*length);
@@ -1469,43 +1471,53 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
     sprite_font->texture.bytes_per_pixel = 4;
     sprite_font->texture.initialized = 1;
 }
-void delo2d_draw_text(char *text,Vector2f position,SpriteFont128 *sprite_font, SpriteBatch *sprite_batch)
+void delo2d_draw_text(char *text,Vector2f position,Color color, SpriteFont128 *sprite_font, SpriteBatch *sprite_batch)
 {
+
     int texture_index = -1;
     delo2d_sprite_batch_add_texture(sprite_batch,&sprite_font->texture, &texture_index);
 
     int length = strlen(text);
 
+    Vector2f original_position = position;
+
     sprite_batch->count = 0;
     for (int i = 0; i < length; i++)
     {
-        int g = (int)text[i];
-        if(g == 32)
+        char c = text[i];
+        Glyph *glyph = &sprite_font->glyphs[(int)c];
+        
+        if(c == ' ')
         {
             position.x += sprite_font->space_width;
+        }
+        else if(c == '\n')
+        {
+            position.x = original_position.x;
+            position.y += sprite_font->new_line * 1.6;
         }
         else
         {
             int index = sprite_batch->count;
-            Sprite *sprite = &sprite_font->sprites[g];
+            Sprite *sprite = &sprite_font->sprites[(int)c];
             sprite_batch->rect_src[index].x      = sprite->rect_src.x;
             sprite_batch->rect_src[index].y      = sprite->rect_src.y;
             sprite_batch->rect_src[index].width  = sprite->rect_src.width;
             sprite_batch->rect_src[index].height = sprite->rect_src.height;
 
             sprite_batch->rect_des[index].x      = position.x;
-            sprite_batch->rect_des[index].y      = position.y + sprite_font->glyphs[g].y;
+            sprite_batch->rect_des[index].y      = position.y;
             sprite_batch->rect_des[index].width  = sprite->rect_src.width;
             sprite_batch->rect_des[index].height = sprite->rect_src.height;
 
             sprite->batch_index = i;
             sprite->quad_index = i;
 
-            sprite_batch->texture_index[i]     = texture_index; 
-            sprite_batch->color[index].r           = 1;
-            sprite_batch->color[index].g           = 1;
-            sprite_batch->color[index].b           = 1;
-            sprite_batch->color[index].a           = 1;
+            sprite_batch->texture_index[i]         = texture_index; 
+            sprite_batch->color[index].r           = color.r;
+            sprite_batch->color[index].g           = color.g;
+            sprite_batch->color[index].b           = color.b;
+            sprite_batch->color[index].a           = color.a;
             sprite_batch->flip_horizontally[index] = 0;
             sprite_batch->flip_vertically[index]   = 0;
 
@@ -1519,12 +1531,12 @@ void delo2d_draw_text(char *text,Vector2f position,SpriteFont128 *sprite_font, S
             sprite_batch->pivot_point[index].y = 0;
 
             sprite_batch->position[index].x = position.x;
-            sprite_batch->position[index].y = position.y + sprite_font->glyphs[g].y;
+            sprite_batch->position[index].y = position.y + glyph->y;
 
             sprite_batch->orientation[index] = 0;
             sprite_batch->updated[index] = 1;
 
-            position.x += sprite->rect_src.width;
+            position.x += glyph->advance;
 
             sprite_batch->count ++;
         }   

@@ -65,7 +65,7 @@ int main(void)
         delo2d_render_target_set(0,0,0,0,1);//sets framebuffer to 0 (the screen) and clear the buffer with r=0,g=0,b=0,a=1
         
         delo2d_sprite_batch_begin(&sprite_batch,shader,projection);
-        delo2d_draw_text("Ey you fucking bitch",(Vector2f){50,50},&sprite_font, &sprite_batch);
+        delo2d_draw_text("Ey you fucking bitch..\nlol",(Vector2f){50,50},(Color){0,1,0,1},&sprite_font, &sprite_batch);
         delo2d_sprite_batch_end(&sprite_batch);
 
         

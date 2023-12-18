@@ -175,13 +175,14 @@ struct PrimitiveBatch
 typedef struct Glyph Glyph;
 struct Glyph
 {
-    int x,y,w,h;
+    int x,y,w,h,advance;
 };
 typedef struct SpriteFont128 SpriteFont128;
 struct SpriteFont128
 {
     int size;
     int space_width;
+    int new_line;
     Texture texture;
     Glyph glyphs[128];
     Sprite sprites[128];
@@ -310,4 +311,4 @@ void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch);
 //primitive batch code end
 
 void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int font_size);
-void delo2d_draw_text(char *text,Vector2f position,SpriteFont128 *sprite_font, SpriteBatch *sprite_batch);
+void delo2d_draw_text(char *text,Vector2f position,Color color,SpriteFont128 *sprite_font, SpriteBatch *sprite_batch);
