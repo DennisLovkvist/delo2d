@@ -180,12 +180,12 @@ struct Glyph
 typedef struct SpriteFont128 SpriteFont128;
 struct SpriteFont128
 {
-    int size;
-    int space_width;
-    int new_line;
+    int font_size;
+    int blank_space_offset_x;
+    int line_spacing;
     Texture texture;
-    Glyph glyphs[128];
-    Sprite sprites[128];
+    Glyph glyphs[94];
+    Sprite sprites[94];
 };
 void GLClearError();
 void GLCheckError();

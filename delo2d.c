@@ -1390,8 +1390,8 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
         FT_Done_FreeType(ft);
         return;
     }
-    FT_Set_Pixel_Sizes(face, 0, font_size); // Set font size
 
+    FT_Set_Pixel_Sizes(face, 0, font_size);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -1402,30 +1402,33 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // Calculate texture size based on the number of characters
     
     sprite_font->texture.width  = 0;
     sprite_font->texture.height = 0;
-
-    for (unsigned char c = 0; c < 128; c++) 
+    int padding = 2;
+    for (unsigned char c = 33; c < 127; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
             fprintf(stderr, "Failed to load glyph\n");
             continue;
         }
-        sprite_font->texture.width += face->glyph->bitmap.width;
+        sprite_font->texture.width += face->glyph->bitmap.width + padding;
         sprite_font->texture.height = font_size;
 
-        sprite_font->space_width = face->glyph->advance.x >> 6;
-        sprite_font->new_line = face->size->metrics.height >> 6;
+        sprite_font->blank_space_offset_x = face->glyph->advance.x >> 6;
+        sprite_font->line_spacing = face->size->metrics.height >> 6;
     }
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, sprite_font->texture.width, sprite_font->texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+    GLubyte* buffer_blank = (GLubyte*)calloc(sprite_font->texture.width * sprite_font->texture.height * 4, sizeof(GLubyte));
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,sprite_font->texture.width, sprite_font->texture.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer_blank);
+    free(buffer_blank);
+
     int offset_x = 0;int max_bearing_y = 0;
 
-    for (unsigned char c = 0; c < 128; c++) 
+    int index = 0;
+    for (unsigned char c = 33; c < 127; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
@@ -1434,12 +1437,14 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
         }
         int offset_y = max_bearing_y - face->glyph->bitmap_top;
 
-        sprite_font->glyphs[c].x = offset_x;
-        sprite_font->glyphs[c].y = offset_y;
-        sprite_font->glyphs[c].w = face->glyph->bitmap.width;
-        sprite_font->glyphs[c].h = font_size;
-        sprite_font->glyphs[c].advance = (float)(face->glyph->linearHoriAdvance >> 16);
+        offset_y = (offset_y < 0)  ? 0 : offset_y;
 
+        sprite_font->glyphs[index].x = offset_x;
+        sprite_font->glyphs[index].y = offset_y;
+        sprite_font->glyphs[index].w = face->glyph->bitmap.width;
+        sprite_font->glyphs[index].h = font_size;
+        sprite_font->glyphs[index].advance = (float)(face->glyph->linearHoriAdvance >> 16);
+        index ++;
         int length = face->glyph->bitmap.rows * face->glyph->bitmap.pitch;
         unsigned int *buffer = alloca(sizeof(unsigned int)*length);
 
@@ -1452,22 +1457,21 @@ void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int fon
             unsigned int a = ((color)         & 0xFF);
             buffer[i] = (((r) << 24) | ((g) << 16) | ((b) << 8) | (a));
         }
-        // Use GL_RGBA for both internal format and format
-        glTexSubImage2D(GL_TEXTURE_2D, 0, offset_x, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+        
+        glTexSubImage2D(GL_TEXTURE_2D, 0, offset_x, offset_y, face->glyph->bitmap.width, face->glyph->bitmap.rows, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
-        offset_x += face->glyph->bitmap.width;
+        offset_x += face->glyph->bitmap.width+padding;
         max_bearing_y = fmax(max_bearing_y, face->glyph->bitmap_top);
     }
 
-    for (int i = 0; i < 128; i++)
+    for (int i = 0; i < 94; i++)
     {
         int x = sprite_font->glyphs[i].x;
-        int y = sprite_font->glyphs[i].y;
         int w = sprite_font->glyphs[i].w;
         int h = sprite_font->glyphs[i].h;
         delo2d_sprite_define(&sprite_font->sprites[i], 0,0,w,h,x,0,w,h,0,sprite_font->texture.width,sprite_font->texture.height,1,1,1,(Color){1,1,1,1},1,1,0,0,0,0);
     }
-    sprite_font->size = font_size;
+    sprite_font->font_size = font_size;
     sprite_font->texture.bytes_per_pixel = 4;
     sprite_font->texture.initialized = 1;
 }
@@ -1485,21 +1489,22 @@ void delo2d_draw_text(char *text,Vector2f position,Color color, SpriteFont128 *s
     for (int i = 0; i < length; i++)
     {
         char c = text[i];
-        Glyph *glyph = &sprite_font->glyphs[(int)c];
-        
+
         if(c == ' ')
         {
-            position.x += sprite_font->space_width;
+            position.x += sprite_font->blank_space_offset_x;
         }
         else if(c == '\n')
         {
             position.x = original_position.x;
-            position.y += sprite_font->new_line * 1.6;
+            position.y += sprite_font->line_spacing * 1.6;
         }
-        else
+        else if (c>=32 && c < 127)
         {
+            Glyph *glyph = &sprite_font->glyphs[(int)c-33];
+            
             int index = sprite_batch->count;
-            Sprite *sprite = &sprite_font->sprites[(int)c];
+            Sprite *sprite = &sprite_font->sprites[(int)c-33];
             sprite_batch->rect_src[index].x      = sprite->rect_src.x;
             sprite_batch->rect_src[index].y      = sprite->rect_src.y;
             sprite_batch->rect_src[index].width  = sprite->rect_src.width;
@@ -1531,7 +1536,7 @@ void delo2d_draw_text(char *text,Vector2f position,Color color, SpriteFont128 *s
             sprite_batch->pivot_point[index].y = 0;
 
             sprite_batch->position[index].x = position.x;
-            sprite_batch->position[index].y = position.y + glyph->y;
+            sprite_batch->position[index].y = position.y;
 
             sprite_batch->orientation[index] = 0;
             sprite_batch->updated[index] = 1;
@@ -1539,7 +1544,7 @@ void delo2d_draw_text(char *text,Vector2f position,Color color, SpriteFont128 *s
             position.x += glyph->advance;
 
             sprite_batch->count ++;
-        }   
+        } 
     }   
 }
 //text code end
