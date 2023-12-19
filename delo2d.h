@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #define DELO_LINE_LIST 2
 #define DELO_TRIANGLE_LIST 3
@@ -170,7 +172,21 @@ struct PrimitiveBatch
     unsigned int shader_id;
     VertexArrayPrimitives vertex_array;
 };
-
+typedef struct Glyph Glyph;
+struct Glyph
+{
+    int x,y,w,h,advance;
+};
+typedef struct SpriteFont128 SpriteFont128;
+struct SpriteFont128
+{
+    int font_size;
+    int blank_space_offset_x;
+    int line_spacing;
+    Texture texture;
+    Glyph glyphs[94];
+    Sprite sprites[94];
+};
 void GLClearError();
 void GLCheckError();
 
@@ -200,10 +216,13 @@ Matrix44 matrix44_rotation_z(float theta);
 Matrix44 matrix44_rotation_y(float theta);
 Matrix44 matrix44_rotation_x(float theta);
 Matrix44 matrix44_multiply(Matrix44 a, Matrix44 b);
+Matrix44 matrix44_add(Matrix44 a, Matrix44 b);
 Matrix44 matrix44_perspective();
 Matrix44 matrix_orthographic_projection(float l,float r,float t,float b,float f,float n);
 float* matrix44_to_gl_matrix(Matrix44 *matrix);
-void matrix_multilpy_vector(Vector2fp *vector, Matrix44 transform);
+void matrix_multilpy_vector2fp(Vector2fp *vector, Matrix44 transform);
+Vector2f matrix_multilpy_vector2f(Vector2f vector, Matrix44 transform);
+Matrix44 matrix44_invert(Matrix44 input);
 //matrix code end
 
 //region quads begin
@@ -241,6 +260,7 @@ void delo2d_sprite_batch_begin(SpriteBatch *sprite_batch,unsigned int shader, Ma
 void delo2d_sprite_batch_end(SpriteBatch *sprite_batch);
 void delo2d_sprite_define(Sprite *sprite, int dx, int dy,int dw, int dh,int sx, int sy,int sw, int sh,unsigned int texture_index, unsigned int texture_width, unsigned int texture_height, unsigned int stride,unsigned int frames, float duration, Color color,float scale_x,float scale_y,float skew_x,float skew_y,unsigned int flip_horizontally,unsigned int flip_vertically);
 void delo2d_sprite_batch_add(SpriteBatch *sprite_batch, Sprite *sprite,Texture *texture);
+void delo2d_sprite_batch_add_no_texture(SpriteBatch *sprite_batch, Sprite *sprite);
 void delo2d_sprite_batch_add_texture(SpriteBatch *sprite_batch,Texture *texture, int *texture_index);
 void delo2d_sprite_batch_to_vertex_array(SpriteBatch *sprite_batch, VertexArray *vertex_array);
 void delo2d_sprite_scale_dest_rect(Sprite *sprite, float scale_x, float scale_y);
@@ -289,3 +309,6 @@ void delo2d_primitive_batch_begin(PrimitiveBatch *primitive_batch,unsigned int s
 void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,float r,float g, float b, float a);
 void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch);
 //primitive batch code end
+
+void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int font_size);
+void delo2d_draw_text(char *text,Vector2f position,Color color,SpriteFont128 *sprite_font, SpriteBatch *sprite_batch);
