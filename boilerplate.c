@@ -23,13 +23,14 @@ int main(void)
 { 
     GLFWwindow *window;
     Texture texture;
-    unsigned int shader;
+    unsigned int shader_sprite_default;
+    unsigned int shader_sprite_anti_aliasing;
     unsigned int shader_primitive;
     Matrix44 projection;
     SpriteBatch sprite_batch;
     PrimitiveBatch primitive_batch;
     Sprite sprite;
-    SpriteFont128 sprite_font;
+    SpriteFont sprite_font;
 
     if(delo2d_render_setup(&window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
     
@@ -42,10 +43,12 @@ int main(void)
 
     glfwSwapInterval(0);
 
-    shader_primitive = delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl");
-    shader = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");//loads and parses the default sprite shader
+    shader_primitive            = delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl");
+    shader_sprite_default       = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");    //loads and parses the default sprite shader
+    shader_sprite_anti_aliasing = delo2d_shader_from_file("shaders/delo2d_sprite_aa.glsl");         //loads and parses the anit-aliasing sprite shader
+    
     delo2d_texture_load(&texture,"textures/logo_animation.png");//loads texture (only tested .png files)
-    delo2d_sprite_font_128_load(&sprite_font,"fonts/white-rabbit.regular.ttf",32);//loads font (only .ttf)
+    delo2d_sprite_font_load(&sprite_font,"fonts/white-rabbit.regular.ttf",32);//loads font (only .ttf)
 
     delo2d_sprite_batch_create(&sprite_batch,64);//creates a spritebatch with capacity for 64 sprites   
     delo2d_primitive_batch_create(&primitive_batch,1000);//creates a spritebatch with capacity for 1 sprite
@@ -70,11 +73,11 @@ int main(void)
         
         delo2d_sprite_animate(&sprite,dt,0);
 
-        delo2d_sprite_batch_begin(&sprite_batch,shader,projection);//sets up the spritebatch for drawing with a shader and projection
-            delo2d_draw_text("delo2d boilderplate 2023-12-19",(Vector2f){150,50},(Color){0.4,0.4,0.4,1},&sprite_font, &sprite_batch);
+        delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_anti_aliasing,projection);//sets up the spritebatch for drawing with a shader and projection
+            delo2d_sprite_font_draw("delo2d boilderplate 2024-01-17",(Vector2f){150,50},(Color){0.4,0.4,0.4,1},&sprite_font, &sprite_batch,1,0);
         delo2d_sprite_batch_end(&sprite_batch);//sets the content of the spritebatch to a vertex array and draws it
         
-        delo2d_sprite_batch_begin(&sprite_batch,shader,projection);//sets up the spritebatch for drawing with a shader and projection
+        delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_default,projection);//sets up the spritebatch for drawing with a shader and projection
            delo2d_sprite_batch_add(&sprite_batch,&sprite, &texture);//adds a sprite to the spritebatch and the texture used by the sprite
         delo2d_sprite_batch_end(&sprite_batch);//sets the content of the spritebatch to a vertex array and draws it
 
@@ -127,7 +130,7 @@ int main(void)
     delo2d_primitive_batch_delete(&primitive_batch);
 
     glDeleteProgram(shader_primitive);
-    glDeleteProgram(shader);
+    glDeleteProgram(shader_sprite_default);
     glfwTerminate();
 
     return 0;

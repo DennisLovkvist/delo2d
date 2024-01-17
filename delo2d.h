@@ -11,8 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ft2build.h>
-#include FT_FREETYPE_H
+#include <ft2build.h>
+#include <locale.h>
+#include <wchar.h>
 
+#include FT_FREETYPE_H
 #define DELO_LINE_LIST 2
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
@@ -175,17 +178,17 @@ struct PrimitiveBatch
 typedef struct Glyph Glyph;
 struct Glyph
 {
-    int x,y,w,h,advance;
+    int x,y,w,h,advance,bearing_x,bearing_y;
 };
-typedef struct SpriteFont128 SpriteFont128;
-struct SpriteFont128
+typedef struct SpriteFont SpriteFont;
+struct SpriteFont
 {
     int font_size;
     int blank_space_offset_x;
     int line_spacing;
     Texture texture;
-    Glyph glyphs[94];
-    Sprite sprites[94];
+    Glyph glyphs[512];
+    Sprite sprites[512];
 };
 void GLClearError();
 void GLCheckError();
@@ -310,5 +313,7 @@ void delo2d_primitive_batch_add(PrimitiveBatch *primitive_batch,int x, int y,flo
 void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch);
 //primitive batch code end
 
-void delo2d_sprite_font_128_load(SpriteFont128 *sprite_font, char *path, int font_size);
-void delo2d_draw_text(char *text,Vector2f position,Color color,SpriteFont128 *sprite_font, SpriteBatch *sprite_batch);
+//text code begin
+void delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size);
+void delo2d_sprite_font_draw(char *text,Vector2f position,Color color,SpriteFont *sprite_font, SpriteBatch *sprite_batch, float scale, int limit_x);
+//text code end
