@@ -63,27 +63,43 @@ int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int he
     return 0;
 }
 //region render target begin
-void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height)
+void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height, float x, float y, float width, float height)
 {
-    rt->vertices[0] = 1.0f;rt->vertices[1] = -1.0f;rt->vertices[2] = 1.0f;rt->vertices[3] = 0.0f;
-    rt->vertices[4] = -1.0f;rt->vertices[5] = -1.0f;rt->vertices[6] = 0.0f;rt->vertices[7] = 0.0f;
-    rt->vertices[8] = -1.0f;rt->vertices[9] = 1.0f;rt->vertices[10] = 0.0f;rt->vertices[11] = 1.0f;
+    rt->projection = matrix_orthographic_projection(0.0f,(float)screen_width,(float)screen_height,0.0f,1,-1);
 
-    rt->vertices[12] = 1.0f;rt->vertices[13] = 1.0f;rt->vertices[14] = 1.0f;rt->vertices[15] = 1.0f;
-    rt->vertices[16] = 1.0f;rt->vertices[17] = -1.0f;rt->vertices[18] = 1.0f;rt->vertices[19] = 0.0f;
-    rt->vertices[20] = -1.0f;rt->vertices[21] = 1.0f;rt->vertices[22] = 0.0f;rt->vertices[23] = 1.0f;
+    y = -y;
+    y += (screen_height-height);
+
+    float quad_x = ((2*x)/screen_width  -1);
+    float quad_y = ((2*y)/screen_height  -1);
+
+    float quad_w = ((2*(width +x)) /screen_width  -1);
+    float quad_h = ((2*(height+y)) /screen_height  -1);
+
+    //delo2d_render_target_default.glsl
+    //position.X                 position.Y                    tex_coord.x                   tex_coord.y                     
+    rt->vertices[0] = quad_w;    rt->vertices[1] = quad_y;     rt->vertices[2]  = 1.0f;    rt->vertices[3]  = 1.0f;
+    rt->vertices[4] = quad_x;    rt->vertices[5] = quad_y;     rt->vertices[6]  = 0.0f;    rt->vertices[7]  = 1.0f;
+    rt->vertices[8] = quad_x;    rt->vertices[9] = quad_h;     rt->vertices[10] = 0.0f;    rt->vertices[11] = 0.0f;
+
+    rt->vertices[12] = quad_w;   rt->vertices[13] = quad_h;    rt->vertices[14] = 1.0f;    rt->vertices[15] = 0.0f;
+    rt->vertices[16] = quad_w;   rt->vertices[17] = quad_y;    rt->vertices[18] = 1.0f;    rt->vertices[19] = 1.0f;
+    rt->vertices[20] = quad_x;   rt->vertices[21] = quad_h;    rt->vertices[22] = 0.0f;    rt->vertices[23] = 0.0f;
 
 	glGenVertexArrays(1, &rt->vao);
 	glGenBuffers(1, &rt->vbo);
 
 	glBindVertexArray(rt->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, rt->vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(rt->vertices), &rt->vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rt->vertices), &rt->vertices, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenFramebuffers(1, &rt->fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, rt->fbo);
@@ -91,25 +107,16 @@ void delo2d_render_target_create(RenderTarget *rt,float screen_width,float scree
 	// Create Framebuffer Texture
 	glGenTextures(1, &rt->fbt);
 	glBindTexture(GL_TEXTURE_2D, rt->fbt);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screen_width,  screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width,  height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt->fbt, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Prevents edge bleeding
-    
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rt->fbt, 0);
-
-	glGenRenderbuffers(1, &rt->rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rt->rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, screen_width,  screen_height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rt->rbo);
-
-    rt->status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindVertexArray(0);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
     rt->initialized = 1;
-    
 }
 void delo2d_render_target_delete(RenderTarget *rt)
 {
@@ -122,7 +129,6 @@ void delo2d_render_target_delete(RenderTarget *rt)
 
     glDeleteVertexArrays(1, &rt->vao);
     glDeleteBuffers(1,&rt->vbo);
-    glDeleteRenderbuffers(1, &rt->rbo);
     glDeleteFramebuffers(2,&rt->fbo);
 	glDeleteTextures(1, &rt->fbt);
     rt->initialized = 0;
@@ -138,7 +144,24 @@ void delo2d_render_target_set(unsigned int frame_buffer,float r, float g, float 
 {
     glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer);
     glClearColor(r,g,b,a);
-    glClear(GL_COLOR_BUFFER_BIT);  
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
+
+    if(frame_buffer == 0)
+    {
+        glEnable(GL_MULTISAMPLE);
+        glSampleCoverage(0.8, GL_FALSE);
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    }
+    else
+    {
+        glEnable(GL_MULTISAMPLE);
+        glSampleCoverage(0.8, GL_FALSE);
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    }
 }
 //region rendering end
 
@@ -190,7 +213,6 @@ void delo2d_texture_copy(Texture *texture_src,Texture *texture_des)
     texture_des->initialized = texture_src->initialized;
 }
 //texture code end
-
 
 //region quads begin
 void delo2d_quad_get(Quad *quad, VertexArray *vertex_array, int element_index)
