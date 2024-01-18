@@ -26,14 +26,18 @@ int main(void)
     unsigned int shader_sprite_default;
     unsigned int shader_sprite_anti_aliasing;
     unsigned int shader_primitive;
+    unsigned int shader_render_target;
     Matrix44 projection;
     SpriteBatch sprite_batch;
     PrimitiveBatch primitive_batch;
     Sprite sprite;
     SpriteFont sprite_font;
+    RenderTarget render_target;
 
     if(delo2d_render_setup(&window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
     
+    delo2d_render_target_create(&render_target,screen_width,screen_height, 256,86,256,64);
+
     projection = matrix_orthographic_projection(0.0f,(float)screen_width,0.0f,(float)screen_height,1,-1);//creates an orthographic_projection to be used as our camera
 
     
@@ -44,8 +48,9 @@ int main(void)
     glfwSwapInterval(0);
 
     shader_primitive            = delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl");
-    shader_sprite_default       = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");    //loads and parses the default sprite shader
-    shader_sprite_anti_aliasing = delo2d_shader_from_file("shaders/delo2d_sprite_aa.glsl");         //loads and parses the anit-aliasing sprite shader
+    shader_sprite_default       = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");        //loads and parses the default sprite shader
+    shader_sprite_anti_aliasing = delo2d_shader_from_file("shaders/delo2d_sprite_aa.glsl");             //loads and parses the anit-aliasing sprite shader
+    shader_render_target        = delo2d_shader_from_file("shaders/delo2d_render_target_default.glsl"); 
     
     delo2d_texture_load(&texture,"textures/logo_animation.png");//loads texture (only tested .png files)
     delo2d_sprite_font_load(&sprite_font,"fonts/white-rabbit.regular.ttf",32);//loads font (only .ttf)
@@ -65,9 +70,19 @@ int main(void)
     struct timeval t1, t2;
     double elapsedTime;
 
+    Vector2f render_target_text_position = (Vector2f){8,16};
+
     while (!glfwWindowShouldClose(window))
     { 
         gettimeofday(&t1, NULL);
+
+        delo2d_render_target_set(render_target.fbo,0.3,0.3,0.3,1);
+
+        delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_anti_aliasing,render_target.projection);
+            delo2d_sprite_font_draw("Render Target",render_target_text_position,(Color){0.8,0.8,0.8,1},&sprite_font, &sprite_batch,1,0);
+        delo2d_sprite_batch_end(&sprite_batch);
+        render_target_text_position.x += 100*dt;
+        render_target_text_position.x = (render_target_text_position.x > 256) ? -256:render_target_text_position.x;
 
         delo2d_render_target_set(0,0,0,0,1);//sets framebuffer to 0 (the screen) and clear the buffer with r=0,g=0,b=0,a=1
         
@@ -111,6 +126,8 @@ int main(void)
             delo2d_primitive_batch_add(&primitive_batch,650,200,1,1,1,1);//line 3
             delo2d_primitive_batch_add(&primitive_batch,600,300,1,1,1,1);//line 3
         delo2d_primitive_batch_end(&primitive_batch);
+
+        delo2d_render_target_draw(&render_target, shader_render_target);
 
 
         glfwSwapBuffers(window);

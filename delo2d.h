@@ -100,8 +100,9 @@ struct Texture
 typedef struct RenderTarget RenderTarget;
 struct RenderTarget
 {
+    Matrix44 projection; 
     unsigned int initialized;
-    unsigned int vao,vbo,fbo,fbt,rbo;
+    unsigned int vao,vbo,fbo,fbt;
     GLenum status;
     float vertices[24];
 };
@@ -197,7 +198,7 @@ void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int heig
 int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
 
 //region render target begin
-void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height);
+void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height, float x, float y, float width, float height);
 void delo2d_render_target_delete(RenderTarget *rt);
 void delo2d_render_target_draw(RenderTarget *render_target, unsigned int shader_id);
 void delo2d_render_target_set(unsigned int frame_buffer,float r, float g, float b, float a);
