@@ -25,7 +25,7 @@ void main()
 #version 330 core
 
 uniform sampler2D u_textures[3];
-layout(location = 0) out vec4 color;
+layout(location = 0) out vec4 frag_color;
 in vec2 v_tex_coord;
 in float v_tex_index;
 in vec4 v_color;
@@ -67,18 +67,18 @@ void main()
 {
     vec2 texel_size = 1.0 / textureSize(u_textures[0], 0);
 
-    vec4 tex_color = texture2D(u_textures[0], v_tex_coord); 
+    vec4 tex_color = texture(u_textures[0], v_tex_coord); 
     
     RGB rgb_data;
     rgb_data.m  = tex_color.rgb;
-    rgb_data.nw = texture2D(u_textures[0], v_tex_coord + vec2(-1.0,-1.0) * texel_size).rgb;
-    rgb_data.ne = texture2D(u_textures[0], v_tex_coord + vec2( 1.0,-1.0) * texel_size).rgb;
-    rgb_data.sw = texture2D(u_textures[0], v_tex_coord + vec2(-1.0, 1.0) * texel_size).rgb;
-    rgb_data.se = texture2D(u_textures[0], v_tex_coord + vec2( 1.0, 1.0) * texel_size).rgb;
-    rgb_data.w  = texture2D(u_textures[0], v_tex_coord + vec2(-1.0, 0.0) * texel_size).rgb;
-    rgb_data.e  = texture2D(u_textures[0], v_tex_coord + vec2( 1.0, 0.0) * texel_size).rgb;
-    rgb_data.s  = texture2D(u_textures[0], v_tex_coord + vec2( 0.0, 1.0) * texel_size).rgb;
-    rgb_data.n  = texture2D(u_textures[0], v_tex_coord + vec2( 0.0,-1.0) * texel_size).rgb;
+    rgb_data.nw = texture(u_textures[0], v_tex_coord + vec2(-1.0,-1.0) * texel_size).rgb;
+    rgb_data.ne = texture(u_textures[0], v_tex_coord + vec2( 1.0,-1.0) * texel_size).rgb;
+    rgb_data.sw = texture(u_textures[0], v_tex_coord + vec2(-1.0, 1.0) * texel_size).rgb;
+    rgb_data.se = texture(u_textures[0], v_tex_coord + vec2( 1.0, 1.0) * texel_size).rgb;
+    rgb_data.w  = texture(u_textures[0], v_tex_coord + vec2(-1.0, 0.0) * texel_size).rgb;
+    rgb_data.e  = texture(u_textures[0], v_tex_coord + vec2( 1.0, 0.0) * texel_size).rgb;
+    rgb_data.s  = texture(u_textures[0], v_tex_coord + vec2( 0.0, 1.0) * texel_size).rgb;
+    rgb_data.n  = texture(u_textures[0], v_tex_coord + vec2( 0.0,-1.0) * texel_size).rgb;
 
     Luma luma_data;
     vec3 luma = vec3(0.299, 0.587, 0.114);
@@ -105,12 +105,12 @@ void main()
     dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX), max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX), dir * rcp_dir_min)) * texel_size;
 
     vec3 rgb_a = 0.5 * (
-        texture2D(u_textures[0], v_tex_coord + dir * (1.0 / 3.0 - 0.5)).rgb +
-        texture2D(u_textures[0], v_tex_coord + dir * (2.0 / 3.0 - 0.5)).rgb);
+        texture(u_textures[0], v_tex_coord + dir * (1.0 / 3.0 - 0.5)).rgb +
+        texture(u_textures[0], v_tex_coord + dir * (2.0 / 3.0 - 0.5)).rgb);
 
     vec3 rgb_b = rgb_a * 0.5 + 0.25 * (
-        texture2D(u_textures[0], v_tex_coord + dir * -0.5).rgb +
-        texture2D(u_textures[0], v_tex_coord + dir * 0.5).rgb);
+        texture(u_textures[0], v_tex_coord + dir * -0.5).rgb +
+        texture(u_textures[0], v_tex_coord + dir * 0.5).rgb);
 
     float luma_end = dot(rgb_b, luma);
     float luma_local_contrast = abs(luma_data.m - luma_end);
@@ -120,21 +120,21 @@ void main()
     dir *= (span1) ? FXAA_CORNER_RCPDIR : FXAA_EDGE_RCPDIR;
 
     vec3 rgb_c = 0.5 * (
-        texture2D(u_textures[0], v_tex_coord + dir * (1.0 / 3.0 - 0.5)).rgb +
-        texture2D(u_textures[0], v_tex_coord + dir * (2.0 / 3.0 - 0.5)).rgb);
+        texture(u_textures[0], v_tex_coord + dir * (1.0 / 3.0 - 0.5)).rgb +
+        texture(u_textures[0], v_tex_coord + dir * (2.0 / 3.0 - 0.5)).rgb);
 
     vec3 rgb_d = rgb_c * 0.5 + 0.25 * (
-        texture2D(u_textures[0], v_tex_coord + dir * -0.5).rgb +
-        texture2D(u_textures[0], v_tex_coord + dir * 0.5).rgb);
+        texture(u_textures[0], v_tex_coord + dir * -0.5).rgb +
+        texture(u_textures[0], v_tex_coord + dir * 0.5).rgb);
 
     vec4 final_color = mix(
-        mix(vec4(rgb_data.m, tex_color.a), vec4(rgb_a, tex_color.a), span1), 
-        mix(vec4(rgb_b, tex_color.a), vec4(rgb_c, tex_color.a), span1), luma_local_contrast);
+        mix(vec4(rgb_data.m, tex_color.a), vec4(rgb_a, tex_color.a), smoothstep(0.0, 1.0, luma_local_contrast)), 
+        mix(vec4(rgb_b, tex_color.a), vec4(rgb_c, tex_color.a), smoothstep(0.0, 1.0, luma_local_contrast)), 
+        smoothstep(0.0, 1.0, luma_local_contrast));
 
-    final_color = mix(final_color, vec4(rgb_d, tex_color.a), luma_local_contrast * luma_local_contrast);
+    final_color = mix(final_color, vec4(rgb_d, tex_color.a), smoothstep(0.0, 1.0, luma_local_contrast * luma_local_contrast));
 
-    color = final_color*v_color;
+    frag_color = final_color * v_color;
 }
 
 #FRAG_END
-
