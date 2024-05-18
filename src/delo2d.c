@@ -1594,7 +1594,7 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
         fprintf(stderr, "Error: Could not initialize FreeType library\n");
         return DELO_ERROR;
     }
-printf("loading from path %s\n", path);
+    
     if (FT_New_Face(ft, path, 0, &face)) 
     {
         fprintf(stderr, "Error: Could not open font file\n");
