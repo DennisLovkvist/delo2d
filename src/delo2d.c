@@ -7,6 +7,7 @@
  * 1.0      delo     2024-01-17     New feature: SpriteFont
  * 1.0      delo     2024-01-18     New feature: Render Target
  * 1.0      delo     2024-05-12     Improvement: SpriteFont - From developing GUI components
+ * 1.0      delo     2024-05-18     Improvement: Added Error handling when loading
  **/
 
 #define STBI_NO_SIMD
@@ -537,11 +538,6 @@ void delo2d_sprite_vertex_array_unbind()
 //vertex array code end
 
 //shader code begin
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <GL/gl.h>
 void checkShaderCompileStatus(GLuint shader)
 {
     GLint compileStatus = 0;
