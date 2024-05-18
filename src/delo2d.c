@@ -596,10 +596,11 @@ uint8_t delo2d_shader_compile(uint32_t type, char *shader_source_code, uint32_t 
     glCompileShader(*id);
 
     GLint compile_status;
-printf("%s\n",src);
+
     glGetShaderiv(*id, GL_COMPILE_STATUS, &compile_status);
-checkShaderCompileStatus(*id);
-printf("compile_status %i\n", compile_status);
+    
+    checkShaderCompileStatus(*id);
+
     if (compile_status == GL_FALSE) 
     {
         fprintf(stderr,"Shader failed to compile\n");
@@ -615,7 +616,6 @@ uint8_t delo2d_shader_create(char *vertex_shader_source_code, char *fragment_sha
 {
     GLClearError();
 
-    printf("dolme\n");
     *program = glCreateProgram();
 
     if (*program == 0) 
