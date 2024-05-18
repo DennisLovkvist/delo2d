@@ -9,7 +9,6 @@
 /*Custom Headers*/
 #include "delo2d.h"
 
-#define GLEW_STATIC 1
 #define COUNT_SHADERS 7
 #define COUNT_TEXTURES 3
 #define WINDOW_TITLE "delo2d boilerplate"
@@ -32,7 +31,7 @@ int main(void)
     SpriteFont sprite_font;
     RenderTarget render_target;
 
-    if(delo2d_render_setup(&window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
+    if(delo2d_render_setup((void**)&window, screen_width, screen_height,WINDOW_TITLE) == -1){return -1;}//setup and initialization for opengl
     
     //glEnable(GL_DEBUG_OUTPUT);
     //glDebugMessageCallback(debugCallback, 0);
@@ -48,12 +47,36 @@ int main(void)
 
     glfwSwapInterval(0);
 
-    shader_primitive            = delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl");
-    shader_sprite_default       = delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl");        //loads and parses the default sprite shader
-    shader_sprite_anti_aliasing = delo2d_shader_from_file("shaders/delo2d_sprite_aa.glsl");             //loads and parses the anit-aliasing sprite shader
-    shader_render_target        = delo2d_shader_from_file("shaders/delo2d_render_target_default.glsl"); 
-    
-    delo2d_texture_load(&texture,"textures/logo_animation.png");//loads texture (only tested .png files)
+
+    if(delo2d_shader_from_file("shaders/delo2d_primitive_default.glsl",&shader_primitive) == DELO_ERROR)
+    {
+        glfwTerminate();
+        return 1;
+    }
+    if(delo2d_shader_from_file("shaders/delo2d_sprite_default.glsl",&shader_sprite_default) == DELO_ERROR)
+    {
+        glfwTerminate();
+        return 1;
+    }
+    if(delo2d_shader_from_file("shaders/delo2d_sprite_aa.glsl",&shader_sprite_anti_aliasing) == DELO_ERROR)
+    {
+        glfwTerminate();
+        return 1;
+    }
+
+    if(delo2d_shader_from_file("shaders/delo2d_render_target_default.glsl",&shader_render_target) == DELO_ERROR)
+    {
+        glfwTerminate();
+        return 1;
+    }
+
+    if(delo2d_texture_load(&texture,"textures/logo_animation.png") == DELO_ERROR)
+    {
+        glfwTerminate();
+        return 1;
+    }
+
+
     delo2d_sprite_font_load(&sprite_font,"fonts/white-rabbit.regular.ttf",32);//loads font (only .ttf)
 
     delo2d_sprite_batch_create(&sprite_batch,64);//creates a spritebatch with capacity for 64 sprites   
