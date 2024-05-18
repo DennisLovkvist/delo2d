@@ -7,29 +7,52 @@
  * 1.0      delo     2024-01-17     New feature: SpriteFont
  * 1.0      delo     2024-01-18     New feature: Render Target
  * 1.0      delo     2024-05-12     Improvement: SpriteFont - From developing GUI components
+ * 1.0      delo     2024-05-18     Improvement: Added Error handling when loading
  **/
+
+#define STBI_NO_SIMD
+#define STB_IMAGE_IMPLEMENTATION
+
 /*System Headers*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
 #include <wchar.h>
 #include <float.h>
+#include <locale.h>
+#include <math.h>
 #if defined(WIN32) || defined(__WIN32) || defined(__WIN32__)
     #include <malloc.h>
 #else
     #include <alloca.h>
 #endif
-#include <math.h>
 /*Third-Party Headers*/
+#include <vendor/stb_image.h>
+#include <freetype/ft2build.h>
+#include <freetype/freetype.h>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <vendor/stb_image.h>
 /*Custom Headers*/
 #include <delo2d.h>
 
+
 void GLClearError()
 {
-    while(!glGetError());
+    GLenum error;
+    int maxIterations = 1000; // or another reasonable limit
+    int iteration = 0;
+
+    while ((error = glGetError()) != GL_NO_ERROR && iteration < maxIterations)
+    {
+        printf("OpenGL Error: %d\n", error);
+        iteration++;
+    }
+
+    if (iteration >= maxIterations)
+    {
+        printf("GLClearError: Reached max iteration limit while clearing errors.\n");
+    }
 }
 void GLCheckError()
 {
@@ -49,18 +72,19 @@ void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum seve
     printf("    Message: %s\n", message);
     printf("\n");
 }
-int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title)
+int delo2d_render_setup(void **window, unsigned int width, unsigned int height,const char *title)
 {
+    GLFWwindow **glfw_window = (GLFWwindow**)window;
     if (!glfwInit()){return -1;} 
 
-    *window = glfwCreateWindow(width, height, title, NULL, NULL);
+    *glfw_window = glfwCreateWindow(width, height, title, NULL, NULL);
 
-    if (!*window)
+    if (!*glfw_window)
     {
         glfwTerminate();
         return -1;
     }
-    glfwMakeContextCurrent(*window);
+    glfwMakeContextCurrent(*glfw_window);
     
     if(glewInit() != GLEW_OK)
     {
@@ -190,27 +214,41 @@ void delo2d_render_target_set(unsigned int frame_buffer,float r, float g, float 
 //region rendering end
 
 //texture code begin
-void delo2d_texture_load(Texture *texture, char file_path[])
+uint8_t delo2d_texture_load(Texture *texture, char file_path[])
 {
     stbi_set_flip_vertically_on_load(0);
-    texture->local_buffer = stbi_load(file_path,&texture->width,&texture->height,&texture->bytes_per_pixel,4);
-    glGenTextures(1,&texture->renderer_id);
-    glBindTexture(GL_TEXTURE_2D,texture->renderer_id);
+    texture->local_buffer = stbi_load(file_path, &texture->width, &texture->height, &texture->bytes_per_pixel, 4);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,texture->width,texture->height,0,GL_RGBA,GL_UNSIGNED_BYTE,texture->local_buffer);
-
-    glBindTexture(GL_TEXTURE_2D,0);
-    if(texture->local_buffer)
+    if (texture->local_buffer == NULL)
     {
-        stbi_image_free(texture->local_buffer);
+        fprintf(stderr, "Error loading texture: %s\n", file_path);
+        return DELO_ERROR;
     }
+
+    glGenTextures(1, &texture->renderer_id);
+    if (texture->renderer_id == 0)
+    {
+        fprintf(stderr, "Error generating texture ID\n");
+        stbi_image_free(texture->local_buffer);
+        return DELO_ERROR;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture->renderer_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture->width, texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture->local_buffer);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    stbi_image_free(texture->local_buffer);
+
     texture->initialized = 1;
+    return DELO_SUCCESS;
 }
+
 void delo2d_texture_delete(Texture *texture)
 {
     if(texture->initialized == 0)return;
@@ -500,112 +538,235 @@ void delo2d_sprite_vertex_array_unbind()
 //vertex array code end
 
 //shader code begin
-static unsigned int delo2d_shader_compile(unsigned int type,char *shader_source_code)
-{    
-    unsigned int id = glCreateShader(type);
-    char const* src = shader_source_code;
-    glShaderSource(id,1,&src,NULL);
-    glCompileShader(id);
-    return id;
-}
-static int delo2d_shader_create(char *vertex_shader_source_code, char *fragment_shader_source_code)
+void checkShaderCompileStatus(GLuint shader)
 {
-    unsigned int program = glCreateProgram();
-    unsigned int vs = delo2d_shader_compile(GL_VERTEX_SHADER,vertex_shader_source_code);
-    unsigned int fs = delo2d_shader_compile(GL_FRAGMENT_SHADER,fragment_shader_source_code);
+    GLint compileStatus = 0;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
 
-    glAttachShader(program,vs);
-    glAttachShader(program,fs);
+    if (compileStatus == GL_FALSE)
+    {
+        GLint infoLogLength = 0;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
 
-    glLinkProgram(program);
-    glValidateProgram(program);
+        if (infoLogLength > 0)
+        {
+            char *infoLog = (char *)malloc(infoLogLength);
+            if (infoLog)
+            {
+                glGetShaderInfoLog(shader, infoLogLength, NULL, infoLog);
+                printf("Shader compile error: %s\n", infoLog);
+                free(infoLog);
+            }
+            else
+            {
+                printf("Failed to allocate memory for shader compile log\n");
+            }
+        }
+        else
+        {
+            printf("Shader compile error: (no additional information available)\n");
+        }
+    }
+    else
+    {
+        printf("Shader compiled successfully.\n");
+    }
+}
+uint8_t delo2d_shader_compile(uint32_t type, char *shader_source_code, uint32_t *id)
+{
+    GLClearError();
+    
+    if (shader_source_code == NULL) 
+    {
+        fprintf(stderr, "Error: Shader source code is NULL\n");
+        return DELO_ERROR;
+    }
+
+    *id = glCreateShader(type);
+    if (*id == 0) 
+    {
+        fprintf(stderr, "Error creating shader\n");
+        return DELO_ERROR;
+    }
+
+    const char *src = shader_source_code;
+    glShaderSource(*id, 1, &src, NULL);
+
+
+    glCompileShader(*id);
+
+    GLint compile_status;
+
+    glGetShaderiv(*id, GL_COMPILE_STATUS, &compile_status);
+    
+    checkShaderCompileStatus(*id);
+
+    if (compile_status == GL_FALSE) 
+    {
+        fprintf(stderr,"Shader failed to compile\n");
+        glDeleteShader(*id);
+        *id = 0;
+        return DELO_ERROR;
+    }
+
+    return DELO_SUCCESS;
+}
+
+uint8_t delo2d_shader_create(char *vertex_shader_source_code, char *fragment_shader_source_code, uint32_t *program)
+{
+    GLClearError();
+
+    *program = glCreateProgram();
+
+    if (*program == 0) 
+    {
+        fprintf(stderr, "Error creating shader program\n");
+        return DELO_ERROR;
+    }
+
+    uint32_t vs;
+    uint32_t fs;
+
+    if (delo2d_shader_compile(GL_VERTEX_SHADER, vertex_shader_source_code, &vs) == DELO_ERROR) 
+    {
+        printf("Could not compiler vertex shader.\n");
+        glDeleteProgram(*program);
+        return DELO_ERROR;
+    }
+    if (delo2d_shader_compile(GL_FRAGMENT_SHADER, fragment_shader_source_code, &fs) == DELO_ERROR) 
+    {
+        printf("Could not compiler fragment shader.\n");
+        glDeleteProgram(*program);
+        return DELO_ERROR;
+    }
+
+    glAttachShader(*program, vs);
+    glAttachShader(*program, fs);
+
+    glLinkProgram(*program);
+    glValidateProgram(*program);
+
+    GLint link_status;
+    glGetProgramiv(*program, GL_LINK_STATUS, &link_status);
+    if (link_status == GL_FALSE) 
+    {
+        fprintf(stderr, "Shader program linking failed.\n");
+        
+        glDeleteProgram(*program);
+        return DELO_ERROR;
+    }
 
     glDeleteShader(vs);
     glDeleteShader(fs);
 
-    return program;
+    return DELO_SUCCESS;
 }
-static char* delo2d_shader_load(char *path)
+
+
+uint8_t delo2d_shader_load(const char *path, char **source_code)
 {
     FILE *f = fopen(path, "rb");
+    if (f == NULL) 
+    {
+        fprintf(stderr, "Error opening file %s\n", path);
+        return 0;
+    }
+    
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
-    char *source_code = malloc(fsize + sizeof(char));
-    fread(source_code, fsize, 1, f);
-    fclose(f);
-    source_code[fsize] = '\0';
-    return source_code;
-}
-static int delo2d_find_keyword(char *string, char *sub_string,int tag)
-{
-    int n = 0;
-    size_t length = strlen(string);
-    for (size_t i = 0; i < length; i++)
+    
+    *source_code = (char*)malloc(fsize + 1); // Allocate memory for source code
+    if (*source_code == NULL) 
     {
-        if(string[i] == sub_string[n])
-        {
-            n++;
-        }
-        else
-        {
-            n = 0;
-        }
-        if(n == strlen(sub_string))
-        {            
-            if(tag == 0)
-            {
-                return i+1;
-            }
-            else
-            {
-                return i - (strlen(sub_string)-1);
-            }
-        }
-    }
-    return 0;
-}
-static char* delo2d_shader_parse(char *source_full,char *keyword_begin,char *keyword_end)
-{
-    int begin = delo2d_find_keyword(source_full,keyword_begin,0);
-    int end = delo2d_find_keyword(source_full,keyword_end,1);
-
-    if(end > begin)
-    {
-        int length = end - begin;
-        char *src = malloc(sizeof(char)*length+1);
-        memcpy(src,&source_full[begin],sizeof(char)*(length));
-        src[length] = '\0'; 
-        return src; 
-    }
-    else
-    {
-        return NULL;
-    }
-}
-unsigned int delo2d_shader_from_file(char *path_shader)
-{
-    char *src = delo2d_shader_load(path_shader); 
-
-
-
-
-    char *src_vert = delo2d_shader_parse(src,"#VERT_BEGIN","#VERT_END");
-    char *src_frag = delo2d_shader_parse(src,"#FRAG_BEGIN","#FRAG_END");    
-
-    if(src_vert != NULL && src_frag != NULL)
-    {
-        unsigned int shader = delo2d_shader_create(src_vert,src_frag); 
-        
-        free(src);
-        free(src_vert);
-        free(src_frag);
-        return shader;
-    }
-    else
-    {
+        fprintf(stderr, "Error allocating memory\n");
+        fclose(f);
         return 0;
-    }    
+    }
+    
+    fread(*source_code, fsize, 1, f);
+    fclose(f);
+    (*source_code)[fsize] = '\0'; // Null-terminate the string
+    
+    return 1; // Return success
+}
+uint8_t delo2d_parse_shader(const char *file_content, char **output_string, const char *keyword1, const char *keyword2) 
+{
+    char *start_ptr, *end_ptr;
+    size_t len;
+
+    // Find the first occurrence of keyword1
+    start_ptr = strstr(file_content, keyword1);
+    if (start_ptr == NULL) {
+        *output_string = NULL;
+        return DELO_ERROR;
+    }
+
+    // Move the pointer past keyword1
+    start_ptr += strlen(keyword1);
+
+    // Find the first occurrence of keyword2 after keyword1
+    end_ptr = strstr(start_ptr, keyword2);
+    if (end_ptr == NULL) {
+        *output_string = NULL;
+        return DELO_ERROR;
+    }
+
+    // Calculate the length of the content between keyword1 and keyword2
+    len = end_ptr - start_ptr;
+
+    // Allocate memory for the output string
+    *output_string = (char *)malloc(len + 1);
+    if (*output_string == NULL) {
+        // Memory allocation failed
+        return DELO_ERROR;
+    }
+
+    // Copy the content between keyword1 and keyword2 to the output string
+    strncpy(*output_string, start_ptr, len);
+
+    // Null-terminate the output string
+    (*output_string)[len] = '\0';
+
+    return DELO_SUCCESS;
+}
+uint8_t delo2d_shader_from_file(char *path_shader, uint32_t *shader_id)
+{
+    *shader_id = 0;
+    char *source_code;
+    
+    if(delo2d_shader_load(path_shader,&source_code) == DELO_ERROR)
+    {
+        printf("[delo2d] Could not load shader file %s\n",path_shader);
+        return DELO_ERROR;
+    }
+    char *src_vert = NULL;
+    char *src_frag = NULL;  
+ 
+    uint8_t status = DELO_SUCCESS;
+
+    status = delo2d_parse_shader(source_code,&src_vert,"#VERT_BEGIN","#VERT_END");
+
+    if(status == DELO_SUCCESS)
+    {
+        status = delo2d_parse_shader(source_code,&src_frag,"#FRAG_BEGIN","#FRAG_END");
+    }
+    if(status == DELO_SUCCESS)
+    {
+        status = delo2d_shader_create(src_vert,src_frag,shader_id);
+    }
+    
+    
+    if(status == DELO_ERROR)
+    {
+        if(src_vert    != NULL)free(src_vert);
+        if(src_frag    != NULL)free(src_frag);
+        if(source_code != NULL)free(source_code);
+
+        return DELO_ERROR;
+    }
+
+    return DELO_SUCCESS;   
 }
 //shader code end
 
@@ -1004,8 +1165,10 @@ void delo2d_color_lerp(Color *result, Color *color_a,Color *color_b, float facor
 }
 //color code end
 
-void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev)
+void delo2d_input_update(void *window, KeyboardInput *ki,KeyboardInput *ki_prev)
 {
+    window = (GLFWwindow**)window;
+
     ki->move_up = glfwGetKey(window, GLFW_KEY_W);
     ki->move_l = glfwGetKey(window, GLFW_KEY_A);
     ki->move_dn = glfwGetKey(window, GLFW_KEY_S);
@@ -1419,7 +1582,7 @@ Matrix44 matrix44_invert(Matrix44 input)
 //matrix code end
 
 //text code begin
-void delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size)
+uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size)
 {
     setlocale(LC_ALL, "en_US.UTF-8");
     int max = 256;
@@ -1429,14 +1592,14 @@ void delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size)
     if (FT_Init_FreeType(&ft)) 
     {
         fprintf(stderr, "Error: Could not initialize FreeType library\n");
-        return;
+        return DELO_ERROR;
     }
-
+    
     if (FT_New_Face(ft, path, 0, &face)) 
     {
         fprintf(stderr, "Error: Could not open font file\n");
         FT_Done_FreeType(ft);
-        return;
+        return DELO_ERROR;
     }
 
     FT_Set_Pixel_Sizes(face, 0, font_size);
@@ -1542,6 +1705,8 @@ void delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size)
     sprite_font->font_size = font_size;
     sprite_font->texture.bytes_per_pixel = 4;
     sprite_font->texture.initialized = 1;
+
+    return DELO_SUCCESS;
 }
 unsigned int* delo2d_sprite_font_convert_to_unicode(const char* string_utf8) 
 {

@@ -1,21 +1,13 @@
 #pragma once
-/*System Headers*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <locale.h>
-#include <wchar.h>
-/*Third-Party Headers*/
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <freetype/ft2build.h>
-#include FT_FREETYPE_H
-/*Custom Headers*/
 
 #define DELO_LINE_LIST 2
 #define DELO_TRIANGLE_LIST 3
 #define DELO_QUAD_LIST 4
 
+#define DELO_SUCCESS 1
+#define DELO_ERROR   0
+
+#include <stdint.h>
 
 typedef struct Vector3 Vector3;
 struct Vector3
@@ -85,7 +77,7 @@ struct VertexArray
 {
     uint8_t initialized,type,layout_float_count,indices_per_element;
     uint32_t id,count_elements,count_index,count_position;
-    GLuint ibo,vao,vbo;
+    uint32_t ibo,vao,vbo;
     uint32_t *buffer_index;
     float *buffer_position;
 };
@@ -94,7 +86,7 @@ struct VertexArrayPrimitives
 {
     uint8_t initialized,type;
     uint32_t layout_float_count,capacity,count;
-    GLuint vao,vbo;
+    uint32_t vao,vbo;
     float *buffer_position;
 };
 
@@ -102,7 +94,7 @@ typedef struct Texture Texture;
 struct Texture
 {
     uint8_t initialized;
-    GLuint renderer_id;
+    uint32_t renderer_id;
     unsigned char* local_buffer;
     int width,height,bytes_per_pixel;
 
@@ -112,8 +104,8 @@ struct RenderTarget
 {
     Matrix44 projection; 
     uint8_t initialized;
-    GLuint vao,vbo,fbo,fbt;
-    GLenum status;
+    uint32_t vao,vbo,fbo,fbt;
+    uint32_t status;
     float vertices[24];
 };
 typedef struct Rectangle_f Rectangle_f;
@@ -134,8 +126,8 @@ struct SpriteBatch
     uint32_t count;
     uint32_t texture_count;
     int32_t *quad_index;
-    GLint shader_id;
-    GLint *texture_index;
+    int32_t shader_id;
+    int32_t *texture_index;
     Vector2f *scale;
     Vector2f *skew;
     Vector2f *pivot_point;
@@ -157,7 +149,7 @@ struct Sprite
     uint8_t updated_tex_coords,flip_horizontally,flip_vertically,loop;
     Rectangle rect_src;
     Rectangle rect_des;
-    GLint texture_index;
+    int32_t texture_index;
     Color color;
     Vector2f position;
     Vector2f scale;
@@ -171,7 +163,7 @@ struct PrimitiveBatch
 {
     uint8_t initialized,called_begin,called_end;
     Matrix44 projection;
-    GLint shader_id;
+    int32_t shader_id;
     VertexArrayPrimitives vertex_array;
 };
 typedef struct Glyph Glyph;
@@ -205,10 +197,9 @@ struct Renderer2D
 
 void GLClearError();
 void GLCheckError();
-void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
 void delo2d_rectangle_set(Rectangle *rectengle, int x, int y,int width, int height);
-int delo2d_render_setup(GLFWwindow **window, unsigned int width, unsigned int height,const char *title);
+int delo2d_render_setup(void **window, unsigned int width, unsigned int height,const char *title);
 
 //region render target begin
 void delo2d_render_target_create(RenderTarget *rt,float screen_width,float screen_height, float x, float y, float width, float height);
@@ -218,7 +209,7 @@ void delo2d_render_target_set(unsigned int frame_buffer,float r, float g, float 
 //region rendering end
 
 //region texture begin
-void delo2d_texture_load(Texture *texture, char file_path[]);
+uint8_t delo2d_texture_load(Texture *texture, char file_path[]);
 void delo2d_texture_bind(unsigned int texture, unsigned int slot);
 void delo2d_texture_unbind();
 void delo2d_texture_delete(Texture *texture);
@@ -260,14 +251,14 @@ void delo2d_sprite_vertex_array_delete(VertexArray *vertex_array);
 void delo2d_sprite_vertex_set_element_sprite(VertexArray *vertex_array, int element,float x, float y, float tex_x,float tex_y,float tex_w,float tex_h,unsigned int texture_slot,Color color);
 void delo2d_sprite_vertex_set_tex_data(VertexArray *vertex_array, int element,float tex_x,float tex_y,unsigned int texture_slot);
 void delo2d_sprite_vertex_array_draw(VertexArray *vertex_array,unsigned int count_elements,unsigned int shader_id,Texture *textures,int texture_count,Matrix44 projection);
-void delo2d_sprite_vertex_array_to_graphics_device(VertexArray *vertex_array, GLintptr offset);
+void delo2d_sprite_vertex_array_to_graphics_device(VertexArray *vertex_array, intptr_t offset);
 void delo2d_sprite_vertex_array_bind(VertexArray *vertex_array);
 void delo2d_sprite_vertex_array_unbind();
 void delo2d_sprite_vertex_array_delete(VertexArray *vertex_array);
 //region vertex array code end
 
 //region shader code begin
-unsigned int delo2d_shader_from_file(char *path_shader);
+uint8_t delo2d_shader_from_file(char *path_shader, uint32_t *shader_id);
 //region shader code end
 
 //region sprites code begin
@@ -298,7 +289,7 @@ void delo2d_camera_set_zoom(Matrix44 *projection, float z, float screen_width, f
 //region camera code end
 
 //region input code begin
-void delo2d_input_update(GLFWwindow *window, KeyboardInput *ki,KeyboardInput *ki_prev); 
+void delo2d_input_update(void *window, KeyboardInput *ki,KeyboardInput *ki_prev); 
 void delo2d_input_init(KeyboardInput *ki,KeyboardInput *ki_prev);
 //region input code end
 
@@ -314,7 +305,7 @@ void delo2d_primitive_vertex_array_create(VertexArrayPrimitives *vertex_array,un
 void delo2d_primitive_vertex_array_delete(VertexArrayPrimitives *vertex_array);
 void delo2d_primitive_vertex_set_element(VertexArrayPrimitives *vertex_array, int element,float x, float y,float r,float g, float b, float a);
 void delo2d_primitive_vertex_array_draw(VertexArrayPrimitives *vertex_array,unsigned int shader_id,Matrix44 projection);
-void delo2d_primitive_vertex_array_to_graphics_device(VertexArrayPrimitives *vertex_array, GLintptr offset);
+void delo2d_primitive_vertex_array_to_graphics_device(VertexArrayPrimitives *vertex_array, intptr_t offset);
 void delo2d_primitive_vertex_array_bind(VertexArrayPrimitives *vertex_array);
 void delo2d_primitive_vertex_array_unbind();
 //vertex array primitives code end
@@ -328,7 +319,7 @@ void delo2d_primitive_batch_end(PrimitiveBatch *primitive_batch);
 //primitive batch code end
 
 //text code begin
-void delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size);
+uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_size);
 void delo2d_sprite_font_draw(char *text,Vector2f position,Color color,SpriteFont *sprite_font, SpriteBatch *sprite_batch, float scale, int limit_x);
 Vector2 delo2d_sprite_font_measure_string(char *text,SpriteFont *sprite_font,float scale, int max);
 int delo2d_sprite_font_set_caret_mouse(char *text,SpriteFont *sprite_font,float scale, Vector2 mp);
