@@ -77,7 +77,7 @@ int main(void)
     }
 
 
-    delo2d_sprite_font_load(&sprite_font,"fonts/white-rabbit.regular.ttf",32);//loads font (only .ttf)
+    delo2d_sprite_font_load(&sprite_font,"fonts/UbuntuMono-R.ttf",32);//loads font (only .ttf)
 
     delo2d_sprite_batch_create(&sprite_batch,64);//creates a spritebatch with capacity for 64 sprites   
     delo2d_primitive_batch_create(&primitive_batch,1000);//creates a spritebatch with capacity for 1 sprite
@@ -115,7 +115,7 @@ int main(void)
         delo2d_sprite_animate(&sprite,dt,0);
 
         delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_default,projection);//sets up the spritebatch for drawing with a shader and projection
-            delo2d_sprite_font_draw("delo2d boilerplate 2024-05-12",(Vector2f){150,50},(Color){0.4,0.4,0.4,1},&sprite_font, &sprite_batch,1,0);
+            delo2d_sprite_font_draw("delo2d boilerplate 2024-05-20",(Vector2f){150,50},(Color){0.4,0.4,0.4,1},&sprite_font, &sprite_batch,1,0);
         delo2d_sprite_batch_end(&sprite_batch);//sets the content of the spritebatch to a vertex array and draws it
         
         delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_default,projection);//sets up the spritebatch for drawing with a shader and projection

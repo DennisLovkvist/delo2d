@@ -1602,7 +1602,11 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
         return DELO_ERROR;
     }
 
-    FT_Set_Pixel_Sizes(face, 0, font_size);
+    if(FT_Set_Pixel_Sizes(face, 0, font_size))
+    {
+        FT_Done_FreeType(ft);
+        return DELO_ERROR;
+    }
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -1618,6 +1622,10 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
     sprite_font->texture.height = 0;
     int padding = 2;int max_bearing_y = 0;
     int lol = 0;
+
+     int max_ascent = 0;
+    int max_descent = 0;
+
     for (unsigned int c = 33; c < max; c++) 
     {
         
@@ -1629,7 +1637,6 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
         else
         {
             sprite_font->texture.width += face->glyph->bitmap.width + padding;
-            sprite_font->texture.height = face->size->metrics.height >> 6;
 
             sprite_font->blank_space_offset_x = face->glyph->advance.x >> 6;
             sprite_font->line_spacing = face->size->metrics.height >> 6;
@@ -1640,8 +1647,26 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
             }
 
             max_bearing_y = fmax(max_bearing_y, face->glyph->bitmap_top);
+
+
+            FT_GlyphSlot g = face->glyph;
+
+                int ascent = g->bitmap_top;
+                int descent = g->bitmap.rows - g->bitmap_top;
+
+                if (ascent > max_ascent) {
+                    max_ascent = ascent;
+                }
+                if (descent > max_descent) {
+                    max_descent = descent;
+                }
+
+
+
         }
     }
+
+    sprite_font->texture.height = face->height;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, sprite_font->texture.width, sprite_font->texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     GLubyte* buffer_blank = (GLubyte*)calloc(sprite_font->texture.width * sprite_font->texture.height * 4, sizeof(GLubyte));
@@ -1649,22 +1674,24 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,sprite_font->texture.width, sprite_font->texture.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer_blank);
     free(buffer_blank);
 
-    int offset_x = 0;
-    int offset_y = 0;
+    float offset_x = 0;
+    float offset_y = 0;
 
     int index = 0;
-    for (unsigned int c = 33; c < max; c++) 
+
+    int pen_y = max_ascent; 
+
+    for (unsigned long c = 33; c < max; c++) 
     {
-        if (FT_Load_Char(face, c, FT_LOAD_RENDER | FT_LOAD_DEFAULT)) 
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
         {
             fprintf(stderr, "Failed to load glyph\n");
             continue;
         }
         else
         {
-            offset_y = max_bearing_y - face->glyph->bitmap_top;
-
-            offset_y = (offset_y < 0)  ? 0 : offset_y;
+            offset_y = pen_y - face->glyph->bitmap_top;
+            //offset_y = (offset_y < 0)  ? 0 : offset_y;
 
             sprite_font->glyphs[index].x = offset_x;
             sprite_font->glyphs[index].y = offset_y;
@@ -1698,9 +1725,10 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
     for (int i = 0; i < max; i++)
     {
         int x = sprite_font->glyphs[i].x;
+        int y = 0;
         int w = sprite_font->glyphs[i].w;
         int h = sprite_font->glyphs[i].h;
-        delo2d_sprite_define(&sprite_font->sprites[i], 0,0,w,h,x,0,w,h,0,sprite_font->texture.width,sprite_font->texture.height,1,1,1,(Color){1,1,1,1},1,1,0,0,0,0);
+        delo2d_sprite_define(&sprite_font->sprites[i], 0,0,w,h,x,y,w,h,0,sprite_font->texture.width,sprite_font->texture.height,1,1,1,(Color){1,1,1,1},1,1,0,0,0,0);
     }
     sprite_font->font_size = font_size;
     sprite_font->texture.bytes_per_pixel = 4;
