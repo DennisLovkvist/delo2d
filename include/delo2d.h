@@ -169,7 +169,7 @@ struct PrimitiveBatch
 typedef struct Glyph Glyph;
 struct Glyph
 {
-    int32_t x,y,w,h,advance,bearing_x,bearing_y;
+    int32_t x,y,w,h,advance,bearing_x;
 };
 typedef struct SpriteFont SpriteFont;
 struct SpriteFont

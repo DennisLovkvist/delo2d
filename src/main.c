@@ -94,8 +94,7 @@ int main(void)
     struct timeval t1, t2;
     double elapsedTime;
 
-    Vector2f render_target_text_position = (Vector2f){8,16};
-
+    Vector2f render_target_text_position = (Vector2f){8,32};
 
     while (!glfwWindowShouldClose(window))
     { 
@@ -115,7 +114,7 @@ int main(void)
         delo2d_sprite_animate(&sprite,dt,0);
 
         delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_default,projection);//sets up the spritebatch for drawing with a shader and projection
-            delo2d_sprite_font_draw("delo2d boilerplate 2024-05-20",(Vector2f){150,50},(Color){0.4,0.4,0.4,1},&sprite_font, &sprite_batch,1,0);
+            delo2d_sprite_font_draw("delo2d boilerplate 2024-05-27",(Vector2f){150,50},(Color){0.4,0.4,0.4,1},&sprite_font, &sprite_batch,1,0);
         delo2d_sprite_batch_end(&sprite_batch);//sets the content of the spritebatch to a vertex array and draws it
         
         delo2d_sprite_batch_begin(&sprite_batch,shader_sprite_default,projection);//sets up the spritebatch for drawing with a shader and projection
