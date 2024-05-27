@@ -1669,8 +1669,6 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
 
     int32_t index = 0;
 
-    int32_t pen_y = max_ascent; 
-
     for (uint32_t c = 33; c < max; c++) 
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER)) 
@@ -1680,7 +1678,7 @@ uint8_t delo2d_sprite_font_load(SpriteFont *sprite_font, char *path, int font_si
         }
         else
         {
-            offset_y = pen_y - face->glyph->bitmap_top;
+            offset_y = max_ascent - face->glyph->bitmap_top;
 
             sprite_font->glyphs[index].x = offset_x;
             sprite_font->glyphs[index].y = offset_y;
