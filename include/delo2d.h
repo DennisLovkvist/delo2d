@@ -137,14 +137,15 @@ struct RenderTarget
     uint32_t vao,vbo,fbo,fbt;
     uint32_t status;
     float vertices[24];
+    Texture texture;
 };
 typedef struct Camera2D Camera2D;
 struct Camera2D
 {
     Matrix44 projection;
     Vector2f position;
-    float back_buffer_width;
-    float back_buffer_height;
+    float width;
+    float height;
 };
 typedef struct FontMeasurement FontMeasurement;
 struct FontMeasurement
@@ -209,7 +210,7 @@ struct RendererSprite
     Rectangle_f*    src_rects;
     Color*          colors;
     Texture*        texture;
-    GLint *         texture_indices;
+    GLuint *         texture_indices;
     Matrix44*       transforms;
     Matrix44        projection;
     Vector2f*        limit_ys;
@@ -252,6 +253,7 @@ struct RendererPrimitive
     PrimitiveVertex* vertices;
     GfxCoreContext*  context;
     Matrix44         projection;
+    Matrix44         projection_default;
     GLuint           capacity;
     GLuint           count;
     GLuint           uniform_projection;
@@ -272,7 +274,7 @@ struct RendererSpriteFont
     Matrix44*       transforms;
     Vector2f*       offsets;
     Rectangle_f*    src_rects;
-    GLint*          texture_indices;
+    GLuint*          texture_indices;
     Vector2f*        limit_ys;
     GLuint          capacity;
     GLuint          count;
@@ -409,6 +411,14 @@ static float *matrix44_to_gl_matrix(Matrix44 *matrix)
 {
     return &matrix->x11;
 }
+static void print_matrix44(const Matrix44* matrix) {
+    printf("[\n");
+    printf("    [ %10.4f, %10.4f, %10.4f, %10.4f ],\n", matrix->x11, matrix->x12, matrix->x13, matrix->x14);
+    printf("    [ %10.4f, %10.4f, %10.4f, %10.4f ],\n", matrix->x21, matrix->x22, matrix->x23, matrix->x24);
+    printf("    [ %10.4f, %10.4f, %10.4f, %10.4f ],\n", matrix->x31, matrix->x32, matrix->x33, matrix->x34);
+    printf("    [ %10.4f, %10.4f, %10.4f, %10.4f ]\n", matrix->x41, matrix->x42, matrix->x43, matrix->x44);
+    printf("]\n");
+}
 static Matrix44 matrix44_translation(float x, float y, float z)
 {
     struct Matrix44 matrix =
@@ -453,35 +463,39 @@ static Matrix44 matrix44_rotation_x(float theta)
             0, 0, 0, 1};
     return matrix;
 }
+
 static Matrix44 matrix44_multiply(Matrix44 a, Matrix44 b)
 {
-    struct Matrix44 matrix =
-    {
-        // First row
-        a.x11 * b.x11 + a.x12 * b.x21 + a.x13 * b.x31 + a.x14 * b.x41,
-        a.x11 * b.x12 + a.x12 * b.x22 + a.x13 * b.x32 + a.x14 * b.x42,
-        a.x11 * b.x13 + a.x12 * b.x23 + a.x13 * b.x33 + a.x14 * b.x43,
-        a.x11 * b.x14 + a.x12 * b.x24 + a.x13 * b.x34 + a.x14 * b.x44,
+    Matrix44 result = {0}; // Initialize result matrix with zeros
 
-        // Second row
-        a.x21 * b.x11 + a.x22 * b.x21 + a.x23 * b.x31 + a.x24 * b.x41,
-        a.x21 * b.x12 + a.x22 * b.x22 + a.x23 * b.x32 + a.x24 * b.x42,
-        a.x21 * b.x13 + a.x22 * b.x23 + a.x23 * b.x33 + a.x24 * b.x43,
-        a.x21 * b.x14 + a.x22 * b.x24 + a.x23 * b.x34 + a.x24 * b.x44,
+    // Loop through rows of a
+    for (int i = 0; i < 4; i++) {
+        // Loop through columns of b
+        for (int j = 0; j < 4; j++) {
+            // Calculate the dot product for result[i][j]
+            result.x11 = (i == 0 && j == 0) ? a.x11 * b.x11 + a.x12 * b.x21 + a.x13 * b.x31 + a.x14 * b.x41 : result.x11;
+            result.x21 = (i == 1 && j == 0) ? a.x21 * b.x11 + a.x22 * b.x21 + a.x23 * b.x31 + a.x24 * b.x41 : result.x21;
+            result.x31 = (i == 2 && j == 0) ? a.x31 * b.x11 + a.x32 * b.x21 + a.x33 * b.x31 + a.x34 * b.x41 : result.x31;
+            result.x41 = (i == 3 && j == 0) ? a.x41 * b.x11 + a.x42 * b.x21 + a.x43 * b.x31 + a.x44 * b.x41 : result.x41;
 
-        // Third row
-        a.x31 * b.x11 + a.x32 * b.x21 + a.x33 * b.x31 + a.x34 * b.x41,
-        a.x31 * b.x12 + a.x32 * b.x22 + a.x33 * b.x32 + a.x34 * b.x42,
-        a.x31 * b.x13 + a.x32 * b.x23 + a.x33 * b.x33 + a.x34 * b.x43,
-        a.x31 * b.x14 + a.x32 * b.x24 + a.x33 * b.x34 + a.x34 * b.x44,
+            result.x12 = (i == 0 && j == 1) ? a.x11 * b.x12 + a.x12 * b.x22 + a.x13 * b.x32 + a.x14 * b.x42 : result.x12;
+            result.x22 = (i == 1 && j == 1) ? a.x21 * b.x12 + a.x22 * b.x22 + a.x23 * b.x32 + a.x24 * b.x42 : result.x22;
+            result.x32 = (i == 2 && j == 1) ? a.x31 * b.x12 + a.x32 * b.x22 + a.x33 * b.x32 + a.x34 * b.x42 : result.x32;
+            result.x42 = (i == 3 && j == 1) ? a.x41 * b.x12 + a.x42 * b.x22 + a.x43 * b.x32 + a.x44 * b.x42 : result.x42;
 
-        // Fourth row
-        a.x41 * b.x11 + a.x42 * b.x21 + a.x43 * b.x31 + a.x44 * b.x41,
-        a.x41 * b.x12 + a.x42 * b.x22 + a.x43 * b.x32 + a.x44 * b.x42,
-        a.x41 * b.x13 + a.x42 * b.x23 + a.x43 * b.x33 + a.x44 * b.x43,
-        a.x41 * b.x14 + a.x42 * b.x24 + a.x43 * b.x34 + a.x44 * b.x44,
-    };
-    return matrix;
+            result.x13 = (i == 0 && j == 2) ? a.x11 * b.x13 + a.x12 * b.x23 + a.x13 * b.x33 + a.x14 * b.x43 : result.x13;
+            result.x23 = (i == 1 && j == 2) ? a.x21 * b.x13 + a.x22 * b.x23 + a.x23 * b.x33 + a.x24 * b.x43 : result.x23;
+            result.x33 = (i == 2 && j == 2) ? a.x31 * b.x13 + a.x32 * b.x23 + a.x33 * b.x33 + a.x34 * b.x43 : result.x33;
+            result.x43 = (i == 3 && j == 2) ? a.x41 * b.x13 + a.x42 * b.x23 + a.x43 * b.x33 + a.x44 * b.x43 : result.x43;
+
+            result.x14 = (i == 0 && j == 3) ? a.x11 * b.x14 + a.x12 * b.x24 + a.x13 * b.x34 + a.x14 * b.x44 : result.x14;
+            result.x24 = (i == 1 && j == 3) ? a.x21 * b.x14 + a.x22 * b.x24 + a.x23 * b.x34 + a.x24 * b.x44 : result.x24;
+            result.x34 = (i == 2 && j == 3) ? a.x31 * b.x14 + a.x32 * b.x24 + a.x33 * b.x34 + a.x34 * b.x44 : result.x34;
+            result.x44 = (i == 3 && j == 3) ? a.x41 * b.x14 + a.x42 * b.x24 + a.x43 * b.x34 + a.x44 * b.x44 : result.x44;
+        }
+    }
+
+    return result;
 }
 
 static Matrix44 matrix44_add(Matrix44 a, Matrix44 b)
@@ -506,22 +520,6 @@ static Matrix44 matrix44_add(Matrix44 a, Matrix44 b)
             a.x44 + b.x44};
     return matrix;
 }
-static Matrix44 matrix44_perspective()
-{
-    // Shit copied from the internet
-    float r = 0.56;
-    float t = 0.33;
-    float n = 1;
-    float f = 60;
-
-    struct Matrix44 matrix =
-        {
-            n / r, 0, 0, 0,
-            0, n / t, 0, 0,
-            0, 0, (-f - n) / (f - n), -1,
-            0, 0, (2 * f * n) / (n - f), 0};
-    return matrix;
-}
 static Vector2f matrix44_multilpy_vector2f(Vector2f vector, Matrix44 transform)
 {
     Vector2f result =
@@ -540,6 +538,23 @@ static Matrix44 matrix44_orthographic_projection(float l, float r, float t, floa
 
             0, 0, -2.0 / (f - n), -((f + n) / (f - n)),
             0, 0, 0, 1};
+    return matrix;
+}
+
+static Matrix44 matrix44_perspective()
+{
+    // Shit copied from the internet
+    float r = 0.56;
+    float t = 0.33;
+    float n = 1;
+    float f = 60;
+
+    struct Matrix44 matrix =
+        {
+            n / r, 0, 0, 0,
+            0, n / t, 0, 0,
+            0, 0, (-f - n) / (f - n), -1,
+            0, 0, (2 * f * n) / (n - f), 0};
     return matrix;
 }
 static float matrix44_calculate_sub_determinant(Matrix44 m, int a, int b, int c, int d)
@@ -687,6 +702,7 @@ static int8_t context_init(GfxCoreContext *context, uint16_t width, uint16_t hei
 }
 static void frame_begin(GfxCoreContext *context)
 {
+    glViewport(0, 0, context->back_buffer_width, context->back_buffer_height);
     context->t1 = glfwGetTime();
     context->dt = context->t1 - context->t0;
 }
@@ -880,8 +896,8 @@ static void sprite_transform(uint32_t width, uint32_t height, Matrix44 *transfor
 // ================================
 static int8_t render_target_init(RenderTarget *rt,float screen_width,float screen_height, float x, float y, float width, float height)
 {
-     rt->projection = matrix44_orthographic_projection(0.0f,(float)screen_width,(float)screen_height,0.0f,1,-1);
-
+     rt->projection = matrix44_orthographic_projection(0.0f,(float)width,(float)height,0.0f,1,-1);
+//rt->projection = matrix44_orthographic_projection((float)0.0f, (float)width, (float)0.0f, (float)height, (float)1, (float)-1);
     y = -y;
     y += (screen_height-height);
 
@@ -934,6 +950,10 @@ static int8_t render_target_init(RenderTarget *rt,float screen_width,float scree
 
 	glBindVertexArray(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    rt->texture.renderer_id = rt->fbt;
+    rt->texture.width = width;
+    rt->texture.height = height;
 }
 
 // ================================
@@ -1176,14 +1196,14 @@ static float radians(float degrees)
 // ================================
 // Camera2D functions
 // ================================
-static int8_t camera2d_init(Camera2D *camera, GfxCoreContext *context)
+static int8_t camera2d_init(Camera2D *camera, GfxCoreContext *context,float width, float height)
 {
-    camera->projection = matrix44_orthographic_projection((float)0.0f, (float)context->back_buffer_width, (float)0.0f, (float)context->back_buffer_height, (float)1, (float)-1);
+    camera->projection = matrix44_orthographic_projection((float)0.0f, (float)width, (float)0.0f, (float)height, (float)1, (float)-1);
 
     camera->projection = matrix44_multiply(camera->projection, matrix44_translation(1, -1, 0));
 
-    camera->back_buffer_width = context->back_buffer_width;
-    camera->back_buffer_height = context->back_buffer_width;
+    camera->width = width;
+    camera->height = height;
 
     camera->position = (Vector2f){0, 0};
 
@@ -1191,8 +1211,8 @@ static int8_t camera2d_init(Camera2D *camera, GfxCoreContext *context)
 }
 static void camera2d_move(Camera2D *camera, float tx, float ty)
 {
-    float w = camera->back_buffer_width;
-    float h = camera->back_buffer_height;
+    float w = camera->width;
+    float h = camera->height;
 
     Matrix44 translation = matrix44_translation(tx / w, ty / h, 0);
 
@@ -1288,6 +1308,7 @@ static int8_t renderer_primitive_init(RendererPrimitive* renderer
     renderer->count = 0;
 
     renderer->projection = matrix44_orthographic_projection((float)0.0f, (float)context->back_buffer_width, (float)0.0f, (float)context->back_buffer_height, (float)1, (float)-1);
+    renderer->projection_default = renderer->projection;
 }
 static int8_t renderer_primitive_apply_shader(RendererPrimitive* renderer
                                       ,uint32_t           shader
@@ -1427,12 +1448,14 @@ static int8_t renderer_primitive_add_rectangle_outline(RendererPrimitive* render
     }
 }
 static int8_t renderer_primitive_begin(RendererPrimitive* renderer
-                               ,Matrix44           projection
-                               ,uint8_t            type
-                               )
+                                      ,Matrix44*          projection
+                                      ,GLuint*            shader
+                                      ,uint8_t            type
+                                      )
 {
     renderer->count = 0;
-    renderer->projection = projection;
+    renderer->projection = (projection == NULL) ? renderer->projection : *projection;
+    renderer->shader = (shader == NULL) ? renderer->shader : *shader;
     renderer->type = type;
 }
 static int8_t renderer_primitive_end(RendererPrimitive* renderer)
@@ -1440,6 +1463,7 @@ static int8_t renderer_primitive_end(RendererPrimitive* renderer)
     renderer_primitive_update(renderer);
     renderer_primitive_render(renderer, &renderer->projection, 0);
     renderer->shader = renderer->shader_default;
+    renderer->projection = renderer->projection_default;
 }
 
 // ================================
@@ -1530,7 +1554,7 @@ static int8_t renderer_sprite_init(RendererSprite* renderer
     renderer->transforms = malloc(sizeof(Matrix44) * capacity);
     renderer->offsets = malloc(sizeof(Vector2f) * capacity);
     renderer->src_rects = malloc(sizeof(Rectangle_f) * capacity);
-    renderer->texture_indices = malloc(sizeof(GLint) * capacity);
+    renderer->texture_indices = malloc(sizeof(GLuint) * capacity);
     renderer->limit_ys = malloc(sizeof(Vector2f) * capacity);
 
     renderer->change_mask = 0b11111111;
@@ -1595,7 +1619,7 @@ static int8_t renderer_sprite_update(RendererSprite* renderer)
     if ((renderer->change_mask >> 4) & 1)
     {
         glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_tex_indices);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * renderer->count, (float *)renderer->texture_indices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * renderer->count, (GLuint *)renderer->texture_indices, GL_STATIC_DRAW);
         renderer->change_mask &= ~(4 << 0);
     }
 
@@ -1885,7 +1909,7 @@ static int8_t renderer_sprite_font_init(RendererSpriteFont* renderer
     renderer->transforms = malloc(sizeof(Matrix44) * capacity);
     renderer->offsets = malloc(sizeof(Vector2f) * capacity);
     renderer->src_rects = malloc(sizeof(Rectangle_f) * capacity);
-    renderer->texture_indices = malloc(sizeof(GLint) * capacity);
+    renderer->texture_indices = malloc(sizeof(GLuint) * capacity);
     renderer->limit_ys = malloc(sizeof(Vector2f) * capacity);
 
     for (uint32_t i = 0; i < capacity; i++)
@@ -1937,7 +1961,7 @@ static int8_t renderer_sprite_font_update(RendererSpriteFont* renderer)
     glBufferData(GL_ARRAY_BUFFER, sizeof(Rectangle_f) * renderer->count, (float *)renderer->src_rects, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_tex_indices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * renderer->count, (GLint *)renderer->texture_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * renderer->count, (GLuint *)renderer->texture_indices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_limit_y);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2f) * renderer->count, (Vector2f *)renderer->limit_ys, GL_STATIC_DRAW);
@@ -2110,7 +2134,7 @@ static int8_t renderer_sprite_font_add_text(RendererSpriteFont* renderer
                     renderer->limit_ys[index].x = limit_y.x;
                     renderer->limit_ys[index].y = limit_y.y;
 
-                    renderer->texture_indices[index] = (GLint)texture_index;
+                    renderer->texture_indices[index] = (float)texture_index;
                     renderer->count++;
                     position.x += glyph->advance;
                 }

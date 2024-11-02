@@ -49,7 +49,7 @@ void main()
     }
     else
     {
-        sampled = vec4(1.0, 0.0, 0.0, 1.0); 
+        sampled = vec4(1.0, 1.0, 0.0, 1.0); 
     }
 
     color = sampled*v_color;

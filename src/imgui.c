@@ -50,8 +50,8 @@ void imgui_begin(ImGui *imgui,char* char_buffer, uint8_t char_buffer_length)
     RendererPrimitive *renderer_primitive_outlines = &imgui->renderer_primitive_outlines;
     RendererSprite *renderer_sprites = &imgui->renderer_sprites;
 
-    renderer_primitive_begin(renderer_primitive_fills, renderer_primitive_fills->projection, DELO_TRIANGLE_LIST);
-    renderer_primitive_begin(renderer_primitive_outlines, renderer_primitive_outlines->projection, DELO_LINE_LIST);
+    renderer_primitive_begin(renderer_primitive_fills, NULL,NULL, DELO_TRIANGLE_LIST);
+    renderer_primitive_begin(renderer_primitive_outlines, NULL,NULL, DELO_LINE_LIST);
     renderer_sprite_font_begin(renderer_sprite_font, renderer_sprite_font->projection);
     renderer_sprite_begin(renderer_sprites, renderer_sprites->projection);
 
@@ -1265,9 +1265,9 @@ DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t selected_year
                                                 ,(Color){0,1,0,0.4}
                                                 ); 
             }
-            else if(mouse_position_x > position.x - 16 && mouse_position_x < position.x + 16)
+            else if(mouse_position_x > position.x && mouse_position_x < position.x + 32)
             {
-                if(mouse_position_y > position.y - 16 && mouse_position_y < position.y + 16)
+                if(mouse_position_y > position.y && mouse_position_y < position.y + 28)
                 {
                     renderer_primitive_add_rectangle(renderer_primitive_fills
                                                     ,(Rectangle_f){position.x-6,position.y-2,32,28}

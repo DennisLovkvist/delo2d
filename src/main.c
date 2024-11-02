@@ -20,12 +20,15 @@ int main()
     uint32_t shader_sprite;
     uint32_t shader_sprite_font;
     uint32_t shader_primitive;
+    uint32_t alpha_bg_shader;
     SpriteFont font_default;
 
     sprite_font_load(&font_default,"fonts/white-rabbit.regular.ttf",16);
     shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite.frag"     ,&shader_sprite);
     shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite_font.frag",&shader_sprite_font);
     shader_load("shaders/gl300/primitive.vert","shaders/gl300/primitive.frag"  ,&shader_primitive);
+
+    shader_load("shaders/gl300/primitive.vert","shaders/gl300/default_canvas_bg.frag"  ,&alpha_bg_shader);
 
     renderer_sprite_apply_shader         (&renderer_sprite     ,shader_sprite);
     renderer_sprite_font_apply_shader    (&renderer_sprite_font,shader_sprite_font);
@@ -67,8 +70,47 @@ int main()
     uint8_t month = 10;
     uint8_t day = 18;
 
+    int canvas_width = 512;
+    int canvas_height = 512;
+
     imgui.offset_month = 0;
     imgui.offset_year = 0;
+
+
+
+    RenderTarget rt_layer_0;
+    render_target_init(&rt_layer_0,1920,1080,500,500,canvas_width,canvas_height);
+
+    RenderTarget rt_layer_1;
+    render_target_init(&rt_layer_1,1920,1080,500,500,canvas_width,canvas_height);
+
+    Sprite canvas_bg;
+    sprite_define(&canvas_bg,720,720,(Rectangle_f){0,0,canvas_width,canvas_height});
+    canvas_bg.position.x = 520;
+    canvas_bg.position.y = 520;
+
+    Sprite canvas;
+    sprite_define(&canvas,720,720,(Rectangle_f){0,0,canvas_width,canvas_height});
+    canvas.position.x = 620;
+    canvas.position.y = 520;
+
+    renderer_sprite_add2(&renderer_sprite,&canvas_bg,&rt_layer_0.texture);
+
+    renderer_sprite_add2(&renderer_sprite,&canvas,&rt_layer_1.texture);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_0.fbo);
+    glViewport(0, 0, canvas_width, canvas_height);
+    renderer_primitive_begin(&renderer_primitive,&rt_layer_0.projection,&alpha_bg_shader,DELO_TRIANGLE_LIST);
+    renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,1,1,1});
+    renderer_primitive_end(&renderer_primitive);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
+    glViewport(0, 0, canvas_width, canvas_height);
+    renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
+    renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,0,1,0.5});
+    renderer_primitive_end(&renderer_primitive);
+
+ 
 
     while (!glfwWindowShouldClose(window)) 
     {
@@ -84,61 +126,26 @@ int main()
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
+
+
+  
+    
         frame_begin(&context);
 
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-/*
-        Color c;
-        color_set_i(&c, 50, 64, 91, 255);
-        renderer_primitive_begin(&renderer_primitive,renderer_primitive.projection,DELO_TRIANGLE_LIST);
-        renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,1920,100},c);
+
+
+        renderer_primitive_begin(&renderer_primitive,NULL,NULL,DELO_LINE_LIST);
+        renderer_primitive_add_line(&renderer_primitive,(Vector2f){0,0},(Vector2f){context.hid_state.mouse_position_x,context.hid_state.mouse_position_y},(Color){1,1,1,1});
         renderer_primitive_end(&renderer_primitive);
-
-        color_set_i(&c, 255, 255, 255, 255);
-        renderer_primitive_begin(&renderer_primitive,renderer_primitive.projection,DELO_LINE_LIST);
-        renderer_primitive_add_rectangle_outline(&renderer_primitive,(Rectangle_f){0,0,1920,100},c);
-        renderer_primitive_end(&renderer_primitive);
-
-        imgui_begin(&imgui,&glfw_callback_data->key_buffer[0], glfw_callback_data->key_buffer_length);
-
-
-        imgui_label(&imgui,UNIQUE_ID,(Vector2f){512,32},"Areas");
-        imgui_label(&imgui,UNIQUE_ID,(Vector2f){512 +32 + 128,32},"Pick Zone");
-        imgui_label(&imgui,UNIQUE_ID,(Vector2f){512 + 64+ 128 + 128,32},"Status");
-
-
-        imgui_dropdown(&imgui,UNIQUE_ID,(Rectangle_f){512,58,128, 32},&captions[0][0], selections,32, CAPTION_SIZE);
-
-        imgui_dropdown(&imgui,UNIQUE_ID,(Rectangle_f){512 +32 + 128,58,128, 32},&captions[0][0], selections,32, CAPTION_SIZE);
-
-        imgui_dropdown(&imgui,UNIQUE_ID,(Rectangle_f){512 + 64+ 128 + 128,58,128, 32},&captions[0][0], selections,32, CAPTION_SIZE);
-
-
-
-        if(imgui_button((Rectangle_f){100,100,256,64},"Lol boi", &imgui).clicked)
-        {
-            printf("%s\n", "clicked");
-        }
-
-        imgui_slider(&imgui,UNIQUE_ID, (Rectangle_f){200,200,256,32},(Rectangle_f){0,0,32,32},0, 100, &slider_value);
-
-        imgui_slider(&imgui,UNIQUE_ID, (Rectangle_f){400,400,256,32},(Rectangle_f){0,0,32,32},0, 50, &slider_value2);
-
-        imgui_tswitch(&imgui,UNIQUE_ID, (Rectangle_f){400,700,64,32},&toggle_value, "On", "Off");
-
-
-        imgui_dropdown(&imgui,UNIQUE_ID,(Rectangle_f){500,200,128,32},&captions[0][0],selections,32,CAPTION_SIZE);
-
-
-        imgui_textbox(&imgui,UNIQUE_ID, (Rectangle_f){100,700,128,32}, context.dt, text, 0,25);
-
-        imgui_tabbar(&imgui,UNIQUE_ID,&active_tab,(Rectangle_f){0,0,384,128},8,&tabbar_tex);
-
         
-*/
+
+        renderer_sprite_update(&renderer_sprite);
+        renderer_sprite_render(&renderer_sprite);
+
 
         imgui_begin(&imgui,&glfw_callback_data->key_buffer[0], glfw_callback_data->key_buffer_length);
         
@@ -149,6 +156,7 @@ int main()
             month = dpe.month;
             day = dpe.day;
         }
+
 
 
         imgui_end(&imgui);
