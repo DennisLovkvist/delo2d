@@ -1374,6 +1374,12 @@ static float radians(float degrees)
 {
     return degrees * (float)(3.14) / 180.0f;
 }
+static float dist(Vector2f p1,Vector2f p2) 
+{
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+    return sqrt(dx*dx+dy*dy);
+}
 // ================================
 // Camera2D functions
 // ================================

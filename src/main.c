@@ -109,7 +109,7 @@ int main()
     glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
     glViewport(0, 0, canvas_width, canvas_height);
     renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
-    renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,0,1,0.5});
+    renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){0,0,0,0});
     renderer_primitive_end(&renderer_primitive);
 
 
@@ -133,8 +133,8 @@ camera2d_zoom(&camera,4);
 
  print_matrix44(&camera.view);
  print_matrix44(&ma);
-
-
+Vector2f mp_world_old;
+uint8_t erase = 0;
     while (!glfwWindowShouldClose(window)) 
     {
         hid_control_update(hid_state
@@ -152,41 +152,47 @@ camera2d_zoom(&camera,4);
 
         camera2d_update(&camera);
 
-        Vector2f mp = {
-
-context.hid_state.mouse_position_x,context.hid_state.mouse_position_y
-};
-
-       // Convert mouse position to normalized device coordinates (NDC)
-        Vector2f ndc = {
-            (2.0f * mp.x / context.back_buffer_width) - 1.0f,  // X in [-1, 1]
-            1.0f - (2.0f * mp.y / context.back_buffer_height)   // Y in [-1, 1], assuming top-left origin for screen space
+        Vector2f mp = 
+        {
+            context.hid_state.mouse_position_x,
+            context.hid_state.mouse_position_y
         };
 
-        // Invert the view-projection matrix to get the world space transformation
+        Vector2f ndc = 
+        {
+            (2.0f * mp.x / context.back_buffer_width) - 1.0f,
+            1.0f - (2.0f * mp.y / context.back_buffer_height)
+        };
+
         Matrix44 inverse_view_projection;
         matrix44_invert2(&camera.view_projection, &inverse_view_projection);
 
-        // Convert NDC to a 4D vector (homogeneous coordinates)
         Vector4f ndc_h = {ndc.x, ndc.y, 0.0f, 1.0f};
 
-        // Transform NDC to world space using the inverse view-projection matrix
         Vector4f world_pos_h = matrix44_multiply_vector4f(inverse_view_projection, ndc_h);
 
-        // Divide by w to get the final 2D world position (for orthographic projections, w should be 1)
         Vector2f mp_world = {world_pos_h.x / world_pos_h.w, world_pos_h.y / world_pos_h.w};
 
 
 
+        if(context.hid_state.mouse_button_left)
+        {
 
-        glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
+            Color c = (erase) ? (Color){0,0,0,0}:(Color){1,1,1,1};
+            glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
 
-        glViewport(0, 0, canvas_width, canvas_height);
-        renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
-        renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){mp_world.x,mp_world.y,1,1},(Color){1,1,1,1});
-        renderer_primitive_end(&renderer_primitive);
+            glViewport(0, 0, canvas_width, canvas_height);
+            renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
+            renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){mp_world.x,mp_world.y,1,1},c);
+            renderer_primitive_end(&renderer_primitive);
 
+            renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_LINE_LIST);
+            renderer_primitive_add_line(&renderer_primitive,(Vector2f){mp_world.x,mp_world.y},(Vector2f){mp_world_old.x,mp_world_old.y},c);
+            renderer_primitive_end(&renderer_primitive);
+            
+        }
 
+        mp_world_old = mp_world;
     
         frame_begin(&context);
 
@@ -212,6 +218,10 @@ context.hid_state.mouse_position_x,context.hid_state.mouse_position_y
         }
 
 
+        if(imgui_button((Rectangle_f){200,200,200,32},"Erase",&imgui).clicked)
+        {
+            erase = !erase;
+        }
 
         imgui_end(&imgui);
 
