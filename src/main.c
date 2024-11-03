@@ -70,35 +70,37 @@ int main()
     uint8_t month = 10;
     uint8_t day = 18;
 
-    int canvas_width = 512;
-    int canvas_height = 512;
+    float canvas_width = 128;
+    float canvas_height = 128;
 
     imgui.offset_month = 0;
     imgui.offset_year = 0;
 
-
+    float display_width = 128;
+    float display_height = 128;
 
     RenderTarget rt_layer_0;
-    render_target_init(&rt_layer_0,1920,1080,500,500,canvas_width,canvas_height);
+    render_target_init(&rt_layer_0,1920,1080,0,0,canvas_width,canvas_height);
 
     RenderTarget rt_layer_1;
-    render_target_init(&rt_layer_1,1920,1080,500,500,canvas_width,canvas_height);
+    render_target_init(&rt_layer_1,1920,1080,0,0,canvas_width,canvas_height);
 
     Sprite canvas_bg;
-    sprite_define(&canvas_bg,720,720,(Rectangle_f){0,0,canvas_width,canvas_height});
-    canvas_bg.position.x = 520;
-    canvas_bg.position.y = 520;
+    sprite_define(&canvas_bg,display_width,display_height,(Rectangle_f){0,0,canvas_width,canvas_height});
+   
 
     Sprite canvas;
-    sprite_define(&canvas,720,720,(Rectangle_f){0,0,canvas_width,canvas_height});
-    canvas.position.x = 620;
-    canvas.position.y = 520;
+    sprite_define(&canvas,display_width,display_height,(Rectangle_f){0,0,canvas_width,canvas_height});
+    canvas.position.x    = display_width/2;
+    canvas.position.y    = display_height/2;
+    canvas_bg.position.x = display_width/2;
+    canvas_bg.position.y = display_height/2;
 
     renderer_sprite_add2(&renderer_sprite,&canvas_bg,&rt_layer_0.texture);
 
     renderer_sprite_add2(&renderer_sprite,&canvas,&rt_layer_1.texture);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_0.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_0.fbo);
     glViewport(0, 0, canvas_width, canvas_height);
     renderer_primitive_begin(&renderer_primitive,&rt_layer_0.projection,&alpha_bg_shader,DELO_TRIANGLE_LIST);
     renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,1,1,1});
@@ -110,25 +112,81 @@ int main()
     renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,0,1,0.5});
     renderer_primitive_end(&renderer_primitive);
 
- 
+
+ Camera2D camera;
+ camera2d_init(&camera,&context,context.back_buffer_width, context.back_buffer_height);
+ camera2d_move(&camera,100,0);
+
+camera2d_zoom(&camera,4);
+
+ struct Matrix44 mb = 
+ {
+    2,0,0,0
+    ,0,2,0,0
+    ,0,0,1,0
+    ,4,3,0,1
+
+ };
+
+ Matrix44 ma;
+ matrix44_invert2(&camera.view,&ma);
+
+ print_matrix44(&camera.view);
+ print_matrix44(&ma);
+
 
     while (!glfwWindowShouldClose(window)) 
     {
         hid_control_update(hid_state
-                                 ,window
-                                 ,context.screen_width
-                                 ,context.screen_height
-                                 ,context.back_buffer_width
-                                 ,context.back_buffer_height
-                                 );
+                          ,window
+                          ,context.screen_width
+                          ,context.screen_height
+                          ,context.back_buffer_width
+                          ,context.back_buffer_height
+                          );
+
         if(hid_state->key_escape == GLFW_PRESS)
         {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
+        camera2d_update(&camera);
+
+        Vector2f mp = {
+
+context.hid_state.mouse_position_x,context.hid_state.mouse_position_y
+};
+
+       // Convert mouse position to normalized device coordinates (NDC)
+        Vector2f ndc = {
+            (2.0f * mp.x / context.back_buffer_width) - 1.0f,  // X in [-1, 1]
+            1.0f - (2.0f * mp.y / context.back_buffer_height)   // Y in [-1, 1], assuming top-left origin for screen space
+        };
+
+        // Invert the view-projection matrix to get the world space transformation
+        Matrix44 inverse_view_projection;
+        matrix44_invert2(&camera.view_projection, &inverse_view_projection);
+
+        // Convert NDC to a 4D vector (homogeneous coordinates)
+        Vector4f ndc_h = {ndc.x, ndc.y, 0.0f, 1.0f};
+
+        // Transform NDC to world space using the inverse view-projection matrix
+        Vector4f world_pos_h = matrix44_multiply_vector4f(inverse_view_projection, ndc_h);
+
+        // Divide by w to get the final 2D world position (for orthographic projections, w should be 1)
+        Vector2f mp_world = {world_pos_h.x / world_pos_h.w, world_pos_h.y / world_pos_h.w};
 
 
-  
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
+
+        glViewport(0, 0, canvas_width, canvas_height);
+        renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
+        renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){mp_world.x,mp_world.y,1,1},(Color){1,1,1,1});
+        renderer_primitive_end(&renderer_primitive);
+
+
     
         frame_begin(&context);
 
@@ -138,11 +196,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
 
-        renderer_primitive_begin(&renderer_primitive,NULL,NULL,DELO_LINE_LIST);
-        renderer_primitive_add_line(&renderer_primitive,(Vector2f){0,0},(Vector2f){context.hid_state.mouse_position_x,context.hid_state.mouse_position_y},(Color){1,1,1,1});
-        renderer_primitive_end(&renderer_primitive);
-        
-
+        renderer_sprite.projection = camera.view_projection;
         renderer_sprite_update(&renderer_sprite);
         renderer_sprite_render(&renderer_sprite);
 
@@ -160,6 +214,13 @@ int main()
 
 
         imgui_end(&imgui);
+
+
+
+        renderer_primitive_begin(&renderer_primitive,&renderer_primitive.projection_default,NULL,DELO_LINE_LIST);
+        renderer_primitive_add_line(&renderer_primitive,(Vector2f){0,0},(Vector2f){mp.x,mp.y},(Color){1,1,1,1});
+        renderer_primitive_end(&renderer_primitive);
+        
 
         frame_end(&context);
     }

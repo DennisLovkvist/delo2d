@@ -93,6 +93,11 @@ struct Vector2f
 {
     float x,y;
 };
+typedef struct Vector4f Vector4f;
+struct Vector4f
+{
+    float x,y,z,w;
+};
 typedef struct Color Color;
 struct Color
 {
@@ -125,9 +130,9 @@ typedef struct Matrix44 Matrix44;
 struct Matrix44
 { 
     float x11, x21, x31, x41,
-        x12, x22, x32, x42,
-        x13, x23, x33, x43,
-        x14, x24, x34, x44;
+          x12, x22, x32, x42,
+          x13, x23, x33, x43,
+          x14, x24, x34, x44;
 };
 typedef struct RenderTarget RenderTarget;
 struct RenderTarget
@@ -143,9 +148,13 @@ typedef struct Camera2D Camera2D;
 struct Camera2D
 {
     Matrix44 projection;
+    Matrix44 view;
+    Matrix44 view_projection;
     Vector2f position;
     float width;
     float height;
+    float view_width_in_world_units;
+    float view_height_in_world_units;
 };
 typedef struct FontMeasurement FontMeasurement;
 struct FontMeasurement
@@ -210,7 +219,7 @@ struct RendererSprite
     Rectangle_f*    src_rects;
     Color*          colors;
     Texture*        texture;
-    GLuint *         texture_indices;
+    float *         texture_indices;
     Matrix44*       transforms;
     Matrix44        projection;
     Vector2f*        limit_ys;
@@ -228,7 +237,7 @@ struct RendererSprite
     GLuint          vbo_transforms;
     GLuint          vbo_offsets;
     GLuint          vbo_src_rects;
-    GLuint          vbo_tex_indices;
+    GLint          vbo_tex_indices;
     GLuint          vbo_limit_y;
     GLuint          uniform_location_u_texture0;
     GLuint          uniform_location_u_texture1;
@@ -274,8 +283,8 @@ struct RendererSpriteFont
     Matrix44*       transforms;
     Vector2f*       offsets;
     Rectangle_f*    src_rects;
-    GLuint*          texture_indices;
-    Vector2f*        limit_ys;
+    float*          texture_indices;
+    Vector2f*       limit_ys;
     GLuint          capacity;
     GLuint          count;
     GLuint          uniform_projection;
@@ -528,6 +537,16 @@ static Vector2f matrix44_multilpy_vector2f(Vector2f vector, Matrix44 transform)
             (vector.x * transform.x12) + (vector.y * transform.x22) + (1 * transform.x32)};
     return result;
 }
+static Vector4f matrix44_multiply_vector4f(Matrix44 matrix, Vector4f vector)
+{
+    Vector4f result = {
+        matrix.x11 * vector.x + matrix.x21 * vector.y + matrix.x31 * vector.z + matrix.x41 * vector.w,
+        matrix.x12 * vector.x + matrix.x22 * vector.y + matrix.x32 * vector.z + matrix.x42 * vector.w,
+        matrix.x13 * vector.x + matrix.x23 * vector.y + matrix.x33 * vector.z + matrix.x43 * vector.w,
+        matrix.x14 * vector.x + matrix.x24 * vector.y + matrix.x34 * vector.z + matrix.x44 * vector.w
+    };
+    return result;
+}
 static Matrix44 matrix44_orthographic_projection(float l, float r, float t, float b, float f, float n)
 {
     struct Matrix44 matrix =
@@ -606,7 +625,149 @@ static float matrix44_calculate_determinant(const Matrix44 *m)
 
     return det;
 }
+static uint8_t matrix44_invert2(Matrix44 *input, Matrix44 *output) {
+    float det;
+    float inv[16];
+    float m[16] = {
+        input->x11, input->x21, input->x31, input->x41,
+        input->x12, input->x22, input->x32, input->x42,
+        input->x13, input->x23, input->x33, input->x43,
+        input->x14, input->x24, input->x34, input->x44
+    };
 
+    inv[0] = m[5]  * m[10] * m[15] - 
+             m[5]  * m[11] * m[14] - 
+             m[9]  * m[6]  * m[15] + 
+             m[9]  * m[7]  * m[14] +
+             m[13] * m[6]  * m[11] - 
+             m[13] * m[7]  * m[10];
+
+    inv[4] = -m[4]  * m[10] * m[15] + 
+              m[4]  * m[11] * m[14] + 
+              m[8]  * m[6]  * m[15] - 
+              m[8]  * m[7]  * m[14] - 
+              m[12] * m[6]  * m[11] + 
+              m[12] * m[7]  * m[10];
+
+    inv[8] = m[4]  * m[9] * m[15] - 
+             m[4]  * m[11] * m[13] - 
+             m[8]  * m[5] * m[15] + 
+             m[8]  * m[7] * m[13] + 
+             m[12] * m[5] * m[11] - 
+             m[12] * m[7] * m[9];
+
+    inv[12] = -m[4]  * m[9] * m[14] + 
+               m[4]  * m[10] * m[13] +
+               m[8]  * m[5] * m[14] - 
+               m[8]  * m[6] * m[13] - 
+               m[12] * m[5] * m[10] + 
+               m[12] * m[6] * m[9];
+
+    inv[1] = -m[1]  * m[10] * m[15] + 
+              m[1]  * m[11] * m[14] + 
+              m[9]  * m[2] * m[15] - 
+              m[9]  * m[3] * m[14] - 
+              m[13] * m[2] * m[11] + 
+              m[13] * m[3] * m[10];
+
+    inv[5] = m[0]  * m[10] * m[15] - 
+             m[0]  * m[11] * m[14] - 
+             m[8]  * m[2] * m[15] + 
+             m[8]  * m[3] * m[14] + 
+             m[12] * m[2] * m[11] - 
+             m[12] * m[3] * m[10];
+
+    inv[9] = -m[0]  * m[9] * m[15] + 
+              m[0]  * m[11] * m[13] + 
+              m[8]  * m[1] * m[15] - 
+              m[8]  * m[3] * m[13] - 
+              m[12] * m[1] * m[11] + 
+              m[12] * m[3] * m[9];
+
+    inv[13] = m[0]  * m[9] * m[14] - 
+              m[0]  * m[10] * m[13] - 
+              m[8]  * m[1] * m[14] + 
+              m[8]  * m[2] * m[13] + 
+              m[12] * m[1] * m[10] - 
+              m[12] * m[2] * m[9];
+
+    inv[2] = m[1]  * m[6] * m[15] - 
+             m[1]  * m[7] * m[14] - 
+             m[5]  * m[2] * m[15] + 
+             m[5]  * m[3] * m[14] + 
+             m[13] * m[2] * m[7] - 
+             m[13] * m[3] * m[6];
+
+    inv[6] = -m[0]  * m[6] * m[15] + 
+              m[0]  * m[7] * m[14] + 
+              m[4]  * m[2] * m[15] - 
+              m[4]  * m[3] * m[14] - 
+              m[12] * m[2] * m[7] + 
+              m[12] * m[3] * m[6];
+
+    inv[10] = m[0]  * m[5] * m[15] - 
+              m[0]  * m[7] * m[13] - 
+              m[4]  * m[1] * m[15] + 
+              m[4]  * m[3] * m[13] + 
+              m[12] * m[1] * m[7] - 
+              m[12] * m[3] * m[5];
+
+    inv[14] = -m[0]  * m[5] * m[14] + 
+               m[0]  * m[6] * m[13] + 
+               m[4]  * m[1] * m[14] - 
+               m[4]  * m[2] * m[13] - 
+               m[12] * m[1] * m[6] + 
+               m[12] * m[2] * m[5];
+
+    inv[3] = -m[1] * m[6] * m[11] + 
+              m[1] * m[7] * m[10] + 
+              m[5] * m[2] * m[11] - 
+              m[5] * m[3] * m[10] - 
+              m[9] * m[2] * m[7] + 
+              m[9] * m[3] * m[6];
+
+    inv[7] = m[0] * m[6] * m[11] - 
+             m[0] * m[7] * m[10] - 
+             m[4] * m[2] * m[11] + 
+             m[4] * m[3] * m[10] + 
+             m[8] * m[2] * m[7] - 
+             m[8] * m[3] * m[6];
+
+    inv[11] = -m[0] * m[5] * m[11] + 
+               m[0] * m[7] * m[9] + 
+               m[4] * m[1] * m[11] - 
+               m[4] * m[3] * m[9] - 
+               m[8] * m[1] * m[7] + 
+               m[8] * m[3] * m[5];
+
+    inv[15] = m[0] * m[5] * m[10] - 
+              m[0] * m[6] * m[9] - 
+              m[4] * m[1] * m[10] + 
+              m[4] * m[2] * m[9] + 
+              m[8] * m[1] * m[6] - 
+              m[8] * m[2] * m[5];
+
+    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+    if (det == 0) {
+        return 0; // No inverse
+    }
+
+    det = 1.0 / det;
+
+    for (int i = 0; i < 16; i++) {
+        inv[i] *= det;
+    }
+
+    *output = (Matrix44){
+        inv[0], inv[1], inv[2], inv[3],
+        inv[4], inv[5], inv[6], inv[7],
+        inv[8], inv[9], inv[10], inv[11],
+        inv[12], inv[13], inv[14], inv[15]
+    };
+
+    return 1;
+}
 static Matrix44 matrix44_invert(Matrix44 input)
 {
     float det = matrix44_calculate_determinant(&input);
@@ -640,6 +801,26 @@ static Matrix44 matrix44_invert(Matrix44 input)
     result.x44 = matrix44_calculate_sub_determinant(input, 0, 1, 2, 2) / det;
 
     return result;
+}
+
+static void map_mouse_to_ortho_space(float mouseX, float mouseY, int screenWidth, int screenHeight, Camera2D* camera, float* orthoX, float* orthoY)
+{
+    // Step 1: Convert mouse position to NDC
+    float ndcX = (2.0f * mouseX / screenWidth) - 1.0f;
+    float ndcY = 1.0f - (2.0f * mouseY / screenHeight);
+
+    // Step 2: Create a vector in NDC space (z=0, w=1 for 2D transformations)
+    Vector2f ndcPos = { ndcX, ndcY};
+
+    // Step 3: Invert the camera's projection matrix
+    Matrix44 inverseProjection = matrix44_invert(camera->projection);
+
+    // Step 4: Transform the NDC coordinates to orthographic space using the inverse projection matrix
+    Vector2f orthoPos = matrix44_multilpy_vector2f(ndcPos,inverseProjection);
+
+    // Step 5: Extract the X and Y values
+    *orthoX = orthoPos.x;
+    *orthoY = orthoPos.y;
 }
 // ================================
 // Graphics context functions
@@ -1198,31 +1379,55 @@ static float radians(float degrees)
 // ================================
 static int8_t camera2d_init(Camera2D *camera, GfxCoreContext *context,float width, float height)
 {
-    camera->projection = matrix44_orthographic_projection((float)0.0f, (float)width, (float)0.0f, (float)height, (float)1, (float)-1);
+    camera->view_width_in_world_units = width;      
+    camera->view_height_in_world_units = width * (height / width);
 
-    camera->projection = matrix44_multiply(camera->projection, matrix44_translation(1, -1, 0));
+    float l = -camera->view_width_in_world_units  / 2;
+    float r =  camera->view_width_in_world_units  / 2;
+    float b =  camera->view_height_in_world_units / 2;
+    float t = -camera->view_height_in_world_units / 2;
+
+    float f = (float)1;
+    float n = (float)-1;
+
+    camera->projection = matrix44_orthographic_projection(l,r,t,b,f,n);
+
 
     camera->width = width;
     camera->height = height;
 
     camera->position = (Vector2f){0, 0};
 
+    camera->view = matrix44_identity();
+
     return DELO_SUCCESS;
+}
+static void camera2d_update(Camera2D *camera)
+{
+    camera->view_projection = matrix44_multiply(camera->view,camera->projection);
 }
 static void camera2d_move(Camera2D *camera, float tx, float ty)
 {
-    float w = camera->width;
-    float h = camera->height;
+    camera->position.x += tx/camera->view_width_in_world_units;
+    camera->position.y += ty/camera->view_height_in_world_units;
 
-    Matrix44 translation = matrix44_translation(tx / w, ty / h, 0);
+    Matrix44 translation = matrix44_translation(-tx, -ty, 0);
 
-    camera->projection = matrix44_multiply(camera->projection, translation);
+    camera->view = matrix44_multiply(translation, camera->view);
 }
-static void camera2d_zoom(Camera2D *camera, float z)
+static void camera2d_zoom(Camera2D *camera, float zoom_factor)
 {
-    Matrix44 transformation = matrix44_scale(z, z, 0);
+    float half_width = camera->width / 2.0f;
+    float half_height = camera->height / 2.0f;
 
-    camera->projection = matrix44_multiply(camera->projection, transformation);
+    float l = -half_width / zoom_factor;
+    float r = half_width / zoom_factor;
+    float b = -half_height / zoom_factor;
+    float t = half_height / zoom_factor;
+
+    camera->projection = matrix44_orthographic_projection(l, r, b, t, 1.0f, -1.0f);
+
+    camera->view_projection = matrix44_multiply(camera->projection, camera->view);
 }
 static void camera2d_rotate(Camera2D *camera, float t)
 {
@@ -1231,9 +1436,9 @@ static void camera2d_rotate(Camera2D *camera, float t)
     Matrix44 translation_0 = matrix44_translation(-camera->position.x, -camera->position.y, 0);
     Matrix44 translation_1 = matrix44_translation(camera->position.x, camera->position.y, 0);
 
-    camera->projection = matrix44_multiply(camera->projection, translation_0);
-    camera->projection = matrix44_multiply(camera->projection, transformation);
-    camera->projection = matrix44_multiply(camera->projection, translation_1);
+    camera->view = matrix44_multiply(camera->view, translation_0);
+    camera->view = matrix44_multiply(camera->view, transformation);
+    camera->view = matrix44_multiply(camera->view, translation_1);
 }
 
 
@@ -1535,7 +1740,7 @@ static int8_t renderer_sprite_init(RendererSprite* renderer
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_tex_indices);
-    glVertexAttribPointer(9, 1, GL_INT, GL_FALSE, sizeof(GLint), (void *)0);
+    glVertexAttribPointer(9, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void *)0);
     glEnableVertexAttribArray(9);
     glVertexAttribDivisor(9, 1);
 
@@ -1554,7 +1759,7 @@ static int8_t renderer_sprite_init(RendererSprite* renderer
     renderer->transforms = malloc(sizeof(Matrix44) * capacity);
     renderer->offsets = malloc(sizeof(Vector2f) * capacity);
     renderer->src_rects = malloc(sizeof(Rectangle_f) * capacity);
-    renderer->texture_indices = malloc(sizeof(GLuint) * capacity);
+    renderer->texture_indices = malloc(sizeof(float) * capacity);
     renderer->limit_ys = malloc(sizeof(Vector2f) * capacity);
 
     renderer->change_mask = 0b11111111;
@@ -1619,7 +1824,7 @@ static int8_t renderer_sprite_update(RendererSprite* renderer)
     if ((renderer->change_mask >> 4) & 1)
     {
         glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_tex_indices);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * renderer->count, (GLuint *)renderer->texture_indices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * renderer->count, (float *)renderer->texture_indices, GL_STATIC_DRAW);
         renderer->change_mask &= ~(4 << 0);
     }
 
@@ -1754,7 +1959,7 @@ static int8_t renderer_sprite_add2(RendererSprite* renderer
         renderer->src_rects[index].y = sprite->src_rect.y / texture_height;
         renderer->src_rects[index].width = sprite->src_rect.width / texture_width;
         renderer->src_rects[index].height = sprite->src_rect.height / texture_height;
-        renderer->texture_indices[index] = texture_index;
+        renderer->texture_indices[index] = (float)texture_index;
         renderer->limit_ys[index].x = 0;
         renderer->limit_ys[index].y = 0;
         renderer->change_mask = 0b11111111;
@@ -1793,7 +1998,7 @@ static int8_t renderer_sprite_add(RendererSprite* renderer
         renderer->src_rects[index].y = src_y / texture_height;
         renderer->src_rects[index].width = src_width / texture_width;
         renderer->src_rects[index].height = src_height / texture_height;
-        renderer->texture_indices[index] = texture_index;
+        renderer->texture_indices[index] = (float)texture_index;
         renderer->limit_ys[index].x = 0;
         renderer->limit_ys[index].y = 0;
         renderer->change_mask = 0b11111111;
@@ -1890,7 +2095,7 @@ static int8_t renderer_sprite_font_init(RendererSpriteFont* renderer
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_tex_indices);
-    glVertexAttribIPointer(9, 1, GL_INT, sizeof(GLint), (void *)0);
+    glVertexAttribPointer(9, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void *)0);
     glEnableVertexAttribArray(9);
     glVertexAttribDivisor(9, 1);
 
@@ -1909,7 +2114,7 @@ static int8_t renderer_sprite_font_init(RendererSpriteFont* renderer
     renderer->transforms = malloc(sizeof(Matrix44) * capacity);
     renderer->offsets = malloc(sizeof(Vector2f) * capacity);
     renderer->src_rects = malloc(sizeof(Rectangle_f) * capacity);
-    renderer->texture_indices = malloc(sizeof(GLuint) * capacity);
+    renderer->texture_indices = malloc(sizeof(float) * capacity);
     renderer->limit_ys = malloc(sizeof(Vector2f) * capacity);
 
     for (uint32_t i = 0; i < capacity; i++)
@@ -1961,7 +2166,7 @@ static int8_t renderer_sprite_font_update(RendererSpriteFont* renderer)
     glBufferData(GL_ARRAY_BUFFER, sizeof(Rectangle_f) * renderer->count, (float *)renderer->src_rects, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_tex_indices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint) * renderer->count, (GLuint *)renderer->texture_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * renderer->count, (float*)renderer->texture_indices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_limit_y);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vector2f) * renderer->count, (Vector2f *)renderer->limit_ys, GL_STATIC_DRAW);

@@ -11,7 +11,7 @@ layout(location = 0) out vec4 color;
 in vec2 v_tex_coord;
 in vec4 v_color;
 in vec2 v_limit_y;
-flat in int v_tex_index;
+in float v_tex_index;
 
 uniform bool u_flip;
 
@@ -31,19 +31,19 @@ void main()
     vec4 sampled;
 
 
-    if (v_tex_index == 0)
+    if (v_tex_index == 0.0)
     {
         sampled = texture(u_texture0, tex_coord);
     }
-    else if (v_tex_index == 1)
+    else if (v_tex_index == 1.0)
     {
         sampled = texture(u_texture1, tex_coord);
     }
-    else if (v_tex_index == 2)
+    else if (v_tex_index == 2.0)
     {
         sampled = texture(u_texture2, tex_coord);
     }
-    else if (v_tex_index == 3)
+    else if (v_tex_index == 3.0)
     {
         sampled = texture(u_texture3, tex_coord);
     }

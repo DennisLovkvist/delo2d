@@ -7,13 +7,13 @@ layout (location = 2) in vec4  a_color;
 layout (location = 3) in vec2  a_offset;                
 layout (location = 4) in vec4  a_src_rect;  
 layout (location = 5) in mat4  a_transform;  
-layout (location = 9) in int a_tex_index;  
+layout (location = 9) in float a_tex_index;  
 layout (location = 10) in vec2 a_limit_y;      
 
 out vec2 v_tex_coord;
 out vec4 v_color;
 out vec2 v_limit_y;
-flat out int v_tex_index;
+out float v_tex_index;
 uniform mat4 u_mvp;
 
 void main()
