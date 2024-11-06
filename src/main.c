@@ -4,6 +4,7 @@
 #include <delo2d.h>  
 #include <imgui.h>  
 #include <stdio.h>
+#include <rista.h>
 
 int main()
 {
@@ -20,6 +21,7 @@ int main()
     uint32_t shader_sprite;
     uint32_t shader_sprite_font;
     uint32_t shader_primitive;
+    uint32_t shader_circle;
     uint32_t alpha_bg_shader;
     SpriteFont font_default;
 
@@ -27,6 +29,7 @@ int main()
     shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite.frag"     ,&shader_sprite);
     shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite_font.frag",&shader_sprite_font);
     shader_load("shaders/gl300/primitive.vert","shaders/gl300/primitive.frag"  ,&shader_primitive);
+    shader_load("shaders/gl300/primitive.vert","shaders/gl300/circle.frag"  ,&shader_circle);
 
     shader_load("shaders/gl300/primitive.vert","shaders/gl300/default_canvas_bg.frag"  ,&alpha_bg_shader);
 
@@ -112,6 +115,8 @@ int main()
     renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){0,0,0,0});
     renderer_primitive_end(&renderer_primitive);
 
+  
+
 
  Camera2D camera;
  camera2d_init(&camera,&context,context.back_buffer_width, context.back_buffer_height);
@@ -135,6 +140,7 @@ camera2d_zoom(&camera,4);
  print_matrix44(&ma);
 Vector2f mp_world_old;
 uint8_t erase = 0;
+uint32_t thickness = 1;
     while (!glfwWindowShouldClose(window)) 
     {
         hid_control_update(hid_state
@@ -177,22 +183,12 @@ uint8_t erase = 0;
 
         if(context.hid_state.mouse_button_left)
         {
-
-            Color c = (erase) ? (Color){0,0,0,0}:(Color){1,1,1,1};
-            glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
-
-            glViewport(0, 0, canvas_width, canvas_height);
-            renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
-            renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){mp_world.x,mp_world.y,1,1},c);
-            renderer_primitive_end(&renderer_primitive);
-
-            renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_LINE_LIST);
-            renderer_primitive_add_line(&renderer_primitive,(Vector2f){mp_world.x,mp_world.y},(Vector2f){mp_world_old.x,mp_world_old.y},c);
-            renderer_primitive_end(&renderer_primitive);
-            
+            pen_draw(&renderer_primitive,&rt_layer_1,mp_world,mp_world_old,((erase) ? COLOR_TRANSPARENT:(Color){1,1,1,1}),thickness,shader_circle);
         }
+            
 
-        mp_world_old = mp_world;
+        mp_world_old.x = mp_world.x;
+        mp_world_old.y = mp_world.y;
     
         frame_begin(&context);
 
@@ -221,6 +217,11 @@ uint8_t erase = 0;
         if(imgui_button((Rectangle_f){200,200,200,32},"Erase",&imgui).clicked)
         {
             erase = !erase;
+        }
+
+        if(imgui_slider(&imgui,UNIQUE_ID,(Rectangle_f){400,200,200,32},(Rectangle_f){0,0,32,32},1,10,&thickness).changed)
+        {
+
         }
 
         imgui_end(&imgui);

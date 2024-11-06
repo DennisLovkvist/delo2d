@@ -273,6 +273,25 @@ struct RendererPrimitive
     GLuint           shader_default;
     uint8_t          type;
 };
+typedef struct RendererCircle RendererCircle;
+struct RendererCircle
+{
+    PrimitiveVertex* vertices;
+    GfxCoreContext*  context;
+    Matrix44         projection;
+    Matrix44         projection_default;
+    GLuint           capacity;
+    GLuint           count;
+    GLuint           uniform_projection;
+    GLuint           uniform_location_u_mvp;
+    GLuint           vao;
+    GLuint           vbo_vertices;
+    GLuint           vbo_radius;
+    GLuint           vbo_center;
+    GLuint           shader;
+    GLuint           shader_default;
+    uint8_t          type;
+};
 
 typedef struct RendererSpriteFont RendererSpriteFont;
 struct RendererSpriteFont
@@ -1479,7 +1498,6 @@ static void color_lerp(Color *result, Color *color_a, Color *color_b, float faco
     result->b = (color_a->b + color_b->b) / 2;
     result->a = (color_a->a + color_b->a) / 2;
 }
-
 // ================================
 // Renderer Primitive functions
 // ================================
