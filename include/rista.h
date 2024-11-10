@@ -7,7 +7,7 @@
 #define BRUSH_SQUARE 0
 #define BRUSH_ROUND  1
 
-static void pen_draw(RendererPrimitive* renderer, RenderTarget* layer, Vector2f point_a, Vector2f point_b, Color color, uint8_t thickness, uint32_t shader_brush)
+static void pen_draw(RendererPrimitive* renderer,RendererCircle* renderer_circle, RenderTarget* layer, Vector2f point_a, Vector2f point_b, Color color, uint8_t thickness, uint32_t shader_brush)
 {
     int x1 = (int)round(point_a.x);
     int y1 = (int)round(point_a.y); 
@@ -30,14 +30,23 @@ static void pen_draw(RendererPrimitive* renderer, RenderTarget* layer, Vector2f 
 
     glViewport(0, 0, layer->texture.width, layer->texture.height);
 
-    renderer_primitive_begin(renderer,&layer->projection,(GLuint*)&shader_brush,DELO_TRIANGLE_LIST);
+    //renderer_primitive_begin(renderer,&layer->projection,(GLuint*)&shader_brush,DELO_TRIANGLE_LIST);
+
+
+    renderer_circle_begin(renderer_circle,&layer->projection,(GLuint*)&shader_brush);
+        
 
     glUseProgram(shader_brush);
-    glUniform1f(glGetUniformLocation(shader_brush, "u_thickness"), thickness);
+    //glUniform1f(glGetUniformLocation(shader_brush, "u_thickness"), thickness);
+
+    //glUniform1f(glGetUniformLocation(shader_brush, "u_back_buffer_height"),(float)viewportHeight);
   
     while (1) 
     {
-        renderer_primitive_add_rectangle(renderer,(Rectangle_f){x1,y1,thickness,thickness},color);
+        //renderer_primitive_add_rectangle(renderer,(Rectangle_f){x1,y1,thickness,thickness},color);
+
+        renderer_circle_add(renderer_circle,(Vector2f){x1,y1},(Color){1,1,1,1},(float)thickness);
+
         if (x1 == x2 && y1 == y2) break;
         e2 = err;
 
@@ -52,7 +61,8 @@ static void pen_draw(RendererPrimitive* renderer, RenderTarget* layer, Vector2f 
             x1 += sx; 
         }
     }
-    renderer_primitive_end(renderer);
+    //renderer_primitive_end(renderer);
+    renderer_circle_end(renderer_circle);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
             
 }

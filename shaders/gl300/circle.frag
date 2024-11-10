@@ -3,21 +3,20 @@ precision mediump float;
 
 layout(location = 0) out vec4 color;
 
-in vec2 v_frag_coord;
 in vec4 v_color;
-in vec2 v_center;
+in vec2 v_offset;
+in float v_radius;
 
-uniform float u_thickness;   
+uniform float u_back_buffer_height;
 
 void main()
 { 
-    vec2 fragCoord = gl_FragCoord.xy;
 
-    float dist = distance(fragCoord, v_center);
+    float dist = distance(gl_FragCoord.xy, vec2(v_offset.x,v_offset.y));
 
-    if (dist < u_thickness*0.5) 
+    if (dist < v_radius) 
     {
-        color = v_color; 
+        color = vec4(1,1,1,1); 
 
     } 
     else 

@@ -13,10 +13,13 @@ int main()
     RendererSpriteFont renderer_sprite_font;
     RendererPrimitive  renderer_primitive;
 
+    RendererCircle  renderer_circle;
+
     context_init(&context,1920,1080,"IMI Aware");
     renderer_sprite_font_init(&renderer_sprite_font,&context,1000);
     renderer_sprite_init(&renderer_sprite,100,&context);
     renderer_primitive_init(&renderer_primitive,1000,&context);
+    renderer_circle_init(&renderer_circle,100,&context);
 
     uint32_t shader_sprite;
     uint32_t shader_sprite_font;
@@ -29,13 +32,15 @@ int main()
     shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite.frag"     ,&shader_sprite);
     shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite_font.frag",&shader_sprite_font);
     shader_load("shaders/gl300/primitive.vert","shaders/gl300/primitive.frag"  ,&shader_primitive);
-    shader_load("shaders/gl300/primitive.vert","shaders/gl300/circle.frag"  ,&shader_circle);
+    shader_load("shaders/gl300/circle.vert","shaders/gl300/circle.frag"  ,&shader_circle);
 
     shader_load("shaders/gl300/primitive.vert","shaders/gl300/default_canvas_bg.frag"  ,&alpha_bg_shader);
 
     renderer_sprite_apply_shader         (&renderer_sprite     ,shader_sprite);
     renderer_sprite_font_apply_shader    (&renderer_sprite_font,shader_sprite_font);
     renderer_primitive_apply_shader      (&renderer_primitive  ,shader_primitive);
+
+    renderer_circle_apply_shader      (&renderer_circle  ,shader_circle);
     
     HidState         *hid_state          = &context.hid_state;
     HidState         *hid_state_prev     = &context.hid_state_prev;
@@ -116,8 +121,6 @@ int main()
     renderer_primitive_end(&renderer_primitive);
 
   
-
-
  Camera2D camera;
  camera2d_init(&camera,&context,context.back_buffer_width, context.back_buffer_height);
  camera2d_move(&camera,100,0);
@@ -136,8 +139,6 @@ camera2d_zoom(&camera,4);
  Matrix44 ma;
  matrix44_invert2(&camera.view,&ma);
 
- print_matrix44(&camera.view);
- print_matrix44(&ma);
 Vector2f mp_world_old;
 uint8_t erase = 0;
 uint32_t thickness = 1;
@@ -183,7 +184,7 @@ uint32_t thickness = 1;
 
         if(context.hid_state.mouse_button_left)
         {
-            pen_draw(&renderer_primitive,&rt_layer_1,mp_world,mp_world_old,((erase) ? COLOR_TRANSPARENT:(Color){1,1,1,1}),thickness,shader_circle);
+            pen_draw(&renderer_primitive,&renderer_circle,&rt_layer_1,mp_world,mp_world_old,((erase) ? COLOR_TRANSPARENT:(Color){1,1,1,1}),thickness,shader_circle);
         }
             
 
@@ -231,6 +232,8 @@ uint32_t thickness = 1;
         renderer_primitive_begin(&renderer_primitive,&renderer_primitive.projection_default,NULL,DELO_LINE_LIST);
         renderer_primitive_add_line(&renderer_primitive,(Vector2f){0,0},(Vector2f){mp.x,mp.y},(Color){1,1,1,1});
         renderer_primitive_end(&renderer_primitive);
+
+
         
 
         frame_end(&context);

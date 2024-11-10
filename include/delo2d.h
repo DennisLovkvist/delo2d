@@ -276,7 +276,10 @@ struct RendererPrimitive
 typedef struct RendererCircle RendererCircle;
 struct RendererCircle
 {
-    PrimitiveVertex* vertices;
+    float* vertices;
+    Color* colors;
+    float* radii;
+    Vector2f* positions;
     GfxCoreContext*  context;
     Matrix44         projection;
     Matrix44         projection_default;
@@ -284,10 +287,12 @@ struct RendererCircle
     GLuint           count;
     GLuint           uniform_projection;
     GLuint           uniform_location_u_mvp;
+    GLuint           uniform_location_u_bbh;
     GLuint           vao;
     GLuint           vbo_vertices;
-    GLuint           vbo_radius;
-    GLuint           vbo_center;
+    GLuint           vbo_colors;
+    GLuint           vbo_radii;
+    GLuint           vbo_positions;
     GLuint           shader;
     GLuint           shader_default;
     uint8_t          type;
@@ -1498,6 +1503,163 @@ static void color_lerp(Color *result, Color *color_a, Color *color_b, float faco
     result->b = (color_a->b + color_b->b) / 2;
     result->a = (color_a->a + color_b->a) / 2;
 }
+// ================================
+// Renderer Circle functions
+// ================================
+static int8_t renderer_circle_init(RendererCircle*    renderer
+                                  ,uint32_t           capacity
+                                  ,GfxCoreContext*    context
+                                  )
+{
+    renderer->context = context;
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        return DELO_ERROR;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glGenVertexArrays(1, &renderer->vao);
+    glBindVertexArray(renderer->vao);
+
+    glGenBuffers(1, &renderer->vbo_vertices);
+    glGenBuffers(1, &renderer->vbo_colors);
+    glGenBuffers(1, &renderer->vbo_positions);
+    glGenBuffers(1, &renderer->vbo_radii);
+
+
+
+    GLfloat vertices[] =
+    {
+        // positions     // texCoords
+        -1.0f, -1.0f, // bottom-left
+        1.0f, -1.0f,  // bottom-right
+        1.0f, 1.0f,   // top-right
+        -1.0f, 1.0f,   // top-left
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_vertices);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_colors);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Color), (void *)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribDivisor(2, 1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_positions);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2f), (void *)0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_radii);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void *)0);
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+    renderer->colors = malloc(sizeof(Color) * capacity);
+    renderer->positions = malloc(sizeof(Vector2f) * capacity);
+    renderer->radii = malloc(sizeof(float) * capacity);
+
+    renderer->capacity = capacity;
+    renderer->count = 0;
+
+    renderer->projection = matrix44_orthographic_projection((float)0.0f, (float)context->back_buffer_width, (float)0.0f, (float)context->back_buffer_height, (float)1, (float)-1);
+    renderer->projection_default = renderer->projection;
+}
+static int8_t renderer_circle_apply_shader(RendererCircle* renderer
+                                      ,uint32_t           shader
+                                      )
+{
+    renderer->shader = shader;
+    renderer->shader_default = shader;
+
+    glUseProgram(shader);
+    renderer->uniform_location_u_mvp = glGetUniformLocation(shader, "u_mvp");
+    renderer->uniform_location_u_bbh = glGetUniformLocation(shader, "u_back_buffer_height");
+    glUseProgram(0);
+}
+static int8_t renderer_circle_update(RendererCircle* renderer)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_colors);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * renderer->count, (float *)renderer->colors, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_positions);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * renderer->count, (float *)renderer->positions, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_radii);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * renderer->count, (float *)renderer->radii, GL_STATIC_DRAW);
+}
+
+static int8_t renderer_circle_render(RendererCircle* renderer
+                                ,Matrix44*          projection
+                                ,uint8_t            flip
+                                )
+{
+
+    /*------------------Draw instances-----------------*/
+    glBindVertexArray(renderer->vao);
+
+    glUseProgram(renderer->shader);
+    glUniformMatrix4fv(renderer->uniform_location_u_mvp, 1, GL_FALSE, &projection->x11);
+
+    glUniform1f(renderer->uniform_location_u_bbh,(float)renderer->context->back_buffer_height);
+
+    glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, renderer->count);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    /*------------------Draw instances-----------------*/
+}
+static int8_t renderer_circle_add(RendererCircle* renderer
+                                    ,Vector2f        position
+                                    ,Color           color
+                                    ,float           radius
+                                    )
+{
+
+    int32_t index = renderer->count;
+
+    if (index < renderer->capacity)
+    {
+        renderer->positions[index].x    = position.x;
+        renderer->positions[index].y    = position.y;
+        renderer->colors[index] = color;
+        renderer->radii[index] = radius;
+        renderer->count++;
+    }
+}
+
+static int8_t renderer_circle_begin(RendererCircle* renderer
+                                      ,Matrix44*          projection
+                                      ,GLuint*            shader
+                                      )
+{
+    renderer->count = 0;
+    renderer->projection = (projection == NULL) ? renderer->projection : *projection;
+    renderer->shader = (shader == NULL) ? renderer->shader : *shader;
+}
+static int8_t renderer_circle_end(RendererCircle* renderer)
+{
+    renderer_circle_update(renderer);
+    renderer_circle_render(renderer, &renderer->projection, 0);
+    renderer->shader = renderer->shader_default;
+    renderer->projection = renderer->projection_default;
+}
+
+
+
+
+
+
+
+
 // ================================
 // Renderer Primitive functions
 // ================================
