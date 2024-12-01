@@ -9,9 +9,9 @@
  * MIT License
  * See end of file for license information.
  * 
- * Copyright (c) 2024 Dennis Lövkvist
+ * Copyright (c) 2024 Dennis Lï¿½vkvist
  *
- * Author: Dennis Lövkvist
+ * Author: Dennis Lï¿½vkvist
  * Date: 2024-01-24
  * 
  * Usage:
@@ -27,9 +27,9 @@
 #include <stdint.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <freetype/ft2build.h>
-#include <float.h>
+#include <freetype2/ft2build.h>
 #include FT_FREETYPE_H
+#include <float.h>
 
 // ================================
 // delo2d
@@ -591,39 +591,38 @@ Matrix44 d2d_matrix44_rotation_x(float theta)
     };
     return matrix;
 }
-Matrix44 d2d_matrix44_multiply(Matrix44 a
-                              ,Matrix44 b
-                              )
+Matrix44 d2d_matrix44_multiply(Matrix44 a, Matrix44 b)
 {
-    struct Matrix44 matrix =
+    Matrix44 result = {0};
+
+    for (int i = 0; i < 4; i++)
     {
-        // First row
-        a.x11 * b.x11 + a.x12 * b.x21 + a.x13 * b.x31 + a.x14 * b.x41,
-        a.x11 * b.x12 + a.x12 * b.x22 + a.x13 * b.x32 + a.x14 * b.x42,
-        a.x11 * b.x13 + a.x12 * b.x23 + a.x13 * b.x33 + a.x14 * b.x43,
-        a.x11 * b.x14 + a.x12 * b.x24 + a.x13 * b.x34 + a.x14 * b.x44,
+        for (int j = 0; j < 4; j++) 
+        {
+            result.x11 = (i == 0 && j == 0) ? a.x11 * b.x11 + a.x12 * b.x21 + a.x13 * b.x31 + a.x14 * b.x41 : result.x11;
+            result.x21 = (i == 1 && j == 0) ? a.x21 * b.x11 + a.x22 * b.x21 + a.x23 * b.x31 + a.x24 * b.x41 : result.x21;
+            result.x31 = (i == 2 && j == 0) ? a.x31 * b.x11 + a.x32 * b.x21 + a.x33 * b.x31 + a.x34 * b.x41 : result.x31;
+            result.x41 = (i == 3 && j == 0) ? a.x41 * b.x11 + a.x42 * b.x21 + a.x43 * b.x31 + a.x44 * b.x41 : result.x41;
 
-        // Second row
-        a.x21 * b.x11 + a.x22 * b.x21 + a.x23 * b.x31 + a.x24 * b.x41,
-        a.x21 * b.x12 + a.x22 * b.x22 + a.x23 * b.x32 + a.x24 * b.x42,
-        a.x21 * b.x13 + a.x22 * b.x23 + a.x23 * b.x33 + a.x24 * b.x43,
-        a.x21 * b.x14 + a.x22 * b.x24 + a.x23 * b.x34 + a.x24 * b.x44,
+            result.x12 = (i == 0 && j == 1) ? a.x11 * b.x12 + a.x12 * b.x22 + a.x13 * b.x32 + a.x14 * b.x42 : result.x12;
+            result.x22 = (i == 1 && j == 1) ? a.x21 * b.x12 + a.x22 * b.x22 + a.x23 * b.x32 + a.x24 * b.x42 : result.x22;
+            result.x32 = (i == 2 && j == 1) ? a.x31 * b.x12 + a.x32 * b.x22 + a.x33 * b.x32 + a.x34 * b.x42 : result.x32;
+            result.x42 = (i == 3 && j == 1) ? a.x41 * b.x12 + a.x42 * b.x22 + a.x43 * b.x32 + a.x44 * b.x42 : result.x42;
 
-        // Third row
-        a.x31 * b.x11 + a.x32 * b.x21 + a.x33 * b.x31 + a.x34 * b.x41,
-        a.x31 * b.x12 + a.x32 * b.x22 + a.x33 * b.x32 + a.x34 * b.x42,
-        a.x31 * b.x13 + a.x32 * b.x23 + a.x33 * b.x33 + a.x34 * b.x43,
-        a.x31 * b.x14 + a.x32 * b.x24 + a.x33 * b.x34 + a.x34 * b.x44,
+            result.x13 = (i == 0 && j == 2) ? a.x11 * b.x13 + a.x12 * b.x23 + a.x13 * b.x33 + a.x14 * b.x43 : result.x13;
+            result.x23 = (i == 1 && j == 2) ? a.x21 * b.x13 + a.x22 * b.x23 + a.x23 * b.x33 + a.x24 * b.x43 : result.x23;
+            result.x33 = (i == 2 && j == 2) ? a.x31 * b.x13 + a.x32 * b.x23 + a.x33 * b.x33 + a.x34 * b.x43 : result.x33;
+            result.x43 = (i == 3 && j == 2) ? a.x41 * b.x13 + a.x42 * b.x23 + a.x43 * b.x33 + a.x44 * b.x43 : result.x43;
 
-        // Fourth row
-        a.x41 * b.x11 + a.x42 * b.x21 + a.x43 * b.x31 + a.x44 * b.x41,
-        a.x41 * b.x12 + a.x42 * b.x22 + a.x43 * b.x32 + a.x44 * b.x42,
-        a.x41 * b.x13 + a.x42 * b.x23 + a.x43 * b.x33 + a.x44 * b.x43,
-        a.x41 * b.x14 + a.x42 * b.x24 + a.x43 * b.x34 + a.x44 * b.x44,
-    };
-    return matrix;
+            result.x14 = (i == 0 && j == 3) ? a.x11 * b.x14 + a.x12 * b.x24 + a.x13 * b.x34 + a.x14 * b.x44 : result.x14;
+            result.x24 = (i == 1 && j == 3) ? a.x21 * b.x14 + a.x22 * b.x24 + a.x23 * b.x34 + a.x24 * b.x44 : result.x24;
+            result.x34 = (i == 2 && j == 3) ? a.x31 * b.x14 + a.x32 * b.x24 + a.x33 * b.x34 + a.x34 * b.x44 : result.x34;
+            result.x44 = (i == 3 && j == 3) ? a.x41 * b.x14 + a.x42 * b.x24 + a.x43 * b.x34 + a.x44 * b.x44 : result.x44;
+        }
+    }
+
+    return result;
 }
-
 Matrix44 d2d_matrix44_add(Matrix44 a
                          ,Matrix44 b
                          )
@@ -1248,22 +1247,11 @@ void d2d_sprite_transform(uint32_t  width
 // ================================
 // Render Target functions
 // ================================
-int8_t d2d_render_target_init(RenderTarget* rt
-                             ,float         screen_width
-                             ,float         screen_height
-                             ,float         x
-                             ,float         y
-                             ,float         width
-                             ,float         height
-                             )
+
+int8_t d2d_render_target_init(RenderTarget *rt,float screen_width,float screen_height, float x, float y, float width, float height)
 {
-    rt->projection = d2d_matrix44_orthographic_projection(0.0f
-                                                         ,(float)width
-                                                         ,(float)height
-                                                         ,0.0f
-                                                         ,1
-                                                         ,-1
-                                                         );
+    rt->projection = d2d_matrix44_orthographic_projection(0.0f,(float)width,(float)height,0.0f,1,-1);
+
     y = -y;
     y += (screen_height-height);
 
@@ -1273,7 +1261,9 @@ int8_t d2d_render_target_init(RenderTarget* rt
     float quad_w = ((2*(width +x)) /screen_width  -1);
     float quad_h = ((2*(height+y)) /screen_height  -1);
 
-    //position.X                 position.Y                    tex_coord.x                 tex_coord.y                     
+
+    //delo2d_render_target_default.glsl
+    //position.X                 position.Y                    tex_coord.x                   tex_coord.y                     
     rt->vertices[0] = quad_w;    rt->vertices[1] = quad_y;     rt->vertices[2]  = 1.0f;    rt->vertices[3]  = 1.0f;
     rt->vertices[4] = quad_x;    rt->vertices[5] = quad_y;     rt->vertices[6]  = 0.0f;    rt->vertices[7]  = 1.0f;
     rt->vertices[8] = quad_x;    rt->vertices[9] = quad_h;     rt->vertices[10] = 0.0f;    rt->vertices[11] = 0.0f;
@@ -1319,7 +1309,6 @@ int8_t d2d_render_target_init(RenderTarget* rt
     rt->texture.width = width;
     rt->texture.height = height;
 }
-
 // ================================
 // Shader functions
 // ================================
@@ -1718,10 +1707,10 @@ void d2d_color_lerp(Color* result
 // ================================
 // Renderer Circle functions
 // ================================
-int8_t d2d_renderer_circle_init(RendererCircle* renderer
-                               ,uint32_t        capacity
-                               ,D2DContext*     context
-                               )
+int8_t d2d_renderer_circle_init(RendererCircle*    renderer
+                                  ,uint32_t           capacity
+                                  ,D2DContext*    context
+                                  )
 {
     renderer->context = context;
 
@@ -1739,13 +1728,15 @@ int8_t d2d_renderer_circle_init(RendererCircle* renderer
     glGenBuffers(1, &renderer->vbo_positions);
     glGenBuffers(1, &renderer->vbo_radii);
 
+
+
     GLfloat vertices[] =
     {
-        //positions
+        // positions     // texCoords
         -1.0f, -1.0f, // bottom-left
-         1.0f, -1.0f, // bottom-right
-         1.0f,  1.0f, // top-right
-        -1.0f,  1.0f  // top-left
+        1.0f, -1.0f,  // bottom-right
+        1.0f, 1.0f,   // top-right
+        -1.0f, 1.0f,   // top-left
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_vertices);
@@ -1753,10 +1744,11 @@ int8_t d2d_renderer_circle_init(RendererCircle* renderer
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
+
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_colors);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Color), (void *)0);
     glEnableVertexAttribArray(1);
-    glVertexAttribDivisor(2, 1);
+    glVertexAttribDivisor(1, 1);
 
     glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo_positions);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2f), (void *)0);
@@ -1768,28 +1760,23 @@ int8_t d2d_renderer_circle_init(RendererCircle* renderer
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 
+
     glBindVertexArray(0);
     glUseProgram(0);
 
-    renderer->colors    = malloc(sizeof(Color)    * capacity);
+    renderer->colors = malloc(sizeof(Color) * capacity);
     renderer->positions = malloc(sizeof(Vector2f) * capacity);
-    renderer->radii     = malloc(sizeof(float)    * capacity);
+    renderer->radii = malloc(sizeof(float) * capacity);
 
     renderer->capacity = capacity;
     renderer->count = 0;
 
-    renderer->projection = d2d_matrix44_orthographic_projection((float)0.0f
-                                                               ,(float)context->back_buffer_width
-                                                               ,(float)0.0f
-                                                               ,(float)context->back_buffer_height
-                                                               ,(float)1
-                                                               ,(float)-1
-                                                               );
+    renderer->projection = d2d_matrix44_orthographic_projection((float)0.0f, (float)context->back_buffer_width, (float)0.0f, (float)context->back_buffer_height, (float)1, (float)-1);
     renderer->projection_default = renderer->projection;
 }
 int8_t d2d_renderer_circle_apply_shader(RendererCircle* renderer
-                                       ,uint32_t        shader
-                                       )
+                                      ,uint32_t           shader
+                                      )
 {
     renderer->shader = shader;
     renderer->shader_default = shader;
@@ -1812,9 +1799,9 @@ int8_t d2d_renderer_circle_update(RendererCircle* renderer)
 }
 
 int8_t d2d_renderer_circle_render(RendererCircle* renderer
-                                 ,Matrix44*       projection
-                                 ,uint8_t         flip
-                                 )
+                                ,Matrix44*          projection
+                                ,uint8_t            flip
+                                )
 {
 
     /*------------------Draw instances-----------------*/
@@ -1832,28 +1819,28 @@ int8_t d2d_renderer_circle_render(RendererCircle* renderer
     /*------------------Draw instances-----------------*/
 }
 int8_t d2d_renderer_circle_add(RendererCircle* renderer
-                              ,Vector2f        position
-                              ,Color           color
-                              ,float           radius
-                              )
+                                    ,Vector2f        position
+                                    ,Color           color
+                                    ,float           radius
+                                    )
 {
 
     int32_t index = renderer->count;
 
     if (index < renderer->capacity)
     {
-        renderer->positions[index].x = position.x;
-        renderer->positions[index].y = position.y;
-        renderer->colors[index]      = color;
-        renderer->radii[index]       = radius;
+        renderer->positions[index].x    = position.x;
+        renderer->positions[index].y    = position.y;
+        renderer->colors[index] = color;
+        renderer->radii[index] = radius;
         renderer->count++;
     }
 }
 
 int8_t d2d_renderer_circle_begin(RendererCircle* renderer
-                                ,Matrix44*       projection
-                                ,GLuint*         shader
-                                )
+                                      ,Matrix44*          projection
+                                      ,GLuint*            shader
+                                      )
 {
     renderer->count = 0;
     renderer->projection = (projection == NULL) ? renderer->projection : *projection;
@@ -1866,6 +1853,8 @@ int8_t d2d_renderer_circle_end(RendererCircle* renderer)
     renderer->shader = renderer->shader_default;
     renderer->projection = renderer->projection_default;
 }
+
+
 // ================================
 // Renderer Primitive functions
 // ================================
@@ -3915,7 +3904,7 @@ int d3d_pick(GLint fbo
 /*
 MIT License
 
-Copyright (c) 2024 Dennis Lövkvist
+Copyright (c) 2024 Dennis Lï¿½vkvist
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

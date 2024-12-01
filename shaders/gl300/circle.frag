@@ -16,7 +16,7 @@ void main()
 
     if (dist < v_radius) 
     {
-        color = vec4(1,1,1,1); 
+        color = v_color; 
 
     } 
     else 

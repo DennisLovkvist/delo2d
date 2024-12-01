@@ -1,25 +1,24 @@
-
-#define STB_IMAGE_IMPLEMENTATION
-
+#define DELO2D_FUNCTION_SIGNATURES
 #include <delo2d.h>  
+#define IMGUI_FUNCTION_SIGNATURES
 #include <imgui.h>  
 #include <stdio.h>
 #include <rista.h>
 
 int main()
 {
-    GfxCoreContext     context;
-    RendererSprite     renderer_sprite;
-    RendererSpriteFont renderer_sprite_font;
-    RendererPrimitive  renderer_primitive;
+    D2DContext     context;
+    RendererSprite     d2d_renderer_sprite;
+    RendererSpriteFont d2d_renderer_sprite_font;
+    RendererPrimitive  d2d_renderer_primitive;
 
-    RendererCircle  renderer_circle;
+    RendererCircle  d2d_renderer_circle;
 
-    context_init(&context,1920,1080,"IMI Aware");
-    renderer_sprite_font_init(&renderer_sprite_font,&context,1000);
-    renderer_sprite_init(&renderer_sprite,100,&context);
-    renderer_primitive_init(&renderer_primitive,1000,&context);
-    renderer_circle_init(&renderer_circle,100,&context);
+    d2d_context_init(&context,1920,1080,"Rista");
+    d2d_renderer_sprite_font_init(&d2d_renderer_sprite_font,&context,1000);
+    d2d_renderer_sprite_init(&d2d_renderer_sprite,100,&context);
+    d2d_renderer_primitive_init(&d2d_renderer_primitive,1000,&context);
+    d2d_renderer_circle_init(&d2d_renderer_circle,100,&context);
 
     uint32_t shader_sprite;
     uint32_t shader_sprite_font;
@@ -28,30 +27,30 @@ int main()
     uint32_t alpha_bg_shader;
     SpriteFont font_default;
 
-    sprite_font_load(&font_default,"fonts/white-rabbit.regular.ttf",16);
-    shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite.frag"     ,&shader_sprite);
-    shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite_font.frag",&shader_sprite_font);
-    shader_load("shaders/gl300/primitive.vert","shaders/gl300/primitive.frag"  ,&shader_primitive);
-    shader_load("shaders/gl300/circle.vert","shaders/gl300/circle.frag"  ,&shader_circle);
+    d2d_sprite_font_load(&font_default,"fonts/white-rabbit.regular.ttf",16);
+    d2d_shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite.frag"     ,&shader_sprite);
+    d2d_shader_load("shaders/gl300/sprite.vert"   ,"shaders/gl300/sprite_font.frag",&shader_sprite_font);
+    d2d_shader_load("shaders/gl300/primitive.vert","shaders/gl300/primitive.frag"  ,&shader_primitive);
+    d2d_shader_load("shaders/gl300/circle.vert","shaders/gl300/circle.frag"  ,&shader_circle);
 
-    shader_load("shaders/gl300/primitive.vert","shaders/gl300/default_canvas_bg.frag"  ,&alpha_bg_shader);
+    d2d_shader_load("shaders/gl300/primitive.vert","shaders/gl300/default_canvas_bg.frag"  ,&alpha_bg_shader);
 
-    renderer_sprite_apply_shader         (&renderer_sprite     ,shader_sprite);
-    renderer_sprite_font_apply_shader    (&renderer_sprite_font,shader_sprite_font);
-    renderer_primitive_apply_shader      (&renderer_primitive  ,shader_primitive);
+    d2d_renderer_sprite_apply_shader         (&d2d_renderer_sprite     ,shader_sprite);
+    d2d_renderer_sprite_font_apply_shader    (&d2d_renderer_sprite_font,shader_sprite_font);
+    d2d_renderer_primitive_apply_shader      (&d2d_renderer_primitive  ,shader_primitive);
 
-    renderer_circle_apply_shader      (&renderer_circle  ,shader_circle);
+    d2d_renderer_circle_apply_shader      (&d2d_renderer_circle  ,shader_circle);
     
     HidState         *hid_state          = &context.hid_state;
     HidState         *hid_state_prev     = &context.hid_state_prev;
     GlfwCallbackData *glfw_callback_data = &context.glfw_callback_data;
     GLFWwindow       *window             = context.window;
 
-    hid_control_init(hid_state,      window);
-    hid_control_init(hid_state_prev, window);
+    d2d_hid_control_init(hid_state,      window);
+    d2d_hid_control_init(hid_state_prev, window);
 
     glfwSetWindowUserPointer(window, glfw_callback_data);
-    glfwSetCharCallback(window, callback_character);
+    glfwSetCharCallback(window, d2d_callback_character);
 
 
     ImGui imgui;
@@ -88,44 +87,44 @@ int main()
     float display_height = 128;
 
     RenderTarget rt_layer_0;
-    render_target_init(&rt_layer_0,1920,1080,0,0,canvas_width,canvas_height);
+    d2d_render_target_init(&rt_layer_0,1920,1080,0,0,canvas_width,canvas_height);
 
     RenderTarget rt_layer_1;
-    render_target_init(&rt_layer_1,1920,1080,0,0,canvas_width,canvas_height);
+    d2d_render_target_init(&rt_layer_1,1920,1080,0,0,canvas_width,canvas_height);
 
     Sprite canvas_bg;
-    sprite_define(&canvas_bg,display_width,display_height,(Rectangle_f){0,0,canvas_width,canvas_height});
+    d2d_sprite_define(&canvas_bg,display_width,display_height,(Rectangle_f){0,0,canvas_width,canvas_height});
    
 
     Sprite canvas;
-    sprite_define(&canvas,display_width,display_height,(Rectangle_f){0,0,canvas_width,canvas_height});
+    d2d_sprite_define(&canvas,display_width,display_height,(Rectangle_f){0,0,canvas_width,canvas_height});
     canvas.position.x    = display_width/2;
     canvas.position.y    = display_height/2;
     canvas_bg.position.x = display_width/2;
     canvas_bg.position.y = display_height/2;
 
-    renderer_sprite_add2(&renderer_sprite,&canvas_bg,&rt_layer_0.texture);
+    d2d_renderer_sprite_add2(&d2d_renderer_sprite,&canvas_bg,&rt_layer_0.texture);
 
-    renderer_sprite_add2(&renderer_sprite,&canvas,&rt_layer_1.texture);
+    d2d_renderer_sprite_add2(&d2d_renderer_sprite,&canvas,&rt_layer_1.texture);
 
     glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_0.fbo);
     glViewport(0, 0, canvas_width, canvas_height);
-    renderer_primitive_begin(&renderer_primitive,&rt_layer_0.projection,&alpha_bg_shader,DELO_TRIANGLE_LIST);
-    renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,1,1,1});
-    renderer_primitive_end(&renderer_primitive);
+    d2d_renderer_primitive_begin(&d2d_renderer_primitive,&rt_layer_0.projection,&alpha_bg_shader,DELO_TRIANGLE_LIST);
+    d2d_renderer_primitive_add_rectangle(&d2d_renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){1,1,1,1});
+    d2d_renderer_primitive_end(&d2d_renderer_primitive);
 
     glBindFramebuffer(GL_FRAMEBUFFER, rt_layer_1.fbo);
     glViewport(0, 0, canvas_width, canvas_height);
-    renderer_primitive_begin(&renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
-    renderer_primitive_add_rectangle(&renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){0,0,0,0});
-    renderer_primitive_end(&renderer_primitive);
+    d2d_renderer_primitive_begin(&d2d_renderer_primitive,&rt_layer_1.projection,NULL,DELO_TRIANGLE_LIST);
+    d2d_renderer_primitive_add_rectangle(&d2d_renderer_primitive,(Rectangle_f){0,0,canvas_width,canvas_height},(Color){0,0,0,0});
+    d2d_renderer_primitive_end(&d2d_renderer_primitive);
 
   
  Camera2D camera;
- camera2d_init(&camera,&context,context.back_buffer_width, context.back_buffer_height);
- camera2d_move(&camera,100,0);
+ d2d_camera2d_init(&camera,&context,context.back_buffer_width, context.back_buffer_height);
+ d2d_camera2d_move(&camera,100,0);
 
-camera2d_zoom(&camera,4);
+d2d_camera2d_zoom(&camera,4);
 
  struct Matrix44 mb = 
  {
@@ -137,14 +136,14 @@ camera2d_zoom(&camera,4);
  };
 
  Matrix44 ma;
- matrix44_invert2(&camera.view,&ma);
+ d2d_matrix44_invert2(&camera.view,&ma);
 
 Vector2f mp_world_old;
 uint8_t erase = 0;
 uint32_t thickness = 1;
     while (!glfwWindowShouldClose(window)) 
     {
-        hid_control_update(hid_state
+        d2d_hid_control_update(hid_state
                           ,window
                           ,context.screen_width
                           ,context.screen_height
@@ -157,7 +156,7 @@ uint32_t thickness = 1;
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
 
-        camera2d_update(&camera);
+        d2d_camera2d_update(&camera);
 
         Vector2f mp = 
         {
@@ -172,26 +171,28 @@ uint32_t thickness = 1;
         };
 
         Matrix44 inverse_view_projection;
-        matrix44_invert2(&camera.view_projection, &inverse_view_projection);
+        d2d_matrix44_invert2(&camera.view_projection, &inverse_view_projection);
 
         Vector4f ndc_h = {ndc.x, ndc.y, 0.0f, 1.0f};
 
-        Vector4f world_pos_h = matrix44_multiply_vector4f(inverse_view_projection, ndc_h);
+        Vector4f world_pos_h = d2d_matrix44_multiply_vector4f(inverse_view_projection, ndc_h);
 
         Vector2f mp_world = {world_pos_h.x / world_pos_h.w, world_pos_h.y / world_pos_h.w};
 
-
-
         if(context.hid_state.mouse_button_left)
         {
-            pen_draw(&renderer_primitive,&renderer_circle,&rt_layer_1,mp_world,mp_world_old,((erase) ? COLOR_TRANSPARENT:(Color){1,1,1,1}),thickness,shader_circle);
+            if(erase)   
+            {
+                glDisable(GL_BLEND);
+            }
+            pen_draw(&d2d_renderer_primitive,&d2d_renderer_circle,&rt_layer_1,mp_world,mp_world_old,((erase) ? COLOR_TRANSPARENT:(Color){1,1,1,1}),thickness,shader_circle);
         }
-            
+        glEnable(GL_BLEND);
 
         mp_world_old.x = mp_world.x;
         mp_world_old.y = mp_world.y;
     
-        frame_begin(&context);
+        d2d_frame_begin(&context);
 
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -199,9 +200,9 @@ uint32_t thickness = 1;
         glClear(GL_COLOR_BUFFER_BIT);
 
 
-        renderer_sprite.projection = camera.view_projection;
-        renderer_sprite_update(&renderer_sprite);
-        renderer_sprite_render(&renderer_sprite);
+        d2d_renderer_sprite.projection = camera.view_projection;
+        d2d_renderer_sprite_update(&d2d_renderer_sprite);
+        d2d_renderer_sprite_render(&d2d_renderer_sprite);
 
 
         imgui_begin(&imgui,&glfw_callback_data->key_buffer[0], glfw_callback_data->key_buffer_length);
@@ -229,13 +230,13 @@ uint32_t thickness = 1;
 
 
 
-        renderer_primitive_begin(&renderer_primitive,&renderer_primitive.projection_default,NULL,DELO_LINE_LIST);
-        renderer_primitive_add_line(&renderer_primitive,(Vector2f){0,0},(Vector2f){mp.x,mp.y},(Color){1,1,1,1});
-        renderer_primitive_end(&renderer_primitive);
+        d2d_renderer_primitive_begin(&d2d_renderer_primitive,&d2d_renderer_primitive.projection_default,NULL,DELO_LINE_LIST);
+        d2d_renderer_primitive_add_line(&d2d_renderer_primitive,(Vector2f){0,0},(Vector2f){mp.x,mp.y},(Color){1,1,1,1});
+        d2d_renderer_primitive_end(&d2d_renderer_primitive);
 
 
         
 
-        frame_end(&context);
+        d2d_frame_end(&context);
     }
 }

@@ -1,6 +1,8 @@
 #pragma once 
+#define DELO2D_FUNCTION_SIGNATURES
 #include <delo2d.h>
 #include <stdint.h>
+#include <math.h>
 
 #define COLOR_TRANSPARENT (Color){0,0,0,0}
 
@@ -33,7 +35,7 @@ static void pen_draw(RendererPrimitive* renderer,RendererCircle* renderer_circle
     //renderer_primitive_begin(renderer,&layer->projection,(GLuint*)&shader_brush,DELO_TRIANGLE_LIST);
 
 
-    renderer_circle_begin(renderer_circle,&layer->projection,(GLuint*)&shader_brush);
+    d2d_renderer_circle_begin(renderer_circle,&layer->projection,(GLuint*)&shader_brush);
         
 
     glUseProgram(shader_brush);
@@ -45,7 +47,7 @@ static void pen_draw(RendererPrimitive* renderer,RendererCircle* renderer_circle
     {
         //renderer_primitive_add_rectangle(renderer,(Rectangle_f){x1,y1,thickness,thickness},color);
 
-        renderer_circle_add(renderer_circle,(Vector2f){x1,y1},(Color){1,1,1,1},(float)thickness);
+        d2d_renderer_circle_add(renderer_circle,(Vector2f){x1,y1},color,(float)thickness);
 
         if (x1 == x2 && y1 == y2) break;
         e2 = err;
@@ -62,7 +64,7 @@ static void pen_draw(RendererPrimitive* renderer,RendererCircle* renderer_circle
         }
     }
     //renderer_primitive_end(renderer);
-    renderer_circle_end(renderer_circle);
+    d2d_renderer_circle_end(renderer_circle);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
             
 }
