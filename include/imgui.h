@@ -1,5 +1,7 @@
-#pragma once 
+
+#pragma once
 #include <delo2d.h>
+
 #include <stdint.h>
 
 #define CAPTION_SIZE 128
@@ -22,6 +24,7 @@ struct ImGui
     RendererPrimitive renderer_primitive_outlines;
     RendererSprite renderer_sprites;
     SpriteFont* font;
+    
 
     float dx;
     int32_t active_id;
@@ -64,6 +67,13 @@ struct SliderEvent
     float delta;
 };
 
+typedef struct DropdownEvent DropdownEvent;
+struct DropdownEvent
+{
+    uint8_t changed;
+    int8_t index;
+};
+
 typedef struct TextboxEvent TextboxEvent;
 struct TextboxEvent
 {
@@ -84,24 +94,55 @@ struct DatePickerEvent
     uint8_t month;
     uint8_t day;
 };
+#if defined(IMGUI_FUNCTION_SIGNATURES) || defined(IMGUI_IMPLEMENTATION)
 
+void imgui_init(ImGui* imgui,D2DContext* context,HidState* hid_state,HidState* hid_state_prev,SpriteFont* font,uint32_t shader_primitive,uint32_t shader_sprite_font,uint32_t shader_sprite);
+void imgui_begin(ImGui* imgui,char* char_buffer,uint8_t char_buffer_length);
+void imgui_end(ImGui* imgui);
+ButtonEvent imgui_button(Rectangle_f rect,char* caption,ImGui* imgui);
+SliderEvent imgui_slider(ImGui* imgui,int32_t id,Rectangle_f rect_bounds,Rectangle_f rect_knob,int32_t min,int32_t max,int32_t* value);
+uint8_t imgui_tswitch(ImGui* imgui,int32_t id,Rectangle_f rect_bounds,uint8_t* value,char* text_on,char* text_off);
+uint8_t lol2(Rectangle_f *rect, float min, float max);
+DropdownEvent imgui_dropdown(ImGui* imgui,int32_t id,Rectangle_f rect_header,char* captions,uint8_t* selections,uint16_t children_count,uint16_t stride);
+void imgui_textbox_insert(char* buffer_source,uint16_t* caret,uint16_t* length,const char* buffer_input,uint16_t buffer_input_length);
+void imgui_textbox_remove(char *buffer_source, uint16_t *caret, uint16_t *length);
+void imgui_textbox_remove_segment(char *buffer_source, uint16_t *caret, uint16_t *length, uint16_t segment_start, uint16_t segment_end);
+TextboxEvent imgui_textbox(ImGui* imgui,int32_t id,Rectangle_f rect_bounds,float dt,char* text,uint8_t input_mode ,uint32_t max_display_length);
+void imgui_label(ImGui *imgui, int32_t id, Vector2f position, char* caption, Color color);
+void imgui_tabbar(ImGui* imgui,int32_t id,int8_t* selected,Rectangle_f rect_bounds,uint8_t tab_count,Texture* texture);
+int days_in_month(int year, int month);
+DatePickerEvent imgui_datepicker(ImGui* imgui,int32_t id,uint16_t selected_year,uint8_t selected_month,uint8_t selected_day);
+#endif
 
-static void imgui_init(ImGui *imgui, GfxCoreContext *context, HidState *hid_state, HidState *hid_state_prev, SpriteFont *font, uint32_t shader_primitive, uint32_t shader_sprite_font, uint32_t shader_sprite)
+#if defined(IMGUI_IMPLEMENTATION)
+
+#include <time.h>
+#include <math.h>
+
+void imgui_init(ImGui*          imgui
+                      ,D2DContext* context
+                      ,HidState*       hid_state
+                      ,HidState*       hid_state_prev
+                      ,SpriteFont*     font
+                      ,uint32_t        shader_primitive
+                      ,uint32_t        shader_sprite_font
+                      ,uint32_t        shader_sprite
+                      )
 {
     RendererSpriteFont *renderer_sprite_font = &imgui->renderer_sprite_font;
     RendererPrimitive *renderer_primitive_fills = &imgui->renderer_primitive_fills;
     RendererPrimitive *renderer_primitive_outlines = &imgui->renderer_primitive_outlines;
     RendererSprite *renderer_sprite = &imgui->renderer_sprites;
 
-    renderer_sprite_font_init(renderer_sprite_font, context, 1000);
-    renderer_primitive_init(renderer_primitive_fills, 1000, context);
-    renderer_primitive_init(renderer_primitive_outlines, 1000, context);
-    renderer_sprite_init(renderer_sprite, 16, context);
+    d2d_renderer_sprite_font_init(renderer_sprite_font, context, 1000);
+    d2d_renderer_primitive_init(renderer_primitive_fills, 1000, context);
+    d2d_renderer_primitive_init(renderer_primitive_outlines, 1000, context);
+    d2d_renderer_sprite_init(renderer_sprite, 16, context);
 
-    renderer_primitive_apply_shader(renderer_primitive_fills, shader_primitive);
-    renderer_primitive_apply_shader(renderer_primitive_outlines, shader_primitive);
-    renderer_sprite_font_apply_shader(renderer_sprite_font, shader_sprite_font);
-    renderer_sprite_apply_shader(renderer_sprite,shader_sprite);
+    d2d_renderer_primitive_apply_shader(renderer_primitive_fills, shader_primitive);
+    d2d_renderer_primitive_apply_shader(renderer_primitive_outlines, shader_primitive);
+    d2d_renderer_sprite_font_apply_shader(renderer_sprite_font, shader_sprite_font);
+    d2d_renderer_sprite_apply_shader(renderer_sprite,shader_sprite);
 
     imgui->window = context->window;
     imgui->hid_state = hid_state;
@@ -129,29 +170,36 @@ static void imgui_init(ImGui *imgui, GfxCoreContext *context, HidState *hid_stat
 
     memset(imgui->text_password,'*',sizeof(char)*32);
 }
-static void imgui_begin(ImGui *imgui,char* char_buffer, uint8_t char_buffer_length)
+void imgui_begin(ImGui*  imgui
+                       ,char*   char_buffer
+                       ,uint8_t char_buffer_length
+                       )
 {
     RendererSpriteFont *renderer_sprite_font = &imgui->renderer_sprite_font;
     RendererPrimitive *renderer_primitive_fills = &imgui->renderer_primitive_fills;
     RendererPrimitive *renderer_primitive_outlines = &imgui->renderer_primitive_outlines;
     RendererSprite *renderer_sprites = &imgui->renderer_sprites;
 
-    renderer_primitive_begin(renderer_primitive_fills, NULL,NULL, DELO_TRIANGLE_LIST);
-    renderer_primitive_begin(renderer_primitive_outlines, NULL,NULL, DELO_LINE_LIST);
-    renderer_sprite_font_begin(renderer_sprite_font, renderer_sprite_font->projection);
-    renderer_sprite_begin(renderer_sprites, renderer_sprites->projection);
+    d2d_renderer_primitive_begin(renderer_primitive_fills, NULL,NULL, DELO_TRIANGLE_LIST);
+    d2d_renderer_primitive_begin(renderer_primitive_outlines, NULL,NULL, DELO_LINE_LIST);
+    d2d_renderer_sprite_font_begin(renderer_sprite_font, renderer_sprite_font->projection);
+    d2d_renderer_sprite_begin(renderer_sprites, renderer_sprites->projection);
 
     imgui->char_buffer = char_buffer;
     imgui->char_buffer_length = char_buffer_length;
+
 }
-static void imgui_end(ImGui *imgui)
+void imgui_end(ImGui* imgui)
 {
-    renderer_primitive_end(&imgui->renderer_primitive_fills);
-    renderer_primitive_end(&imgui->renderer_primitive_outlines);
-    renderer_sprite_font_end(&imgui->renderer_sprite_font);
-    renderer_sprite_end(&imgui->renderer_sprites);
+    d2d_renderer_primitive_end(&imgui->renderer_primitive_fills);
+    d2d_renderer_primitive_end(&imgui->renderer_primitive_outlines);
+    d2d_renderer_sprite_font_end(&imgui->renderer_sprite_font);
+    d2d_renderer_sprite_end(&imgui->renderer_sprites);
 }
-static ButtonEvent imgui_button(Rectangle_f rect, char *caption, ImGui *imgui)
+ButtonEvent imgui_button(Rectangle_f rect
+                               ,char*       caption
+                               ,ImGui*      imgui
+                               )
 {
     ButtonEvent event = {0, 0};
     RendererSpriteFont *renderer_sprite_font = &imgui->renderer_sprite_font;
@@ -167,7 +215,7 @@ static ButtonEvent imgui_button(Rectangle_f rect, char *caption, ImGui *imgui)
 
     uint8_t button_state = BUTTON_STATE_NORMAL;
 
-    if (rectangle_within_bounds(&rect, mouse_position_x, mouse_position_y))
+    if (d2d_rectangle_within_bounds(&rect, mouse_position_x, mouse_position_y))
     {
         button_state = (mouse_button_left == GLFW_PRESS) ? BUTTON_STATE_ACTIVE : BUTTON_STATE_HOVER;
         if (mouse_button_left == GLFW_PRESS && mouse_button_left_prev == GLFW_RELEASE)
@@ -182,37 +230,44 @@ static ButtonEvent imgui_button(Rectangle_f rect, char *caption, ImGui *imgui)
     switch (button_state)
     {
     case BUTTON_STATE_NORMAL:
-        color_set_i(&color_fill, 50, 64, 91, 255);
-        color_set_i(&color_outline, 77 * 0.5, 99 * 0.5, 140 * 0.5, 255);
+        d2d_color_set_i(&color_fill, 50, 64, 91, 255);
+        d2d_color_set_i(&color_outline, 77 * 0.5, 99 * 0.5, 140 * 0.5, 255);
         break;
     case BUTTON_STATE_HOVER:
-        color_set_i(&color_fill, 50 * 1.1, 64 * 1.1, 91 * 1.1, 255);
-        color_set_i(&color_outline, 77 * 1.0, 99 * 1.0, 140 * 1.0, 255);
+        d2d_color_set_i(&color_fill, 50 * 1.1, 64 * 1.1, 91 * 1.1, 255);
+        d2d_color_set_i(&color_outline, 77 * 1.0, 99 * 1.0, 140 * 1.0, 255);
         break;
     case BUTTON_STATE_ACTIVE:
-        color_set_i(&color_fill, 50 * 1.3, 64 * 1.3, 91 * 1.3, 255);
-        color_set_i(&color_outline, 77 * 1.5, 99 * 1.5, 140 * 1.5, 255);
+        d2d_color_set_i(&color_fill, 50 * 1.3, 64 * 1.3, 91 * 1.3, 255);
+        d2d_color_set_i(&color_outline, 77 * 1.5, 99 * 1.5, 140 * 1.5, 255);
         break;
     }
 
-    renderer_primitive_add_rectangle(renderer_primitive_fills, rect, color_fill);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect, color_outline);
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect, color_fill);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect, color_outline);
 
     FontMeasurement measurement;
-    sprite_font_measure_string(caption, font, &measurement, -1, -1);
+    d2d_sprite_font_measure_string(caption, font, &measurement, -1, -1);
 
     Vector2f position;
     position.x = rect.x + (rect.width / 2) - measurement.width_in_px / 2;
     position.y = rect.y + (rect.height / 2) - (font->font_size + font->padding) / 2;
 
-    color_set_i(&color_text, 255, 255, 255, 255);
+    d2d_color_set_i(&color_text, 255, 255, 255, 255);
 
-    renderer_sprite_font_add_text(renderer_sprite_font, font, caption, 0, position, color_text, (Vector2f){0, 0});
+    d2d_renderer_sprite_font_add_text(renderer_sprite_font, font, caption, 0, position, color_text, (Vector2f){0, 0});
 
     return event;
 }
 
-static SliderEvent imgui_slider(ImGui *imgui, int32_t id, Rectangle_f rect_bounds, Rectangle_f rect_knob, int32_t min, int32_t max, int32_t *value)
+SliderEvent imgui_slider(ImGui*      imgui
+                               ,int32_t     id
+                               ,Rectangle_f rect_bounds
+                               ,Rectangle_f rect_knob
+                               ,int32_t     min
+                               ,int32_t     max
+                               ,int32_t*    value
+                               )
 {
     SliderEvent event = {0, 0, 0.0f};
     RendererSpriteFont *renderer_sprite_font = &imgui->renderer_sprite_font;
@@ -231,12 +286,12 @@ static SliderEvent imgui_slider(ImGui *imgui, int32_t id, Rectangle_f rect_bound
 
     if (mouse_button_left == GLFW_PRESS && mouse_button_left_prev == GLFW_RELEASE)
     {
-        if (rectangle_within_bounds(&rect_knob, mouse_position_x, mouse_position_y))
+        if (d2d_rectangle_within_bounds(&rect_knob, mouse_position_x, mouse_position_y))
         {
             imgui->dx = rect_knob.x - mouse_position_x;
             imgui->active_id = id;
         }
-        else if (rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
+        else if (d2d_rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
         {
             imgui->dx = -rect_knob.width / 2;
             imgui->active_id = id;
@@ -280,17 +335,17 @@ static SliderEvent imgui_slider(ImGui *imgui, int32_t id, Rectangle_f rect_bound
     }
 
     Color color_fills;
-    color_set_i(&color_fills, 50, 64, 91, 255);
-    renderer_primitive_add_rectangle(renderer_primitive_fills, rect_bounds, color_fills);
+    d2d_color_set_i(&color_fills, 50, 64, 91, 255);
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect_bounds, color_fills);
 
     Color color_outlines;
-    color_set_i(&color_outlines, 101, 129, 184, 255);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_bounds, color_outlines);
-    color_set_i(&color_outlines, 255, 255, 255, 255);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_knob, color_outlines);
+    d2d_color_set_i(&color_outlines, 101, 129, 184, 255);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_bounds, color_outlines);
+    d2d_color_set_i(&color_outlines, 255, 255, 255, 255);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_knob, color_outlines);
 
     Color color_text;
-    color_set_i(&color_text, 255, 255, 255, 255);
+    d2d_color_set_i(&color_text, 255, 255, 255, 255);
     char value_text[16];
     snprintf(&value_text[0], sizeof(char) * CAPTION_SIZE, "%i", *value);
 
@@ -298,12 +353,18 @@ static SliderEvent imgui_slider(ImGui *imgui, int32_t id, Rectangle_f rect_bound
     position.x = rect_bounds.x + rect_bounds.width + 6;
     position.y = rect_bounds.y + rect_bounds.height * 0.5 - font->font_size * 0.5;
 
-    renderer_sprite_font_add_text(renderer_sprite_font, font, value_text, 0, position, color_text, (Vector2f){0, 0});
+    d2d_renderer_sprite_font_add_text(renderer_sprite_font, font, value_text, 0, position, color_text, (Vector2f){0, 0});
 
     return event;
 }
 
-static uint8_t imgui_tswitch(ImGui *imgui, int32_t id, Rectangle_f rect_bounds, uint8_t *value, char *text_on, char *text_off)
+uint8_t imgui_tswitch(ImGui*      imgui
+                            ,int32_t     id
+                            ,Rectangle_f rect_bounds
+                            ,uint8_t*    value
+                            ,char*       text_on
+                            ,char*       text_off
+                            )
 {
     uint8_t changed = 0;
 
@@ -327,7 +388,7 @@ static uint8_t imgui_tswitch(ImGui *imgui, int32_t id, Rectangle_f rect_bounds, 
 
     if (mouse_button_left == GLFW_PRESS && mouse_button_left_prev == GLFW_RELEASE)
     {
-        if (rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
+        if (d2d_rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
         {
             *value = !*value;
             changed = 1;
@@ -335,21 +396,21 @@ static uint8_t imgui_tswitch(ImGui *imgui, int32_t id, Rectangle_f rect_bounds, 
     }
 
     Color color_fills;
-    color_set_i(&color_fills, 50, 64, 91, 255);
-    renderer_primitive_add_rectangle(renderer_primitive_fills, rect_bounds, color_fills);
+    d2d_color_set_i(&color_fills, 50, 64, 91, 255);
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect_bounds, color_fills);
 
-    color_set_i(&color_fills, 66, 84, 120, 255);
-    renderer_primitive_add_rectangle(renderer_primitive_fills, rect_knob, color_fills);
+    d2d_color_set_i(&color_fills, 66, 84, 120, 255);
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect_knob, color_fills);
 
     Color color_outline;
-    color_set_i(&color_outline, 101, 129, 184, 255);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_bounds, color_outline);
+    d2d_color_set_i(&color_outline, 101, 129, 184, 255);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_bounds, color_outline);
 
-    color_set_i(&color_outline, 255, 255, 255, 255);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_knob, color_outline);
+    d2d_color_set_i(&color_outline, 255, 255, 255, 255);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_knob, color_outline);
 
     Color color_sprite_font;
-    color_set_i(&color_sprite_font, 255, 255, 255, 255);
+    d2d_color_set_i(&color_sprite_font, 255, 255, 255, 255);
 
     Vector2f position =
         {
@@ -358,10 +419,10 @@ static uint8_t imgui_tswitch(ImGui *imgui, int32_t id, Rectangle_f rect_bounds, 
 
     char *caption = (*value) ? text_on : text_off;
 
-    renderer_sprite_font_add_text(renderer_sprite_font, font, caption, 0, position, color_sprite_font, (Vector2f){0, 0});
+    d2d_renderer_sprite_font_add_text(renderer_sprite_font, font, caption, 0, position, color_sprite_font, (Vector2f){0, 0});
     return changed;
 }
-static uint8_t lol2(Rectangle_f *rect, float min, float max)
+uint8_t lol2(Rectangle_f *rect, float min, float max)
 {
     if (rect->y > max)
     {
@@ -372,24 +433,38 @@ static uint8_t lol2(Rectangle_f *rect, float min, float max)
         if (rect->y + 32 > max)
         {
             rect->height = max - rect->y;
+            return 1;
         }
+        
     }
 
-    if (rect->y < min)
+    if (rect->y + 32 < min)
     {
         return 0;
     }
     else
     {
-        if (rect->y < min + 32)
+        if (rect->y < min)
         {
             rect->height = rect->y - min;
             rect->y += 32 - rect->height;
+            return 1;
         }
     }
+    return 1;
 }
-static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header, char *captions,uint8_t *selections, uint16_t children_count, uint16_t stride)
+DropdownEvent imgui_dropdown(ImGui*      imgui
+                      ,int32_t     id
+                      ,Rectangle_f rect_header
+                      ,char*       captions
+                      ,uint8_t*    selections
+                      ,uint16_t    children_count
+                      ,uint16_t    stride
+                      )
 {
+    DropdownEvent event;
+    event.changed = 0;
+
     RendererSpriteFont *renderer_sprite_font = &imgui->renderer_sprite_font;
     RendererPrimitive *renderer_primitive_fills = &imgui->renderer_primitive_fills;
     RendererPrimitive *renderer_primitive_outlines = &imgui->renderer_primitive_outlines;
@@ -425,7 +500,7 @@ static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header,
 
     if (click)
     {
-        if (rectangle_within_bounds(&rect_header, mouse_position_x, mouse_position_y))
+        if (d2d_rectangle_within_bounds(&rect_header, mouse_position_x, mouse_position_y))
         {
             imgui->collapsed = !imgui->collapsed;
 
@@ -452,15 +527,15 @@ static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header,
         {
             Rectangle_f rect_bounds = {rect_header.x, rect_header.y, rect_header.width, rect_header.height * display_count + 32};
 
-            if (!rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
+            if (!d2d_rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
             {
-                if (!rectangle_within_bounds(&scroll_area, mouse_position_x, mouse_position_y))
+                if (!d2d_rectangle_within_bounds(&scroll_area, mouse_position_x, mouse_position_y))
                 {
                     imgui->collapsed = 1;
                     imgui->active_id = 0;
                 }
             }
-            if (rectangle_within_bounds(&scroll_bar, mouse_position_x, mouse_position_y))
+            if (d2d_rectangle_within_bounds(&scroll_bar, mouse_position_x, mouse_position_y))
             {
                 imgui->hold_scroll_bar = 1;
                 imgui->scroll_bar_delta_y = scroll_bar.y - mouse_position_y;
@@ -514,10 +589,9 @@ static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header,
 
                 uint8_t within_bounds = lol2(&rect, rect_header.y, rect_header.y + (32 * (display_count + 1)));
 
-                printf("within_bounds = %i\n",within_bounds);
                 if (within_bounds)
                 {
-                    if (rectangle_within_bounds(&rect, mouse_position_x, mouse_position_y))
+                    if (d2d_rectangle_within_bounds(&rect, mouse_position_x, mouse_position_y))
                     {
                         hover = 1;
                         if (click)
@@ -532,48 +606,49 @@ static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header,
                                 imgui->active_id = 0;
                             }
                             selections[i] = !selections[i];
+                            event.changed = 1;
                         }
                     }
 
                     Color color_fills;
                     if (selections[i])
                     {
-                        color_set_i(&color_fills, 66 * 1.5, 84 * 1.5, 120 * 1.5, 255);
+                        d2d_color_set_i(&color_fills, 66 * 1.5, 84 * 1.5, 120 * 1.5, 255);
                     }
                     else if (hover)
                     {
-                        color_set_i(&color_fills, 66 * 0.5, 84 * 0.5, 120 * 0.5, 255);
+                        d2d_color_set_i(&color_fills, 66 * 0.5, 84 * 0.5, 120 * 0.5, 255);
                     }
                     else
                     {
-                        color_set_i(&color_fills, 50, 64, 91, 255);
+                        d2d_color_set_i(&color_fills, 50, 64, 91, 255);
                     }
 
-                    renderer_primitive_add_rectangle(renderer_primitive_fills, rect, color_fills);
+                    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect, color_fills);
 
                     Color color_outlines;
                     if (selections[i])
                     {
-                        color_set_i(&color_outlines, 77 * 1.5, 99 * 1.5, 140 * 1.5, 255);
+                        d2d_color_set_i(&color_outlines, 77 * 1.5, 99 * 1.5, 140 * 1.5, 255);
                     }
                     else
                     {
-                        color_set_i(&color_outlines, 77, 99, 140, 255);
+                        d2d_color_set_i(&color_outlines, 77, 99, 140, 255);
                     }
-                    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect, color_outlines);
+                    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect, color_outlines);
 
                     Color color_text;
                     if (selections[i])
                     {
-                        color_set_i(&color_text, 255, 255, 255, 255);
+                        d2d_color_set_i(&color_text, 255, 255, 255, 255);
                     }
                     else if (hover)
                     {
-                        color_set_i(&color_text, 255, 255, 255, 255);
+                        d2d_color_set_i(&color_text, 255, 255, 255, 255);
                     }
                     else
                     {
-                        color_set_i(&color_text, 250, 250, 250, 255);
+                        d2d_color_set_i(&color_text, 250, 250, 250, 255);
                     }
 
                     char *caption = &captions[i * sizeof(char) * stride];
@@ -586,7 +661,7 @@ static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header,
                     limit_y.x = rect_header.y + 32;
                     limit_y.y = rect_header.y + (rect_header.height * (display_count + 1));
 
-                    renderer_sprite_font_add_text(renderer_sprite_font, font, caption, 12, position, color_text, limit_y);
+                    d2d_renderer_sprite_font_add_text(renderer_sprite_font, font, caption, 12, position, color_text, limit_y);
                 }
             }
         }
@@ -596,30 +671,37 @@ static uint8_t imgui_dropdown(ImGui *imgui, int32_t id, Rectangle_f rect_header,
             scroll_bar.y = imgui->scroll_bar_y;
 
             Color color;
-            color_set_i(&color, 50, 64, 91, 255);
-            renderer_primitive_add_rectangle(renderer_primitive_fills, scroll_area, color);
-            color_set_i(&color, 66 * 0.5, 84 * 0.5, 120 * 0.5, 255);
-            renderer_primitive_add_rectangle(renderer_primitive_fills, scroll_bar, color);
+            d2d_color_set_i(&color, 50, 64, 91, 255);
+            d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, scroll_area, color);
+            d2d_color_set_i(&color, 66 * 0.5, 84 * 0.5, 120 * 0.5, 255);
+            d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, scroll_bar, color);
 
-            color_set_i(&color, 255, 255, 255, 255);
-            renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, scroll_area, color);
-            renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, scroll_bar, color);
+            d2d_color_set_i(&color, 255, 255, 255, 255);
+            d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, scroll_area, color);
+            d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, scroll_bar, color);
         }
     }
 
     Color color;
-    color_set_i(&color, 50, 64, 91, 255);
-    renderer_primitive_add_rectangle(renderer_primitive_fills, rect_header, color);
-    color_set_i(&color, 255, 255, 255, 255);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_header, color);
+    d2d_color_set_i(&color, 50, 64, 91, 255);
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect_header, color);
+    d2d_color_set_i(&color, 255, 255, 255, 255);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_header, color);
 
     Color color_text;
     Vector2f position;
     position.x = rect_header.x + 6;
     position.y = rect_header.y + (rect_header.height / 2) - (font->font_size + font->padding) / 2;
     //renderer_sprite_font_add_text(renderer_sprite_font, font, "lol", 12, position, color_text, (Vector2f){0, 0});
+
+    return event;
 }
-static void imgui_textbox_insert(char *buffer_source, uint16_t *caret, uint16_t *length, const char *buffer_input, uint16_t buffer_input_length)
+void imgui_textbox_insert(char*       buffer_source
+                                ,uint16_t*   caret
+                                ,uint16_t*   length
+                                ,const char* buffer_input
+                                ,uint16_t    buffer_input_length
+                                )
 {
     if (*caret == *length)
     {
@@ -637,7 +719,7 @@ static void imgui_textbox_insert(char *buffer_source, uint16_t *caret, uint16_t 
     }
     buffer_source[*length] = '\0';
 }
-static void imgui_textbox_remove(char *buffer_source, uint16_t *caret, uint16_t *length)
+void imgui_textbox_remove(char *buffer_source, uint16_t *caret, uint16_t *length)
 {
     if (*caret == *length)
     {
@@ -655,7 +737,7 @@ static void imgui_textbox_remove(char *buffer_source, uint16_t *caret, uint16_t 
     }
 }
 
-static void imgui_textbox_remove_segment(char *buffer_source, uint16_t *caret, uint16_t *length, uint16_t segment_start, uint16_t segment_end)
+void imgui_textbox_remove_segment(char *buffer_source, uint16_t *caret, uint16_t *length, uint16_t segment_start, uint16_t segment_end)
 {
     int32_t len = strlen(&buffer_source[segment_end]);
 
@@ -673,7 +755,14 @@ static void imgui_textbox_remove_segment(char *buffer_source, uint16_t *caret, u
         buffer_source[*length] = '\0';
     }
 }
-static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bounds, float dt, char* text, uint8_t input_mode,uint32_t max_display_length)
+TextboxEvent imgui_textbox(ImGui*      imgui
+                                 ,int32_t     id
+                                 ,Rectangle_f rect_bounds
+                                 ,float       dt
+                                 ,char*       text
+                                 ,uint8_t     input_mode
+                                 ,uint32_t    max_display_length
+                                 )
 {
     TextboxEvent event = {0};
     
@@ -725,7 +814,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
     {
         imgui->mp_select = 0;
 
-        if(rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
+        if(d2d_rectangle_within_bounds(&rect_bounds, mouse_position_x, mouse_position_y))
         {
             imgui->active_id = id;
             
@@ -734,7 +823,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
                 mouse_position_x - (rect_bounds.x + 6),
                 mouse_position_y - (rect_bounds.y)
             };
-            imgui->caret = sprite_font_set_caret_mouse(text, imgui->offset, font, mp);
+            imgui->caret = d2d_sprite_font_set_caret_mouse(text, imgui->offset, font, mp);
             imgui->selection_pivot = imgui->caret;
             imgui->hold_timer = 0;
         }
@@ -832,7 +921,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
                     imgui->caret--;
                 }
             }
-            else if (key_arrow_right == GLFW_PRESS && key_arrow_right == GLFW_RELEASE)
+            else if (key_arrow_right == GLFW_PRESS && key_arrow_right_prev == GLFW_RELEASE)
             {
                 imgui->blink_timer = -0.2;
                 imgui->caret_blink = 1;
@@ -900,7 +989,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
                         mouse_position_y - (rect_bounds.y)
                     };
 
-                    imgui->caret = sprite_font_set_caret_mouse(&text[0], imgui->offset, font, mp);
+                    imgui->caret = d2d_sprite_font_set_caret_mouse(&text[0], imgui->offset, font, mp);
                 }
             }
             imgui->hold_timer += dt;
@@ -908,16 +997,16 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
     }
 
     Color color;
-    color_set_i(&color, 50, 64, 91, 255);
-    renderer_primitive_add_rectangle(renderer_primitive_fills, rect_bounds, color);
-    color_set_i(&color, 101, 129, 184, 255);
-    renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_bounds, color);
+    d2d_color_set_i(&color, 50, 64, 91, 255);
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect_bounds, color);
+    d2d_color_set_i(&color, 101, 129, 184, 255);
+    d2d_renderer_primitive_add_rectangle_outline(renderer_primitive_outlines, rect_bounds, color);
 
     if(imgui->active_id == id)
     {
         if (imgui->selection || imgui->mp_select)
         {
-            color_set_i(&color, 137, 153, 190, 255);
+            d2d_color_set_i(&color, 137, 153, 190, 255);
             Rectangle_f rect = {0,0,0,0};
 
             FontMeasurement m_caret;
@@ -925,12 +1014,12 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
             float c = 0;
             float p = 0;
 
-            sprite_font_measure_string(&text[imgui->offset],font,&m_caret,imgui->caret-imgui->offset,-1);
+            d2d_sprite_font_measure_string(&text[imgui->offset],font,&m_caret,imgui->caret-imgui->offset,-1);
             c = m_caret.width_in_px;
 
             if(imgui->selection_pivot > imgui->offset)
             {
-                sprite_font_measure_string(&text[imgui->offset],font,&m_pivot,imgui->selection_pivot-imgui->offset,-1);
+                d2d_sprite_font_measure_string(&text[imgui->offset],font,&m_pivot,imgui->selection_pivot-imgui->offset,-1);
                 p = m_pivot.width_in_px;
             }
 
@@ -941,7 +1030,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
             rect.y = rect_bounds.y + rect.height*0.5;
 
 
-            renderer_primitive_add_rectangle(renderer_primitive_fills, rect, color);
+            d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, rect, color);
             
         }
 
@@ -950,7 +1039,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
         char *display_text = (input_mode == 0) ? &text[imgui->offset] : &imgui->text_password[imgui->offset];
 
         FontMeasurement measurement;
-        sprite_font_measure_string(display_text, font,&measurement,  imgui->caret - imgui->offset,-1);
+        d2d_sprite_font_measure_string(display_text, font,&measurement,  imgui->caret - imgui->offset,-1);
     
         Vector2f p = 
         {
@@ -960,14 +1049,14 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
 
         if (imgui->caret_blink)
         {
-            color_set_i(&color, 255, 255, 255, 255);
+            d2d_color_set_i(&color, 255, 255, 255, 255);
         }
         else
         {
-            color_set_i(&color, 255, 255, 255, 0);
+            d2d_color_set_i(&color, 255, 255, 255, 0);
         }
 
-        renderer_primitive_add_rectangle(renderer_primitive_fills, (Rectangle_f){p.x, p.y, 2, font->font_size}, color);
+        d2d_renderer_primitive_add_rectangle(renderer_primitive_fills, (Rectangle_f){p.x, p.y, 2, font->font_size}, color);
 
 
     }
@@ -976,7 +1065,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
     position.y = rect_bounds.y + rect_bounds.height * 0.5 - (font->font_size  + font->padding)/2;
 
     Color color_text;
-    color_set_i(&color_text, 255, 255, 255, 255);
+    d2d_color_set_i(&color_text, 255, 255, 255, 255);
 
     int16_t offset = (imgui->active_id == id) ? imgui->offset:0;
     int16_t caret  = (imgui->active_id == id) ? imgui->caret:0;
@@ -995,7 +1084,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
         if(length > 0)
         {   
 
-            renderer_sprite_font_add_text(renderer_sprite_font
+            d2d_renderer_sprite_font_add_text(renderer_sprite_font
                                          ,font
                                          ,&text[offset]
                                          ,max_display_length
@@ -1012,7 +1101,7 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
             memset(imgui->text_password,'*',sizeof(char)*len);
             imgui->text_password[len-1] = '\0';
 
-            renderer_sprite_font_add_text(renderer_sprite_font
+            d2d_renderer_sprite_font_add_text(renderer_sprite_font
                                          ,font
                                          ,&imgui->text_password[offset]
                                          ,max_display_length
@@ -1029,16 +1118,19 @@ static TextboxEvent imgui_textbox(ImGui *imgui, int32_t id, Rectangle_f rect_bou
     
 }
 
-static void imgui_label(ImGui *imgui, int32_t id, Vector2f position, char* caption)
+void imgui_label(ImGui *imgui, int32_t id, Vector2f position, char* caption, Color color)
 {
-    Color color_text;
-    color_set_i(&color_text, 255, 255, 255, 255);
-
     RendererSpriteFont *renderer_sprite_font = &imgui->renderer_sprite_font;
-    renderer_sprite_font_add_text(renderer_sprite_font, imgui->font, caption, 0, position, color_text,(Vector2f){0,0});
+    d2d_renderer_sprite_font_add_text(renderer_sprite_font, imgui->font, caption, 0, position, color,(Vector2f){0,0});
 }
 
-static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f rect_bounds, uint8_t tab_count, Texture *texture)
+void imgui_tabbar(ImGui*      imgui
+                        ,int32_t     id
+                        ,int8_t*     selected
+                        ,Rectangle_f rect_bounds
+                        ,uint8_t     tab_count
+                        ,Texture*    texture
+                        )
 {
     RendererPrimitive *renderer_primitive_fills    = &imgui->renderer_primitive_fills;
     RendererPrimitive *renderer_primitive_outlines = &imgui->renderer_primitive_outlines;
@@ -1061,7 +1153,7 @@ static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f 
             64,
             64
         };
-        if (rectangle_within_bounds(&tab_bounds, mpx, mpy))
+        if (d2d_rectangle_within_bounds(&tab_bounds, mpx, mpy))
         {
             hover = i;
             if (mb == GLFW_PRESS && mbp == GLFW_RELEASE)
@@ -1097,9 +1189,9 @@ static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f 
 
             if (hover == i)
             {
-                color_set_i(&color_fills, 66, 84, 120, 255);
-                color_set_i(&color_outlines, 255, 255, 255, 100);
-                color_set_i(&color_sprite, 255, 255, 255, 255);
+                d2d_color_set_i(&color_fills, 66, 84, 120, 255);
+                d2d_color_set_i(&color_outlines, 255, 255, 255, 100);
+                d2d_color_set_i(&color_sprite, 255, 255, 255, 255);
                 top_left = 6;
                 bottom_left = 6;
                 top_right = 6;
@@ -1107,9 +1199,9 @@ static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f 
             }
             else if (i == (hover - 1))
             {
-                color_set_i(&color_fills, 40, 51, 72, 255);
-                color_set_i(&color_outlines, 50, 64, 91, 100);
-                color_set_i(&color_sprite, 200, 200, 200, 255);
+                d2d_color_set_i(&color_fills, 40, 51, 72, 255);
+                d2d_color_set_i(&color_outlines, 50, 64, 91, 100);
+                d2d_color_set_i(&color_sprite, 200, 200, 200, 255);
                 top_left = 0;
                 bottom_left = 0;
                 top_right = 5;
@@ -1117,9 +1209,9 @@ static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f 
             }
             else if (i == (hover + 1))
             {
-                color_set_i(&color_fills, 40, 51, 72, 255);
-                color_set_i(&color_outlines, 50, 64, 91, 100);
-                color_set_i(&color_sprite, 200, 200, 200, 255);
+                d2d_color_set_i(&color_fills, 40, 51, 72, 255);
+                d2d_color_set_i(&color_outlines, 50, 64, 91, 100);
+                d2d_color_set_i(&color_sprite, 200, 200, 200, 255);
                 top_left = 5;
                 bottom_left = 5;
                 top_right = 0;
@@ -1127,32 +1219,32 @@ static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f 
             }
             else
             {
-                color_set_i(&color_fills, 50, 64, 91, 100);
-                color_set_i(&color_outlines, 50, 64, 91, 100);
-                color_set_i(&color_sprite, 200, 200, 200, 255);
+                d2d_color_set_i(&color_fills, 50, 64, 91, 100);
+                d2d_color_set_i(&color_outlines, 50, 64, 91, 100);
+                d2d_color_set_i(&color_sprite, 200, 200, 200, 255);
             }
 
             if (*selected == i)
             {
-                color_set_i(&color_sprite, 255, 157, 0, 255);
+                d2d_color_set_i(&color_sprite, 255, 157, 0, 255);
             }
 
             Rectangle_f *b = &tab_bounds;
-            renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x,            b->y - top_left}, color_fills);
-            renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x + b->width, b->y - top_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x + b->width, b->y + b->height + bottom_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x + b->width, b->y + b->height + bottom_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x,            b->y + b->height + bottom_left}, color_fills);
-            renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x,            b->y - top_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x,            b->y - top_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x + b->width, b->y - top_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x + b->width, b->y + b->height + bottom_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x + b->width, b->y + b->height + bottom_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x,            b->y + b->height + bottom_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_fills,    (Vector2f){b->x,            b->y - top_left}, color_fills);
 
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y - bottom_left}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y - bottom_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y - bottom_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y + b->height + top_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y + b->height + top_right}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y + b->height + top_left}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y + b->height + top_left}, color_fills);
-            renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y - bottom_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y - bottom_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y - bottom_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y - bottom_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y + b->height + top_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x + b->width, b->y + b->height + top_right}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y + b->height + top_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y + b->height + top_left}, color_fills);
+            d2d_renderer_primitive_add(renderer_primitive_outlines, (Vector2f){b->x, b->y - bottom_left}, color_fills);
 
             Rectangle_f src = 
             {
@@ -1163,21 +1255,26 @@ static void imgui_tabbar(ImGui *imgui, int32_t id,int8_t* selected, Rectangle_f 
                 64*i,0,64,64
             };
 
-            renderer_sprite_add(renderer_sprites,32+(64*i),64/2+8,64,64,64*i,64,64,64,texture, &color_sprite);
+            d2d_renderer_sprite_add(renderer_sprites,32+(64*i),64/2+8,64,64,64*i,64,64,64,texture, &color_sprite);
         }
     
 }
-static int days_in_month(int year, int month) {
-    // Array of days in each month (for non-leap years)
+int days_in_month(int year, int month) 
+{
     int days_in_months[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     
-    // Check for leap year and adjust February's days
-    if (month == 2 && (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))) {
+    if (month == 2 && (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))) 
+    {
         return 29;
     }
     return days_in_months[month - 1];
 }
-static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t selected_year,uint8_t selected_month,uint8_t selected_day)
+DatePickerEvent imgui_datepicker(ImGui*   imgui
+                                       ,int32_t  id
+                                       ,uint16_t selected_year
+                                       ,uint8_t  selected_month
+                                       ,uint8_t  selected_day
+                                       )
 {
     uint16_t year  = selected_year  + imgui->offset_year;
     uint8_t  month = selected_month + imgui->offset_month;
@@ -1206,9 +1303,9 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
     Rectangle_f bounds_header = {100,100,256,32};
     Color color_header = (Color){0.3,0.3,0.3,1};
 
-    if(rectangle_within_bounds(&bounds_header,mouse_position_x,mouse_position_y))
+    if(d2d_rectangle_within_bounds(&bounds_header,mouse_position_x,mouse_position_y))
     {
-        color_set_f(&color_header,0.5,0.5,0.5,1.0);
+        d2d_color_set_f(&color_header,0.5,0.5,0.5,1.0);
 
         if(mouse_button_left == 1 && mouse_button_left_prev == 0)
         {
@@ -1226,7 +1323,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
     char selected_date_string[128];
     
     snprintf(selected_date_string, sizeof(char)*128,"%02d-%02d-%02d",selected_year,selected_month,selected_day);
-    renderer_sprite_font_add_text(renderer_sprite_font
+    d2d_renderer_sprite_font_add_text(renderer_sprite_font
                                  ,imgui->font,selected_date_string
                                  ,200
                                  ,(Vector2f){bounds_header.x + 82,bounds_header.y + 2}
@@ -1234,7 +1331,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
                                  ,(Vector2f){0,0}
                                  );
     
-    renderer_primitive_add_rectangle(renderer_primitive_fills
+    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills
                                     ,bounds_header
                                     ,(Color){0.15,0.15,0.15,1}
                                     );
@@ -1269,7 +1366,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
             bounds_calendar_top.height + bounds_calendar_bottom.height
         };
 
-        if(!rectangle_within_bounds(&bounds_area_interactive,mouse_position_x,mouse_position_y))
+        if(!d2d_rectangle_within_bounds(&bounds_area_interactive,mouse_position_x,mouse_position_y))
         {
             if(mouse_button_left == 1 && mouse_button_left_prev == 0)
             {
@@ -1277,17 +1374,17 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
             }
         }
 
-        renderer_primitive_add_rectangle(renderer_primitive_fills,
+        d2d_renderer_primitive_add_rectangle(renderer_primitive_fills,
                                          bounds_calendar_bottom,
                                          (Color){0.1,0.1,0.1,1}
                                         );
                                         
-        renderer_primitive_add_rectangle(renderer_primitive_fills,
+        d2d_renderer_primitive_add_rectangle(renderer_primitive_fills,
                                          bounds_calendar_top, 
                                          (Color){0.15,0.15,0.15,1}
                                         );
         
-        renderer_sprite_font_add_text(renderer_sprite_font
+        d2d_renderer_sprite_font_add_text(renderer_sprite_font
                                      ,imgui->font
                                      ,"Mo  Tu  We  Th  Fr  Sa  Su"
                                      ,200
@@ -1313,7 +1410,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
 
         snprintf(month_str,sizeof(char)*128,"%i %s",year,month_names[month-1]);
 
-        renderer_sprite_font_add_text(renderer_sprite_font
+        d2d_renderer_sprite_font_add_text(renderer_sprite_font
                                      ,imgui->font
                                      ,month_str
                                      ,200
@@ -1333,7 +1430,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
                 margin.y + bounds_calendar_top.y + y + 96
             };
 
-            renderer_sprite_font_add_text(renderer_sprite_font
+            d2d_renderer_sprite_font_add_text(renderer_sprite_font
                                          ,imgui->font
                                          ,day_str
                                          ,200
@@ -1346,7 +1443,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
 
             if(selected_day == i+1 && month == selected_month && year == selected_year)
             {
-                renderer_primitive_add_rectangle(renderer_primitive_fills
+                d2d_renderer_primitive_add_rectangle(renderer_primitive_fills
                                                 ,(Rectangle_f){position.x-6,position.y-2,32,28}
                                                 ,(Color){0,1,0,0.4}
                                                 ); 
@@ -1355,7 +1452,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
             {
                 if(mouse_position_y > position.y && mouse_position_y < position.y + 28)
                 {
-                    renderer_primitive_add_rectangle(renderer_primitive_fills
+                    d2d_renderer_primitive_add_rectangle(renderer_primitive_fills
                                                     ,(Rectangle_f){position.x-6,position.y-2,32,28}
                                                     ,(Color){0.4,0.4,0.4,0.4}
                                                     ); 
@@ -1396,7 +1493,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
             32
         };
         
-        if(rectangle_within_bounds(&button_month_previous,mouse_position_x,mouse_position_y))
+        if(d2d_rectangle_within_bounds(&button_month_previous,mouse_position_x,mouse_position_y))
         {
             if(mouse_button_left == 1 && mouse_button_left_prev == 0)
             {
@@ -1417,12 +1514,12 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
                     }
                 }
             }
-            renderer_primitive_add_rectangle(renderer_primitive_fills
+            d2d_renderer_primitive_add_rectangle(renderer_primitive_fills
                                             ,button_month_previous
                                             ,(Color){0.4,0.4,0.4,1.0}
                                             ); 
         }
-        else if(rectangle_within_bounds(&button_month_next,mouse_position_x,mouse_position_y))
+        else if(d2d_rectangle_within_bounds(&button_month_next,mouse_position_x,mouse_position_y))
         {
             if(mouse_button_left == 1 && mouse_button_left_prev == 0)
             {
@@ -1444,7 +1541,7 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
                     
                 }
             }
-            renderer_primitive_add_rectangle(renderer_primitive_fills
+            d2d_renderer_primitive_add_rectangle(renderer_primitive_fills
                                             ,button_month_next
                                             ,(Color){0.4,0.4,0.4,1.0}
                                             ); 
@@ -1453,15 +1550,16 @@ static DatePickerEvent imgui_datepicker(ImGui* imgui, int32_t id,uint16_t select
 
         Color color_arrow = {0.9,0.9,0.9,1};
 
-        renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_previous.x+ 20 ,button_month_previous.y + 6 }, color_arrow);
-        renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_previous.x+ 6  ,button_month_previous.y + 16}, color_arrow);
-        renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_previous.x+ 20 ,button_month_previous.y + 24}, color_arrow);
+        d2d_renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_previous.x+ 20 ,button_month_previous.y + 6 }, color_arrow);
+        d2d_renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_previous.x+ 6  ,button_month_previous.y + 16}, color_arrow);
+        d2d_renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_previous.x+ 20 ,button_month_previous.y + 24}, color_arrow);
 
-        renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_next.x + 10  ,button_month_next.y + 6 },color_arrow);
-        renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_next.x + 32-6,button_month_next.y + 16},color_arrow);
-        renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_next.x + 10  ,button_month_next.y + 24},color_arrow);
+        d2d_renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_next.x + 10  ,button_month_next.y + 6 },color_arrow);
+        d2d_renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_next.x + 32-6,button_month_next.y + 16},color_arrow);
+        d2d_renderer_primitive_add(renderer_primitive_fills,(Vector2f){button_month_next.x + 10  ,button_month_next.y + 24},color_arrow);
 
     }
 
     return event;
 }
+#endif
